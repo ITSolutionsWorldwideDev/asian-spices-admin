@@ -1,36 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<!-- // D:\project\asian-spices\README.md -->
+# 🛒 **Asian Spices | Ecommerce Platform (Turborepo + Next.js)**
 
-## Getting Started
+A modern, scalable ecommerce platform built using Turborepo, featuring a customer-facing website, a powerful admin dashboard, shared UI components, and reusable packages—designed for performance, modularity, and easy team collaboration.
 
-First, run the development server:
+---
+
+## 🚀 Live Demo
+
+👉 **Website:** https://asian-spices.com/
+👉 **Admin Panel:** https://asian-spices.com/
+
+---
+
+## 📌 **Features**
+
+### 🛍 **Website**
+- 🧭 Modern, SEO-optimized storefront built with Next.js App Router  
+- ⚡ High-performance product browsing and search  
+- 🛒 Cart & checkout flows  
+- 🌐 Internationalization (i18n)  
+- 📱 Fully responsive UI with Tailwind CSS  
+
+### 🛠 **Admin Dashboard**
+- 📦 Product management (CRUD)  
+- 👥 Customer & order management  
+- 📊 Analytics & reporting  
+- 🔐 Role-based authentication  
+- ⚙️ Settings & configuration  
+
+### 📦 **Monorepo / Turborepo Features**
+- ♻️ Shared UI component library  
+- 🧩 Shared utilities and config packages  
+- 🚄 Remote caching for faster builds  
+- 🧪 Unified testing and linting setup  
+- 🗂 Clear folder structure for multiple apps  
+
+---
+
+## 🛠️ Tech Stack
+
+| Tech         | Description                          |
+|--------------|--------------------------------------|
+| **Turborepo** | High-performance monorepo tooling |
+| **Next.js** | Framework for website + admin dashboard |
+| **TypeScript** | Type-safe development |
+| **Tailwind CSS** | Utility-first CSS styling |
+| **Prisma / MongoDB / PostgreSQL** | Database & ORM |
+| **NextAuth / Auth0 / Custom Auth** | Authentication |
+| **i18next** | Internationalization |
+| **React Query / SWR** | Data fetching & caching |
+| **Zustand / Redux** | State management (if applicable) |
+
+---
+
+
+## ⚙️ Getting Started
+
+### 1. Clone the repository
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+git clone https://github.com/ITSolutionsWorldwideDev/asian-spices.git
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📁 **Monorepo Structure**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```txt
+/apps
+  ├── website        # Customer-facing storefront
+  ├── admin          # Admin panel dashboard
 
-## Learn More
+/packages
+  ├── ui             # Shared UI components
+  ├── config         # Shared ESLint, Tailwind, TS config
+  ├── utils          # Shared helper functions
+  ├── hooks          # Shared custom hooks
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+/turbo.json          # Turborepo pipeline config
+/package.json
+/tsconfig.json
