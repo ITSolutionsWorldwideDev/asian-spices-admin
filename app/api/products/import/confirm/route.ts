@@ -22,10 +22,7 @@ export async function POST(req: NextRequest) {
     const body: { rows: ImportRow[] } = await req.json();
 
     if (!body?.rows?.length) {
-      return NextResponse.json(
-        { error: "No rows provided" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No rows provided" }, { status: 400 });
     }
 
     await client.query("BEGIN");
@@ -37,7 +34,7 @@ export async function POST(req: NextRequest) {
     /* ---------------- EXISTING SKU CACHE ---------------- */
 
     const existing = await client.query<ProductSkuRow>(
-      `SELECT sku FROM store_products`
+      `SELECT sku FROM store_products`,
     );
 
     const skuSet = new Set(existing.rows.map((r: ProductSkuRow) => r.sku));
@@ -70,7 +67,7 @@ export async function POST(req: NextRequest) {
         if (row.Category) {
           const cRes = await client.query<{ id: number }>(
             `SELECT id FROM store_categories WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) LIMIT 1`,
-            [row.Category]
+            [row.Category],
           );
           if (cRes.rows.length) categoryId = cRes.rows[0].id;
         }
@@ -78,7 +75,7 @@ export async function POST(req: NextRequest) {
         if (row.Subcategory) {
           const scRes = await client.query<{ id: number }>(
             `SELECT id FROM store_subcategories WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) LIMIT 1`,
-            [row.Subcategory]
+            [row.Subcategory],
           );
           if (scRes.rows.length) subcategoryId = scRes.rows[0].id;
         }
@@ -86,7 +83,7 @@ export async function POST(req: NextRequest) {
         if (row.Brand) {
           const bRes = await client.query<{ brand_id: number }>(
             `SELECT brand_id FROM store_brands WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) LIMIT 1`,
-            [row.Brand]
+            [row.Brand],
           );
           if (bRes.rows.length) brandId = bRes.rows[0].brand_id;
         }
@@ -125,11 +122,11 @@ export async function POST(req: NextRequest) {
             row.Description || null,
             row["Health Benefits"] || null,
             Number(row.Price),
-            Number(row.Quantity)|| 999999999,
+            Number(row.Quantity) || 999999999,
             row["Discount Type"] || null,
             row["Discount Value"] ? Number(row["Discount Value"]) : null,
             row.Status === "Active" ? 1 : 0,
-          ]
+          ],
         );
 
         const productId = productRes.rows[0].id;
@@ -150,7 +147,7 @@ export async function POST(req: NextRequest) {
 
             const cRes = await client.query<{ country_id: number }>(
               `SELECT country_id FROM countries WHERE LOWER(TRIM(country_name)) = LOWER(TRIM($1))`,
-              [countryName]
+              [countryName],
             );
 
             if (cRes.rows.length) {
@@ -163,7 +160,7 @@ export async function POST(req: NextRequest) {
                 VALUES ($1,$2)
                 ON CONFLICT DO NOTHING
                 `,
-                [productId, cRes.rows[0].country_id]
+                [productId, cRes.rows[0].country_id],
               );
             }
           }
@@ -174,7 +171,10 @@ export async function POST(req: NextRequest) {
         if (row["B2B Prices"]) {
           try {
             // const tiers = JSON.parse(row["B2B Prices"]);
-            const tiers = JSON.parse(row["B2B Prices"]) as Array<{ min_quantity: number; price: number }>;
+            const tiers = JSON.parse(row["B2B Prices"]) as Array<{
+              min_quantity: number;
+              price: number;
+            }>;
 
             for (const t of tiers) {
               await client.query(
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
                 )
                 VALUES ($1,'B2B',$2,$3)
                 `,
-                [productId, t.min_quantity, t.price]
+                [productId, t.min_quantity, t.price],
               );
             }
           } catch {
@@ -203,6 +203,29 @@ export async function POST(req: NextRequest) {
         });
         skipped++;
       }
+    }
+
+    if (inserted > 0) {
+      await client.query(
+        `INSERT INTO public.store_product_images (
+              product_id, 
+              url, 
+              alt_text, 
+              is_primary
+          )
+            SELECT 
+              p.id AS product_id,
+              media_id AS url, 
+              COALESCE(m.alt_text, p.name) AS alt_text,
+              true AS is_primary
+          FROM public.store_products p
+          JOIN public.media m ON m.file_name ILIKE '%' || p.name || '%'
+          WHERE NOT EXISTS (
+            SELECT 1 
+            FROM public.store_product_images spi
+            WHERE spi.product_id = p.id 
+              AND spi.url::int = m.media_id)`
+      );
     }
 
     await client.query("COMMIT");
@@ -222,7 +245,7 @@ export async function POST(req: NextRequest) {
         error: "Import failed",
         detail: err.message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   } finally {
     client.release();
