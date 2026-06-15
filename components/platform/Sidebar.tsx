@@ -114,6 +114,20 @@ const PLATFORM_MENU = [
   },
 
   {
+    label: "Tax",
+    submenu: true,
+    submenuHdr: "Tax",
+    submenuItems: [
+      {
+        label: "Tax",
+        link: "/platform/tax-rules",
+        icon: "currency",
+        submenu: false,
+      },
+    ],
+  },
+
+  {
     label: "Shipping",
     submenu: true,
     submenuHdr: "Shipping",
