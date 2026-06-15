@@ -206,6 +206,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (inserted > 0) {
+
+      // Product Primary Images Link
+
       await client.query(
         `INSERT INTO public.store_product_images (
               product_id, 
@@ -225,6 +228,30 @@ export async function POST(req: NextRequest) {
             FROM public.store_product_images spi
             WHERE spi.product_id = p.id 
               AND spi.url::int = m.media_id)`
+      );
+
+      // Default Store Assignment
+      
+      await client.query(
+        ` INSERT INTO store_product_catalog (
+            store_id, 
+            product_id, 
+            price, 
+            quantity, 
+            status
+          )
+          SELECT 
+            'afef3fd5-c31a-440a-ae56-99eca0b24359' AS store_id,
+            p.id,
+            COALESCE(p.price,0) AS price,
+            999999999 AS quantity,
+            1 AS status
+          FROM store_products p
+          ON CONFLICT (store_id, product_id)
+          DO UPDATE SET
+            price = COALESCE(EXCLUDED.price, store_product_catalog.price),
+            quantity = COALESCE(EXCLUDED.quantity, store_product_catalog.quantity),
+            updated_at = now()`
       );
     }
 
