@@ -23,6 +23,7 @@ export interface ShipmentResult {
   trackingNumber?: string;
   trackingUrl?: string;
   labelUrl?: string;
+  paymentUrl?: string;
   raw: any;
 }
 

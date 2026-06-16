@@ -34,6 +34,8 @@ export async function POST(req: NextRequest) {
 
     const provider = await getShippingProvider(providerSlug);
 
+    console.log('Attempting label generation for shipment external ID:', shipment.external_shipment_id);
+
     // ❗ OPTIONAL: check if paid
     const orderRes = await pool.query(
       `SELECT shipping_paid FROM store_orders WHERE id = $1`,
@@ -65,7 +67,8 @@ export async function POST(req: NextRequest) {
       `
       UPDATE store_orders
       SET 
-        shipping_label = $1,label_url = $1,
+        shipping_label = $1,
+        label_url = $1,
         fulfillment_status = 'shipped',
         updated_at = NOW()
       WHERE id = $2
@@ -78,10 +81,21 @@ export async function POST(req: NextRequest) {
       labelUrl: label.url,
     });
   } catch (err: any) {
-    console.error("generate-label error:", err);
+    console.error("❌ [Generate Label API Error]:", err);
+
+    // User-friendly messaging for common gateway lifecycle rejections
+    if (err.message?.includes("Order has not status booked")) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "This shipment is an unpaid draft on CheapCargo. Please pay for the shipment inside your CheapCargo merchant portal before attempting to render labels." 
+        },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json(
-      { success: false, error: err.message },
+      { success: false, error: err.message || "Internal label generation engine failure" },
       { status: 500 },
     );
   }

@@ -17,28 +17,35 @@ type Credentials = {
 // Helpers
 // -----------------------------
 
-// function getAuthenticationToken(apiKey: any) {
-//   const now = new Date();
+function getStandardizedTimestamp(): string {
+  const now = new Date();
 
-//   // ⏱ Round hour to nearest 2-hour block
-//   const hour = now.getHours();
-//   const roundedHour = Math.floor(hour / 2) * 2;
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Amsterdam",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hour12: false,
+  });
 
-//   const YYYY = now.getFullYear();
-//   const MM = String(now.getMonth() + 1).padStart(2, "0");
-//   const DD = String(now.getDate()).padStart(2, "0");
-//   const HH = String(roundedHour).padStart(2, "0");
+  const parts = formatter.formatToParts(now);
 
-//   const timestamp = `${YYYY}${MM}${DD}${HH}`;
+  const getPart = (type: string) =>
+    parts.find((p) => p.type === type)?.value ?? "";
 
-//   return md5(apiKey + timestamp);
-// }
+  const YYYY = getPart("year");
+  const MM = getPart("month");
+  const DD = getPart("day");
 
-// function getPasswordHash(value: string) {
-//   return crypto.createHash("md5").update(value).digest("hex");
-// }
+  const hour = parseInt(getPart("hour"), 10);
+  const roundedHour = Math.floor(hour / 2) * 2;
+  const HH = String(roundedHour).padStart(2, "0");
 
-function getStandardizedTimestamp(useUTC = false): string {
+  return `${YYYY}${MM}${DD}${HH}`;
+}
+
+/* function getStandardizedTimestamp(useUTC = false): string {
   const now = new Date();
 
   const hour = useUTC ? now.getUTCHours() : now.getHours();
@@ -50,10 +57,11 @@ function getStandardizedTimestamp(useUTC = false): string {
   const HH = String(roundedHour).padStart(2, "0");
 
   return `${YYYY}${MM}${DD}${HH}`;
-}
+} */
 
 function getAuthenticationToken(apiKey: any) {
-  const timestamp = getStandardizedTimestamp(false); // Matches your key setup criteria
+  // const timestamp = getStandardizedTimestamp(false); // Matches your key setup criteria
+  const timestamp = getStandardizedTimestamp(); // Matches your key setup criteria
   return md5(apiKey + timestamp);
 }
 

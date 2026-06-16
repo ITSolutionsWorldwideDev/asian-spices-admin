@@ -26,36 +26,38 @@ export class CheapCargoAdapter implements ShippingAdapter {
       ? "https://www.cheapcargo-demo.nl/api"
       : "https://www.cheapcargo.com/api";
   }
-  /**
-   * ⏱ Helper to compute standardized 2-hour server time-blocks
-   * Aligned completely to local system timezone parameters
-   */
 
-  private getStandardizedTimestamp(useUTC = false): string {
+  private getStandardizedTimestamp(): string {
     const now = new Date();
 
-    const hour = useUTC ? now.getUTCHours() : now.getHours();
-    const roundedHour = Math.floor(hour / 2) * 2;
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Amsterdam",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      hour12: false,
+    });
 
-    const YYYY = useUTC ? now.getUTCFullYear() : now.getFullYear();
-    const MM = String(
-      (useUTC ? now.getUTCMonth() : now.getMonth()) + 1,
-    ).padStart(2, "0");
-    const DD = String(useUTC ? now.getUTCDate() : now.getDate()).padStart(
-      2,
-      "0",
-    );
+    const parts = formatter.formatToParts(now);
+
+    const getPart = (type: string) =>
+      parts.find((p) => p.type === type)?.value ?? "";
+
+    const YYYY = getPart("year");
+    const MM = getPart("month");
+    const DD = getPart("day");
+
+    const hour = parseInt(getPart("hour"), 10);
+    const roundedHour = Math.floor(hour / 2) * 2;
     const HH = String(roundedHour).padStart(2, "0");
 
     return `${YYYY}${MM}${DD}${HH}`;
   }
 
   private getAuthenticationToken() {
-
-    console.log('this.creds.apiKey ==== ',this.creds.apiKey);
-    const timestamp = this.getStandardizedTimestamp(false);
-
-    console.log('timestamp ==== ',timestamp);
+    // const timestamp = this.getStandardizedTimestamp(false);
+    const timestamp = this.getStandardizedTimestamp();
     return md5(this.creds.apiKey.trim() + timestamp);
   }
 
@@ -140,6 +142,14 @@ export class CheapCargoAdapter implements ShippingAdapter {
 
     const parcelList = Array.isArray(input.parcels) ? input.parcels : [];
 
+    const parseStreetNumber = (street: string, incomingNum: string) => {
+      if (incomingNum && !incomingNum.toLowerCase().includes("line")) {
+        return incomingNum;
+      }
+      const match = street.match(/\s+(\d+[a-zA-Z]?)$/);
+      return match ? match[1] : "1";
+    };
+
     const payload = {
       shipments: {
         authentication: this.getAuthenticationToken(),
@@ -152,26 +162,35 @@ export class CheapCargoAdapter implements ShippingAdapter {
           {
             "@pay": false,
             "@waitForLabel": false,
+            // "@pay": true,
+            // "@waitForLabel": true,
             "@id": input.orderId,
             "@orderBy": "price",
             sender: {
               companyName: input.from.name || "Store Vendor Instance",
               contactPerson: "Store Administrator",
               street: input.from.street || "Hoofdstraat",
-              number: input.from.number || "123",
-              zipcode: input.from.postal_code || "1000AA",
+              number: parseStreetNumber(
+                input.from.street || "",
+                input.from.number || "123",
+              ),
+              zipcode: (input.from.postal_code || "1000AA").replace(/\s+/g, ""),
               city: input.from.city || "Amsterdam",
               country: input.from.country || "NL",
               phone: input.from.phone || "+31612345678",
-              email: input.from.email || "sender@example.com",
+              email:
+                input.from.email || this.creds.email || "sender@example.com",
               type: "business",
             },
             receiver: {
               companyName: input.to.companyName || "Private Customer Consignee",
               contactPerson: input.to.contactPerson || "Jane Receiver",
               street: input.to.street || "Kerkstraat",
-              number: input.to.number || "456",
-              zipcode: input.to.postal_code || "2000BB",
+              number: parseStreetNumber(
+                input.to.street || "",
+                input.to.number || "456",
+              ),
+              zipcode: (input.to.postal_code || "2000BB").replace(/\s+/g, ""),
               city: input.to.city || "Rotterdam",
               country: input.to.country || "NL",
               phone: input.to.phone || "+31687654321",
@@ -185,7 +204,8 @@ export class CheapCargoAdapter implements ShippingAdapter {
                 length: Number(parcel.length || 10),
                 width: Number(parcel.width || 10),
                 height: Number(parcel.height || 10),
-                value: Math.round(150 / Math.max(1, parcelList.length)), // Safely split total custom declared value
+                value: Math.round(150 / Math.max(1, parcelList.length)),
+                // value: Math.round((input.totalValue || 150) / Math.max(1, parcelList.length)),
                 package: "PACKAGE",
                 quantity: 1,
               })),
@@ -236,9 +256,10 @@ export class CheapCargoAdapter implements ShippingAdapter {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
+          "User-Agent": "EcommerceApp/1.0 NextJS-ShippingAdapter",
           // 🚀 Inject standard User-Agent so Nginx doesn't classify Next.js fetch as a suspicious bot script
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 AcmeShippingApp/1.0",
+          // "User-Agent":
+          //   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 AcmeShippingApp/1.0",
         },
         // headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -271,11 +292,18 @@ export class CheapCargoAdapter implements ShippingAdapter {
       console.log("shipment shipped_data.shipment === ", shipped_data.shipment);
 
       if (shipped_data?.shipment?.status !== "ok") {
-        console.log("shipment data.shipment?.error === ", shipped_data.shipment?.error);
-        console.error("CheapCargo error:", shipped_data);
-        throw new Error("CheapCargo shipment failed");
+        const problemArr =
+          shipped_data?.shipment?.order?.[0]?.details?.problems?.problem;
+        const reason = problemArr
+          ? JSON.stringify(problemArr)
+          : "Unknown operational reason";
+        throw new Error(`CheapCargo shipment rejected: ${reason}`);
       }
-      console.log("shipment shipped_data.shipment?.order === ", shipped_data.shipment?.order);
+
+      console.log(
+        "shipment shipped_data.shipment?.order === ",
+        shipped_data.shipment?.order,
+      );
 
       const shipped_order = shipped_data?.shipment?.order?.[0];
 
@@ -288,6 +316,8 @@ export class CheapCargoAdapter implements ShippingAdapter {
       const trackingNumber = shipped_order.details?.awb || undefined;
       const trackingUrl = shipped_order.details?.trackAndTrace || undefined;
 
+      const paymentUrl = shipped_data?.shipment?.url || undefined;
+
       console.log("externalId === ", externalId);
       console.log("trackingNumber === ", trackingNumber);
       console.log("trackingUrl === ", trackingUrl);
@@ -297,6 +327,7 @@ export class CheapCargoAdapter implements ShippingAdapter {
         trackingNumber: trackingNumber,
         trackingUrl: trackingUrl,
         labelUrl: undefined,
+        paymentUrl: paymentUrl,
         raw: shipped_data,
       };
     } catch (error: any) {
@@ -334,7 +365,13 @@ export class CheapCargoAdapter implements ShippingAdapter {
 
     const res = await fetch(`${this.baseUrl}/getStatus`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        // 🚀 Inject standard User-Agent so Nginx doesn't classify Next.js fetch as a suspicious bot script
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 AcmeShippingApp/1.0",
+      },
       body: JSON.stringify(payload),
     });
 
@@ -384,14 +421,25 @@ export class CheapCargoAdapter implements ShippingAdapter {
       },
     };
 
+    console.log(
+      "generateLabel to CheapCargo:",
+      JSON.stringify(payload, null, 2),
+    );
+
     const res = await fetch(`${this.baseUrl}/getLabel`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "User-Agent": "EcommerceApp/1.0 NextJS-ShippingAdapter",
+        // 🚀 Inject standard User-Agent so Nginx doesn't classify Next.js fetch as a suspicious bot script
+        // "User-Agent":
+        //   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 AcmeShippingApp/1.0",
+      },
       body: JSON.stringify(payload),
     });
 
     const data = await res.json();
-    
 
     // 🔥 ENHANCED LOGGING: Stringifies the nested error array returned from the gateway
     console.log(
@@ -442,10 +490,41 @@ export class CheapCargoAdapter implements ShippingAdapter {
 
     const res = await fetch(`${this.baseUrl}/cancelShipment`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "User-Agent": "EcommerceApp/1.0 NextJS-ShippingAdapter",
+        // 🚀 Inject standard User-Agent so Nginx doesn't classify Next.js fetch as a suspicious bot script
+        // "User-Agent":
+        //   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 AcmeShippingApp/1.0",
+      },
       body: JSON.stringify(payload),
     });
 
     return res.json();
   }
 }
+
+/**
+ * ⏱ Helper to compute standardized 2-hour server time-blocks
+ * Aligned completely to local system timezone parameters
+ */
+
+/* private getStandardizedTimestamp(useUTC = false): string {
+    const now = new Date();
+
+    const hour = useUTC ? now.getUTCHours() : now.getHours();
+    const roundedHour = Math.floor(hour / 2) * 2;
+
+    const YYYY = useUTC ? now.getUTCFullYear() : now.getFullYear();
+    const MM = String(
+      (useUTC ? now.getUTCMonth() : now.getMonth()) + 1,
+    ).padStart(2, "0");
+    const DD = String(useUTC ? now.getUTCDate() : now.getDate()).padStart(
+      2,
+      "0",
+    );
+    const HH = String(roundedHour).padStart(2, "0");
+
+    return `${YYYY}${MM}${DD}${HH}`;
+  } */

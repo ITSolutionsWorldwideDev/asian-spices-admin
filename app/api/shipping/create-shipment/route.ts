@@ -265,6 +265,7 @@ export async function POST(req: NextRequest) {
     // 🏷 Generate label (optional)
     // -----------------------------
     let labelUrl: string | null = shipmentResult.labelUrl || null;
+    let paymentUrl: string | null = shipmentResult.paymentUrl || null;
 
     // -----------------------------
     // 💾 Save shipment
@@ -273,8 +274,8 @@ export async function POST(req: NextRequest) {
       `
       INSERT INTO shipments
         (order_id, store_id, provider_id, shipping_method_id,
-         external_shipment_id, tracking_number, label_url, tracking_url,raw_response,packaging_type_id)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         external_shipment_id, tracking_number, label_url, tracking_url,raw_response,packaging_type_id,payment_url)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
       RETURNING *
       `,
       [
@@ -288,6 +289,7 @@ export async function POST(req: NextRequest) {
         shipmentResult.trackingUrl || null,
         JSON.stringify(shipmentResult.raw || {}),
         packagingTypeId || null,
+        paymentUrl || null,
       ],
     );
 

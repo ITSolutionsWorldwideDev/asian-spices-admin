@@ -92,6 +92,8 @@ export default function OrderDetailPage() {
   const [shippingLoading, setShippingLoading] = useState(false);
   const [provider, setProvider] = useState("cheapcargo");
 
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+
   // 🚀 Packaging Registry States
   const [packagingOptions, setPackagingOptions] = useState<
     PackagingInventoryItem[]
@@ -163,7 +165,7 @@ export default function OrderDetailPage() {
           ...item,
           fulfilled_quantity: item.fulfilled_quantity ?? item.quantity,
         }));
-      }      
+      }
 
       setOrder(data.order);
 
@@ -383,6 +385,10 @@ export default function OrderDetailPage() {
           data.error || "Failed registration manifest data parameters",
         );
 
+      if (data.paymentUrl) {
+        setPaymentUrl(data.paymentUrl);
+      }
+
       showToast("success", "Carrier parcel entity registered successfully");
       await fetchOrder();
     } catch (err: any) {
@@ -481,6 +487,7 @@ export default function OrderDetailPage() {
       });
       const data = await res.json();
       if (data.success) {
+        console.log("handleRefreshTracking == ", data);
         alert(`Current Status: ${data.statusName}`);
         // router.refresh(); // Hot reload Server Components
       } else {
@@ -876,26 +883,6 @@ export default function OrderDetailPage() {
                 </select>
               </div>
 
-              {/* <div>
-                <label className="block text-gray-500 font-medium mb-1">
-                  Active Rate Method Node
-                </label>
-                <select
-                  value={shippingMethodId}
-                  onChange={(e) => setShippingMethodId(e.target.value)}
-                  className="w-full p-2 border rounded-lg focus:outline-none bg-white"
-                >
-                  <option value="">
-                    Select Shipping Courier Pipeline Target...
-                  </option>
-                  {methods.map((m: any) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
-                </select>
-              </div> */}
-
               <div>
                 <label className="block text-gray-500 font-medium mb-1">
                   Active Rate Method Node
@@ -922,20 +909,7 @@ export default function OrderDetailPage() {
               </div>
             </div>
 
-            {/* Conditional Action Dispatch Interfaces */}
-            {/* {!hasShipment && (
-              <button
-                onClick={handleShip}
-                disabled={
-                  shippingLoading || !shipping.weight || !shipping.length
-                }
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-200 text-white text-xs font-bold rounded-lg transition"
-              >
-                {shippingLoading
-                  ? "Creating Manifest..."
-                  : "Initialize Courier Waybill Package Instance"}
-              </button>
-            )} */}
+            {/* 1. INITIALIZE STEP */}
             {!hasShipment && (
               <button
                 onClick={handleShip}
@@ -951,26 +925,106 @@ export default function OrderDetailPage() {
                   : "Initialize Courier Waybill Package Instance"}
               </button>
             )}
-            {hasShipment && !isBooked && (
+
+            {/* 2. HYBRID WORKFLOW: PAY ON CHEAPCARGO PORTAL STEP */}
+            {hasShipment && !isBooked && (paymentUrl || order?.payment_url) && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-2">
+                <p className="text-[11px] text-amber-700 font-medium">
+                  ⚠️ This shipment is an unpaid draft. Your account requires
+                  billing execution inside the gateway portal before a carrier
+                  label can be generated.
+                </p>
+                <a
+                  href={paymentUrl || order?.payment_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-center w-full py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition shadow-sm"
+                >
+                  Complete Order Payment on CheapCargo ↗
+                </a>
+                <span className="block text-[10px] text-gray-400 text-center">
+                  After completing the checkout tab, come back and click
+                  "Refresh Tracking" to unlock labels.
+                </span>
+              </div>
+            )}
+
+            {/* 3. CONFIRM/PICKUP FALLBACK (If account balance is ready or for non-CheapCargo providers) */}
+            {hasShipment &&
+              !isBooked &&
+              !(paymentUrl || order?.payment_url) && (
+                <button
+                  onClick={handleConfirmBooking}
+                  disabled={bookingLoading}
+                  className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition"
+                >
+                  {bookingLoading
+                    ? "Finalizing Booking Details..."
+                    : "Confirm Final Manifest Pickup with Courier"}
+                </button>
+              )}
+
+            {/* 4. LABEL GENERATION TRIGGER */}
+            {isBooked && !hasLabel && (
               <button
-                onClick={handleConfirmBooking}
-                disabled={bookingLoading}
-                className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-lg transition"
+                onClick={handleGenerateLabel}
+                disabled={shippingLoading}
+                className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition"
               >
-                {bookingLoading
-                  ? "Finalizing Booking Details..."
-                  : "Confirm Final Manifest Pickup with Courier"}
+                {shippingLoading
+                  ? "Fetching PDF..."
+                  : "Generate PDF Shipping Label"}
               </button>
             )}
-            {isBooked && !hasLabel && (
+
+            {/* 5. SYNC TRACKING UTILITY */}
+            {hasShipment && (
+              <button
+                onClick={handleRefreshTracking}
+                disabled={loading}
+                className="mt-2 w-full px-4 py-2 border text-xs font-medium rounded inline-flex items-center justify-center gap-1.5 bg-white hover:bg-gray-50 transition text-gray-700"
+              >
+                <svg
+                  className={`w-3.5 h-3.5 text-gray-500 ${loading ? "animate-spin" : ""}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.253 8H18"
+                  />
+                </svg>
+                {loading
+                  ? "Syncing Manifest Status..."
+                  : "Refresh Tracking / Booking State"}
+              </button>
+            )}
+
+            {/* 6. LABEL VIEW LINK */}
+            {hasLabel && (
+              <a
+                href={
+                  order?.shipping_label || (order as any).label_url || undefined
+                }
+                target="_blank"
+                rel="noreferrer"
+                className="block text-center text-xs font-bold text-blue-600 underline hover:text-blue-800 transition pt-2"
+              >
+                Open Printable Air Waybill (PDF) ↗
+              </a>
+            )}
+            {/*  {isBooked && !hasLabel && (
               <button
                 onClick={handleGenerateLabel}
                 className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition"
               >
                 Generate PDF Shipping Label
               </button>
-            )}
-            {isBooked && (
+            )} */}
+            {/* {isBooked && (
               <button
                 onClick={handleRefreshTracking}
                 disabled={loading}
@@ -1003,7 +1057,7 @@ export default function OrderDetailPage() {
               >
                 Open Printable Air Waybill (PDF) ↗
               </a>
-            )}
+            )} */}
           </div>
 
           {/* Ledger Balance Sheet Invoice Calculation Node Card Component */}
