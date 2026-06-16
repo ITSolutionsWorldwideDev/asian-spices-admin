@@ -265,28 +265,28 @@ export class CheapCargoAdapter implements ShippingAdapter {
         );
       }
 
-      const data = await res.json();
+      const shipped_data = await res.json();
 
-      console.log("shipment data === ", data);
-      console.log("shipment data.shipment === ", data.shipment);
+      console.log("shipment shipped_data === ", shipped_data);
+      console.log("shipment shipped_data.shipment === ", shipped_data.shipment);
 
-      if (data?.shipment?.status !== "ok") {
-        console.log("shipment data.shipment?.error === ", data.shipment?.error);
-        console.error("CheapCargo error:", data);
+      if (shipped_data?.shipment?.status !== "ok") {
+        console.log("shipment data.shipment?.error === ", shipped_data.shipment?.error);
+        console.error("CheapCargo error:", shipped_data);
         throw new Error("CheapCargo shipment failed");
       }
-      console.log("shipment data.shipment?.order === ", data.shipment?.order);
+      console.log("shipment shipped_data.shipment?.order === ", shipped_data.shipment?.order);
 
-      const order = data?.shipment?.order?.[0];
+      const shipped_order = shipped_data?.shipment?.order?.[0];
 
-      if (!order) {
-        console.error("Invalid CheapCargo response:", data);
+      if (!shipped_order) {
+        console.error("Invalid CheapCargo response:", shipped_data);
         throw new Error("Invalid CheapCargo response");
       }
 
-      const externalId = order.number;
-      const trackingNumber = order.details?.awb || undefined;
-      const trackingUrl = order.details?.trackAndTrace || undefined;
+      const externalId = shipped_order.number;
+      const trackingNumber = shipped_order.details?.awb || undefined;
+      const trackingUrl = shipped_order.details?.trackAndTrace || undefined;
 
       console.log("externalId === ", externalId);
       console.log("trackingNumber === ", trackingNumber);
@@ -297,7 +297,7 @@ export class CheapCargoAdapter implements ShippingAdapter {
         trackingNumber: trackingNumber,
         trackingUrl: trackingUrl,
         labelUrl: undefined,
-        raw: data,
+        raw: shipped_data,
       };
     } catch (error: any) {
       console.log("createShipment api error =======  ", error);
@@ -391,10 +391,11 @@ export class CheapCargoAdapter implements ShippingAdapter {
     });
 
     const data = await res.json();
+    
 
     // 🔥 ENHANCED LOGGING: Stringifies the nested error array returned from the gateway
     console.log(
-      "CheapCargo raw getLabel payload stringified response:",
+      "generateLabel CheapCargo raw getLabel payload stringified response:",
       JSON.stringify(data, null, 2),
     );
 

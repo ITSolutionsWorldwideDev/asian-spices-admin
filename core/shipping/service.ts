@@ -40,6 +40,8 @@ export async function createShipment(orderId: string) {
   // 5. Create shipment
   const shipment = await provider.createShipment(order);
 
+  console.log('Create shipment === ',shipment);
+
   // 6. Save shipment
   await pool.query(
     `
@@ -58,7 +60,7 @@ export async function createShipment(orderId: string) {
       order.id,
       order.store_id,
       method.provider_id,
-      shipment.id,
+      shipment.externalId,
       shipment.tracking,
       shipment.label_url,
       shipment,

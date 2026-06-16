@@ -80,8 +80,7 @@ export default function OrderDetailPage() {
         const res = await fetch(`/api/orders-queue/${orderId}`);
         if (!res.ok) throw new Error("Order not found");
         const data = await res.json();
-
-        console.log('data.order === ',data.order);
+        
         setOrder(data.order);
       } catch (err: any) {
         showToast("error", err.message || "Could not load order details");

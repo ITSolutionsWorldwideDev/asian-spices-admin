@@ -79,6 +79,9 @@ export async function POST(req: NextRequest) {
     if (!method.provider_id) throw new Error("This method is not API-based");
 
     console.log("validateShipmentRequest parcels ==== ", parcels);
+    console.log("validateShipmentRequest shipping_method_id ==== ", method.id);
+
+    const shipping_method_id = method.id;
 
     // -----------------------------
     // Validate request (NEW)
@@ -278,7 +281,7 @@ export async function POST(req: NextRequest) {
         order.id,
         storeId,
         method.provider_id,
-        shippingMethodId,
+        shipping_method_id,
         shipmentResult.externalId,
         shipmentResult.trackingNumber || null,
         labelUrl,

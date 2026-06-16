@@ -163,9 +163,7 @@ export default function OrderDetailPage() {
           ...item,
           fulfilled_quantity: item.fulfilled_quantity ?? item.quantity,
         }));
-      }
-
-      console.log("data.order ==== ", data.order);
+      }      
 
       setOrder(data.order);
 

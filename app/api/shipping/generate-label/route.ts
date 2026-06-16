@@ -44,6 +44,8 @@ export async function POST(req: NextRequest) {
       throw new Error("Shipment not booked/paid yet");
     }
 
+    console.log('generateLabel shipment === ',shipment);
+
     const label = await provider.generateLabel(
       shipment.external_shipment_id,
     );
