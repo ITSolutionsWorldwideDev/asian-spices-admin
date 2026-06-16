@@ -368,9 +368,10 @@ export class CheapCargoAdapter implements ShippingAdapter {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        "User-Agent": "EcommerceApp/1.0 NextJS-ShippingAdapter",
         // 🚀 Inject standard User-Agent so Nginx doesn't classify Next.js fetch as a suspicious bot script
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 AcmeShippingApp/1.0",
+        // "User-Agent":
+        //   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 AcmeShippingApp/1.0",
       },
       body: JSON.stringify(payload),
     });
@@ -381,21 +382,43 @@ export class CheapCargoAdapter implements ShippingAdapter {
       JSON.stringify(data, null, 2),
     );
 
-    if (data?.shipments?.status === "error") {
+    // if (data?.shipments?.status === "error") {
+    //   throw new Error(
+    //     `CheapCargo tracking failed: ${JSON.stringify(data.shipments.error)}`,
+    //   );
+    // }
+
+    if (data?.status?.status === "error") {
       throw new Error(
-        `CheapCargo tracking failed: ${JSON.stringify(data.shipments.error)}`,
+        `CheapCargo tracking failed: ${JSON.stringify(data.status.error || data)}`,
       );
     }
 
-    const trackingInfo = data?.shipments?.status?.[0];
+    // 📝 Extract tracking details array based on document specs: status -> label
+    const trackingLabel = data?.status?.label?.[0];
+    const details = trackingLabel?.details;
+
+    // Map trackAndTrace history statuses safely if available
+    const statusArray = details?.trackAndTrace?.statuses?.status || [];
+    const latestTransitEvent = statusArray[statusArray.length - 1];
 
     return {
-      statusName: trackingInfo?.statusName || "Unknown",
-      StatusCode: trackingInfo?.StatusCode || "0",
+      statusName: details?.status || "Unknown", // Returns e.g. "booked", "inTransit", "delivered"
+      paid: trackingLabel?.paid || false,
+      awb: details?.awb || undefined,
+      trackingUrl: details?.trackAndTrace?.url || undefined,
+      latestTransitMessage: latestTransitEvent?.message || undefined,
+      latestTransitOccurred: latestTransitEvent?.occurred || undefined,
       raw: data,
     };
 
-    return res.json();
+    // const trackingInfo = data?.shipments?.status?.[0];
+
+    // return {
+    //   statusName: trackingInfo?.statusName || "Unknown",
+    //   StatusCode: trackingInfo?.StatusCode || "0",
+    //   raw: data,
+    // };
   }
 
   // ======================================================

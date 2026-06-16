@@ -56,7 +56,12 @@ export async function POST(req: NextRequest) {
       simplifiedStatus = "shipped";
     } else if (statusLower.includes("cancelled")) {
       simplifiedStatus = "cancelled";
+    }else if (statusLower === "new") {
+      simplifiedStatus = "pending_payment";
     }
+
+    const isPaidOnGateway = trackingData.paid === true || statusLower === "booked";
+    const awbTrackingCode = trackingData.awb || null;
 
     // 4. Persist tracking metrics downstream into database tables
     await pool.query(
@@ -64,10 +69,11 @@ export async function POST(req: NextRequest) {
       UPDATE shipments 
       SET 
         status = $1,
+        tracking_number = COALESCE($2::TEXT, tracking_number),
         updated_at = NOW() 
-      WHERE id = $2
+      WHERE id = $3
       `,
-      [simplifiedStatus, shipment.id],
+      [simplifiedStatus, awbTrackingCode, shipment.id],
     );
 
     await pool.query(
@@ -75,10 +81,12 @@ export async function POST(req: NextRequest) {
       UPDATE store_orders 
       SET 
         shipping_status = $1,
+        shipping_paid = $2,
+        tracking_number = COALESCE($3::TEXT, tracking_number),
         updated_at = NOW() 
-      WHERE id = $2
+      WHERE id = $4
       `,
-      [simplifiedStatus, orderId],
+      [simplifiedStatus, isPaidOnGateway, awbTrackingCode, orderId],
     );
 
     return NextResponse.json({
@@ -86,7 +94,16 @@ export async function POST(req: NextRequest) {
       statusName: trackingData.statusName,
       statusCode: trackingData.StatusCode,
       mappedStatus: simplifiedStatus,
+      isPaid: isPaidOnGateway,
+      awb: awbTrackingCode
     });
+
+    // return NextResponse.json({
+    //   success: true,
+    //   statusName: trackingData.statusName,
+    //   statusCode: trackingData.StatusCode,
+    //   mappedStatus: simplifiedStatus,
+    // });
   } catch (err: any) {
     console.error("Tracking API execution breakdown error:", err);
     return NextResponse.json(

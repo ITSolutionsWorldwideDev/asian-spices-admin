@@ -486,15 +486,47 @@ export default function OrderDetailPage() {
         body: JSON.stringify({ orderId: orderId }),
       });
       const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error);
+
       if (data.success) {
+        console.log("Tracking sync data response == ", data);
+
+        if (data.isPaid) {
+          showToast(
+            "success",
+            `Shipment status confirmed: ${data.statusName}. Ready for label extraction!`,
+          );
+        } else {
+          showToast(
+            "primary",
+            `Current Gateway State: ${data.statusName}. Pending balance clearing.`,
+          );
+        }
+
+        // Re-fetch the layout parameters. This resets 'isBooked' to true
+        // and opens the "Generate PDF Shipping Label" button automatically.
+        await fetchOrder();
+      } else {
+        showToast("error", `Tracking sync rejected: ${data.error}`);
+      }
+
+      /* if (data.success) {
         console.log("handleRefreshTracking == ", data);
         alert(`Current Status: ${data.statusName}`);
         // router.refresh(); // Hot reload Server Components
       } else {
         alert(`Tracking issue: ${data.error}`);
-      }
-    } catch (err) {
+      } */
+    } catch (err: any) {
       console.error(err);
+      console.error("Refresh tracking UI failure:", err);
+      showToast(
+        "error",
+        err.message || "Unable to reach tracking server node.",
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
