@@ -8,7 +8,7 @@ import { Edit, Trash2, Pause, Play } from "react-feather";
 type Store = {
   id: string;
   name: string;
-  application_id?: string;
+  partner_registration_id?: string;
   slug: string;
   status: "active" | "suspended";
   created_at: string;
@@ -24,7 +24,7 @@ export default function StoreCard({
   onToggleStatus: () => void;
 }) {
 
-  console.log('store === ',store)
+  // console.log('store === ',store)
   return (
     <div className="bg-white rounded-lg shadow-sm border p-4 flex flex-col justify-between">
       <div>
@@ -45,7 +45,7 @@ export default function StoreCard({
         </div>
 
         <p className="text-xs text-gray-500">
-          Application ID: {store.application_id}
+          Application ID: {store.partner_registration_id}
         </p>
 
         <p className="text-xs text-gray-500 mb-3">

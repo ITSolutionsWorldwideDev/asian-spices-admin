@@ -23,9 +23,9 @@ export async function createStoreFromPartner(client: any, partner: any) {
 
   // 3️⃣ Create Store Record
   await client.query(
-    `INSERT INTO stores (id, name, slug, owner_email, status)
-     VALUES ($1, $2, $3, $4, 'active')`,
-    [storeId, partner.company_name, slug, partner.business_email_address],
+    `INSERT INTO stores (id, name, slug, owner_email, status, partner_registration_id)
+     VALUES ($1, $2, $3, $4, 'active',$5)`,
+    [storeId, partner.company_name, slug, partner.business_email_address, partner.partner_id],
   );
 
   // 4️⃣ Create Core Platform Store Administrator

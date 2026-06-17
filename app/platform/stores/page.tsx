@@ -15,9 +15,16 @@ export default async function StoresPage({
 
   const params = searchParams ? await searchParams : {};
 
-  const page = Number(params.page ?? 1);
-  const q = params.q as string | undefined;
-  const status = params.status as string | undefined;
+  const rawPage =
+    typeof params.page === "string" ? parseInt(params.page, 10) : 1;
+  const page = isNaN(rawPage) || rawPage < 1 ? 1 : rawPage;
+
+  const q = typeof params.q === "string" ? params.q : undefined;
+  const status = typeof params.status === "string" ? params.status : undefined;
+
+  // const page = Number(params.page ?? 1);
+  // const q = params.q as string | undefined;
+  // const status = params.status as string | undefined;
   const offset = (page - 1) * PAGE_SIZE;
 
   const where: string[] = [];
@@ -25,7 +32,13 @@ export default async function StoresPage({
 
   if (q) {
     values.push(`%${q}%`);
-    where.push(`(name ILIKE $${values.length} OR slug ILIKE $${values.length})`);
+    where.push(`
+      (
+        name ILIKE $${values.length}
+        OR slug ILIKE $${values.length}
+        OR partner_registration_id ILIKE $${values.length}
+      )
+    `);
   }
 
   if (status) {
@@ -35,34 +48,24 @@ export default async function StoresPage({
 
   const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
 
-  const { rows } = await pool.query(
-    `
-    SELECT id, name, slug, status, created_at,
-           COUNT(*) OVER() AS total
-    FROM stores
-    ${whereClause}
-    ORDER BY created_at DESC
-    LIMIT ${PAGE_SIZE} OFFSET ${offset}
-    `,
-    values,
-  );
+  values.push(PAGE_SIZE, offset);
+  const limitParamIndex = values.length - 1;
+  const offsetParamIndex = values.length;
 
-  /* 
-  
-	SELECT
-    s.id,
-    s.name,
-    s.slug,
-    s.status,
-    s.created_at,
-	pr.application_id,
-    COUNT(*) OVER() AS total
-FROM stores s
-LEFT JOIN partner_registration pr
-    ON pr.partner_id = s.partner_registration_id::uuid;
-  */
+  const query = `
+      SELECT id, name, slug, status,partner_registration_id, created_at,
+            COUNT(*) OVER() AS total
+      FROM stores
+      ${whereClause}
+      ORDER BY created_at DESC
+      LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}      
+      `;
+  // LIMIT ${PAGE_SIZE} OFFSET ${offset}
 
-  const total = rows[0]?.total ?? 0;
+  const { rows } = await pool.query(query, values);
+
+  // const total = rows[0]?.total ?? 0;
+  const total = rows[0]?.total ? parseInt(rows[0].total, 10) : 0;
 
   return (
     <>
