@@ -26,6 +26,10 @@ export async function POST(
 
     await client.query("BEGIN");
 
+    console.log('orderId === ',orderId);
+    console.log('action === ',action);
+    console.log('items === ',items);
+
     // 🔒 Lock current partner store allocations
     const { rows: allocations } = await client.query(
       `SELECT * FROM order_item_allocations
@@ -37,6 +41,9 @@ export async function POST(
     if (!allocations.length) {
       throw new Error("No allocations found matching this store instance.");
     }
+
+    
+    console.log('allocations === ',allocations);
 
     // ==========================================
     // ✅ CASE 1: FULL FULFILLMENT
@@ -147,15 +154,15 @@ export async function POST(
         );
       }
 
+      // Pass the remaining items down the global SaaS routing queue
+      await assignNextStore(client, orderId);
+
       await logOrderEvent(client, {
         orderId,
         eventType: ORDER_EVENTS.REJECTED,
         storeId,
         message: "Partner store rejected allocation completely post-acceptance",
       });
-
-      // Pass the remaining items down the global SaaS routing queue
-      await assignNextStore(client, orderId);
     }
 
     // Recalculate parent orders tables header status configurations strings

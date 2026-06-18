@@ -399,48 +399,6 @@ export default function OrderDetailPage() {
     }
   };
 
-  /* const handleShip = async () => {
-    if (!shippingMethodId) {
-      showToast("error", "Please select a courier dispatch configuration");
-      return;
-    }
-
-    try {
-      setShippingLoading(true);
-
-      const payload = {
-        orderId,
-        shippingMethodId,
-        packagingTypeId: selectedPackagingId || null,
-        parcel: {
-          weight: normalizeNumber(shipping.weight),
-          length: normalizeNumber(shipping.length) || 10,
-          width: normalizeNumber(shipping.width) || 10,
-          height: normalizeNumber(shipping.height) || 10,
-          boxes: normalizeNumber(shipping.boxes) || 1,
-        },
-      };
-
-      const res = await fetch("/api/shipping/create-shipment", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-
-      showToast("success", "Carrier parcel entity registered successfully");
-      await fetchOrder();
-    } catch (err: any) {
-      showToast("error", err.message);
-    } finally {
-      setShippingLoading(false);
-    }
-  }; */
-
   const handleConfirmBooking = async () => {
     if (!order?.shipment_id) {
       showToast("error", "Shipment not found");
@@ -854,7 +812,7 @@ export default function OrderDetailPage() {
                         />
                       </td>
 
-                      {/* Individual row package grouping allocation count */}
+   
                       <td className="p-3">
                         <input
                           type="number"
@@ -872,7 +830,7 @@ export default function OrderDetailPage() {
                         />
                       </td>
 
-                      {/* Dynamic Row Evacuation Command Trigger */}
+         
                       <td className="p-3 text-center">
                         <button
                           type="button"
@@ -888,7 +846,7 @@ export default function OrderDetailPage() {
                 </tbody>
               </table>
 
-              {/* Append Row Option Action Trigger */}
+   
               {!hasShipment && boxRows.length < 3 && (
                 <button
                   type="button"
@@ -928,7 +886,7 @@ export default function OrderDetailPage() {
                     Select Shipping Courier Pipeline Target...
                   </option>
                   {methods.map((m: any) => {
-                    // 🚀 Match safely against name or internal rate identifiers
+                    
                     const elementValue = m.name || m.id;
                     return (
                       <option key={m.id} value={elementValue}>
@@ -1048,6 +1006,47 @@ export default function OrderDetailPage() {
                 Open Printable Air Waybill (PDF) ↗
               </a>
             )}
+          </div>
+
+          <div className="bg-white border rounded-xl shadow-sm p-5 space-y-2.5 text-sm">
+            <div className="flex justify-between text-gray-500">
+              <span>Subtotal</span>
+              <span>€{Number(order.subtotal).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-gray-500">
+              <span>Tax</span>
+              <span>€{Number(order.tax_amount).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-gray-500 border-b pb-2">
+              <span>Shipping Invoiced Fee</span>
+              <span>€{Number(order.shipping_amount).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between font-bold text-gray-900 text-base pt-1">
+              <span>Gross Total Amount</span>
+              <span>€{total.toFixed(2)}</span>
+            </div>
+
+            {/* {order.tracking_number && ( */}
+            <div className="pt-4 border-t border-dashed mt-4 space-y-2 text-center bg-gray-50 rounded-lg p-3">
+              <span className="block text-xs font-mono font-bold text-gray-600 tracking-wider">
+                TRACKING BARCODE: {order.tracking_number}
+              </span>
+              {order.shipping_label && (
+                <img
+                  src={order.shipping_label}
+                  alt="Logistics Router Tracking Stamp Map"
+                  className="w-28 h-28 mx-auto border rounded-md shadow-inner bg-white mt-1"
+                />
+              )}
+            </div>
+            {/* )} */}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
             {/*  {isBooked && !hasLabel && (
               <button
                 onClick={handleGenerateLabel}
@@ -1090,155 +1089,47 @@ export default function OrderDetailPage() {
                 Open Printable Air Waybill (PDF) ↗
               </a>
             )} */}
-          </div>
 
-          {/* Ledger Balance Sheet Invoice Calculation Node Card Component */}
-          <div className="bg-white border rounded-xl shadow-sm p-5 space-y-2.5 text-sm">
-            <div className="flex justify-between text-gray-500">
-              <span>Subtotal</span>
-              <span>€{Number(order.subtotal).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-gray-500">
-              <span>Tax</span>
-              <span>€{Number(order.tax_amount).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between text-gray-500 border-b pb-2">
-              <span>Shipping Invoiced Fee</span>
-              <span>€{Number(order.shipping_amount).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between font-bold text-gray-900 text-base pt-1">
-              <span>Gross Total Amount</span>
-              <span>€{total.toFixed(2)}</span>
-            </div>
+            
 
-            {/* {order.tracking_number && ( */}
-            <div className="pt-4 border-t border-dashed mt-4 space-y-2 text-center bg-gray-50 rounded-lg p-3">
-              <span className="block text-xs font-mono font-bold text-gray-600 tracking-wider">
-                TRACKING BARCODE: {order.tracking_number}
-              </span>
-              {order.shipping_label && (
-                <img
-                  src={order.shipping_label}
-                  alt="Logistics Router Tracking Stamp Map"
-                  className="w-28 h-28 mx-auto border rounded-md shadow-inner bg-white mt-1"
-                />
-              )}
-            </div>
-            {/* )} */}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+  /* const handleShip = async () => {
+    if (!shippingMethodId) {
+      showToast("error", "Please select a courier dispatch configuration");
+      return;
+    }
 
-{
-  /* <div className="text-xs">
-              <label className="block text-gray-500 font-medium mb-1">
-                Select Active Box Variant from Stock Inventory Template
-              </label>
-              <select
-                value={selectedPackagingId}
-                onChange={(e) => handlePackagingChange(e.target.value)}
-                disabled={hasShipment}
-                className="w-full p-2 border rounded-lg focus:outline-none bg-white font-medium text-gray-700 disabled:bg-gray-50"
-              >
-                <option value="">
-                  -- Manual Dimension Configuration (No Template Chosen) --
-                </option>
-                {packagingOptions &&
-                  packagingOptions.map((box) => {
-                    // Parse string decimals smoothly to prevent rendering errors
-                    const l = Math.round(Number(box.length_cm || 0));
-                    const w = Math.round(Number(box.width_cm || 0));
-                    const h = Math.round(Number(box.height_cm || 0));
-                    const availableStock =
-                      box.quantity_available !== undefined
-                        ? box.quantity_available
-                        : 0;
+    try {
+      setShippingLoading(true);
 
-                    // Fallback target identifier validation
-                    const targetValue = box.packaging_type_id || box.id;
+      const payload = {
+        orderId,
+        shippingMethodId,
+        packagingTypeId: selectedPackagingId || null,
+        parcel: {
+          weight: normalizeNumber(shipping.weight),
+          length: normalizeNumber(shipping.length) || 10,
+          width: normalizeNumber(shipping.width) || 10,
+          height: normalizeNumber(shipping.height) || 10,
+          boxes: normalizeNumber(shipping.boxes) || 1,
+        },
+      };
 
-                    return (
-                      <option key={box.id || targetValue} value={targetValue}>
-                        {box.name || "Unnamed Variant"} ({box.sku || "N/A"}) —{" "}
-                        {l}x{w}x{h} cm [Avail: {availableStock}]
-                      </option>
-                    );
-                  })}
-              </select>
-            </div>
+      const res = await fetch("/api/shipping/create-shipment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
-              <div>
-                <label className="block text-gray-500 font-medium mb-1">
-                  Weight (kg)
-                </label>
-                <input
-                  type="number"
-                  value={shipping.weight}
-                  onChange={(e) =>
-                    setShipping({ ...shipping, weight: e.target.value })
-                  }
-                  className="w-full p-2 border rounded-lg focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-500 font-medium mb-1">
-                  Boxes Count
-                </label>
-                <input
-                  type="number"
-                  value={shipping.boxes}
-                  onChange={(e) =>
-                    setShipping({ ...shipping, boxes: e.target.value })
-                  }
-                  className="w-full p-2 border rounded-lg focus:outline-none"
-                />
-              </div>
-            </div> */
-}
-
-{
-  /* <div>
-                <label className="block text-gray-500 font-medium mb-1">
-                  Length (cm)
-                </label>
-                <input
-                  type="number"
-                  value={shipping.length}
-                  onChange={(e) =>
-                    setShipping({ ...shipping, length: e.target.value })
-                  }
-                  className="w-full p-2 border rounded-lg focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-500 font-medium mb-1">
-                  Width (cm)
-                </label>
-                <input
-                  type="number"
-                  value={shipping.width}
-                  onChange={(e) =>
-                    setShipping({ ...shipping, width: e.target.value })
-                  }
-                  className="w-full p-2 border rounded-lg focus:outline-none"
-                />
-              </div>
-              <div>
-                <label className="block text-gray-500 font-medium mb-1">
-                  Height (cm)
-                </label>
-                <input
-                  type="number"
-                  value={shipping.height}
-                  onChange={(e) =>
-                    setShipping({ ...shipping, height: e.target.value })
-                  }
-                  className="w-full p-2 border rounded-lg focus:outline-none"
-                />
-              </div> */
-}
+      showToast("success", "Carrier parcel entity registered successfully");
+      await fetchOrder();
+    } catch (err: any) {
+      showToast("error", err.message);
+    } finally {
+      setShippingLoading(false);
+    }
+  }; */

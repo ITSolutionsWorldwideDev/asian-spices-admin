@@ -4,6 +4,8 @@ import { pool } from "@/core/db";
 import { cache } from "react";
 
 export const getStoreDashboardData = cache(async (storeId: string) => {
+  // console.log("session store storeId === ", storeId);
+
   const [
     productsRes,
     ordersRes,
@@ -15,11 +17,20 @@ export const getStoreDashboardData = cache(async (storeId: string) => {
     pendingOrdersRes,
     recentOrdersRes,
   ] = await Promise.all([
-    pool.query(`SELECT COUNT(*) FROM store_product_catalog WHERE store_id = $1`, [storeId]),
+    pool.query(
+      `SELECT COUNT(*) FROM store_product_catalog WHERE store_id = $1`,
+      [storeId],
+    ),
 
-    pool.query(`SELECT COUNT(*) FROM store_orders WHERE store_id = $1`, [storeId]),
+    // pool.query(`SELECT COUNT(*) FROM store_orders WHERE store_id = $1`, [storeId]),
+    pool.query(
+      `SELECT COUNT(DISTINCT order_id) FROM order_item_allocations WHERE store_id = $1 AND status in ('assigned','pending')`,
+      [storeId],
+    ),
 
-    pool.query(`SELECT COUNT(*) FROM store_customers WHERE store_id = $1`, [storeId]),
+    pool.query(`SELECT COUNT(*) FROM store_customers WHERE store_id = $1`, [
+      storeId,
+    ]),
 
     pool.query(`SELECT COUNT(*) FROM store_users WHERE store_id = $1`, [
       storeId,
@@ -42,30 +53,78 @@ export const getStoreDashboardData = cache(async (storeId: string) => {
     ),
 
     pool.query(
-      `SELECT COUNT(*)
-       FROM store_orders
-       WHERE store_id IS NULL
-         AND DATE(created_at) = CURRENT_DATE`,
-      [],
-    ),
-
-    pool.query(
-      `SELECT COUNT(*)
-       FROM store_orders
-       WHERE store_id = $1
-         AND order_status = 'pending'`,
+      `SELECT COUNT(DISTINCT order_id) 
+       FROM order_item_allocations 
+       WHERE store_id = $1 AND 
+             status in ('assigned','pending') AND 
+             DATE(created_at) = CURRENT_DATE`,
       [storeId],
     ),
 
+    // pool.query(
+    //   `SELECT COUNT(*)
+    //    FROM store_orders
+    //    WHERE store_id IS NULL
+    //      AND DATE(created_at) = CURRENT_DATE`,
+    //   [],
+    // ),
+
     pool.query(
-      `SELECT id, total_amount, order_status, created_at
-       FROM store_orders
-       WHERE store_id = $1
-       ORDER BY created_at DESC
-       LIMIT 5`,
+      `SELECT COUNT(DISTINCT order_id) 
+       FROM order_item_allocations 
+       WHERE store_id = $1 AND 
+             status in ('pending')`,
       [storeId],
     ),
+
+    // pool.query(
+    //   `SELECT COUNT(*)
+    //    FROM store_orders
+    //    WHERE store_id = $1
+    //      AND order_status = 'pending'`,
+    //   [storeId],
+    // ),
+
+    // pool.query(
+    //   `SELECT COUNT(DISTINCT order_id) 
+    //    FROM order_item_allocations 
+    //    WHERE store_id = $1`,
+    //   [storeId],
+    // ),
+
+    pool.query(
+      `
+      SELECT
+          so.id,
+          so.order_number,
+          so.total_amount,
+          so.order_status,
+          so.created_at
+      FROM store_orders so
+      WHERE EXISTS (
+          SELECT 1
+          FROM order_item_allocations oia
+          WHERE oia.order_id = so.id
+            AND oia.store_id = $1
+            AND oia.status in ('assigned','pending','fulfilled','rejected')
+      )
+      ORDER BY so.created_at DESC
+      LIMIT 20
+      `,
+      [storeId],
+    ),
+
+    // pool.query(
+    //   `SELECT id, total_amount, order_status, created_at
+    //    FROM store_orders
+    //    WHERE store_id = $1
+    //    ORDER BY created_at DESC
+    //    LIMIT 5`,
+    //   [storeId],
+    // ),
   ]);
+
+  // console.log('recentOrdersRes.rows === ',recentOrdersRes.rows);
 
   return {
     totalProducts: Number(productsRes.rows[0].count),

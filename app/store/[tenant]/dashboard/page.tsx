@@ -14,6 +14,7 @@ export default async function StoreDashboard({
   const { tenant } = await params;
 
   const store = await requireStoreAccess(tenant);
+  // console.log('session store details === ',store);
 
   const {
     totalProducts,
@@ -44,12 +45,12 @@ export default async function StoreDashboard({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-primary text-white rounded-lg p-4 shadow">
             <h6 className="text-sm font-medium">Total Revenue</h6>
-            <h3 className="text-2xl font-bold">${totalRevenue.toLocaleString()}</h3>
+            <h3 className="text-2xl font-bold">€{totalRevenue.toLocaleString()}</h3>
           </div>
 
           <div className="bg-white rounded-lg p-4 shadow">
             <h6 className="text-sm font-medium text-gray-600">This Month Revenue</h6>
-            <h3 className="text-2xl font-bold">${monthRevenue.toLocaleString()}</h3>
+            <h3 className="text-2xl font-bold">€{monthRevenue.toLocaleString()}</h3>
           </div>
 
           <div className="bg-white rounded-lg p-4 shadow">
@@ -75,10 +76,10 @@ export default async function StoreDashboard({
             <h3 className="text-2xl font-bold">{totalOrders}</h3>
           </div>
 
-          <div className="bg-white rounded-lg p-4 shadow">
+          {/* <div className="bg-white rounded-lg p-4 shadow">
             <h6 className="text-sm font-medium text-gray-600">Total Customers</h6>
             <h3 className="text-2xl font-bold">{totalCustomers}</h3>
-          </div>
+          </div> */}
 
           <div className="bg-white rounded-lg p-4 shadow">
             <h6 className="text-sm font-medium text-gray-600">Store Staff</h6>
@@ -114,8 +115,6 @@ export default async function StoreDashboard({
             </a>
           </div>
         </div>
-
-        {/* Recent Orders */}
         <div className="bg-white rounded-lg shadow">
           <div className="p-4 border-b">
             <h5 className="text-lg font-medium text-gray-700">Recent Orders</h5>
@@ -131,11 +130,11 @@ export default async function StoreDashboard({
                 </tr>
               </thead>
               <tbody>
-                {recentOrders.map((order: any) => (
+                {recentOrders.map((order: any,index) => (
                   <tr key={order.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-2">#{order.id}</td>
-                    <td className="px-4 py-2">${Number(order.total_amount).toLocaleString()}</td>
-                    <td className="px-4 py-2">{order.status}</td>
+                    <td className="px-4 py-2">#{order.order_number}</td>
+                    <td className="px-4 py-2">€{Number(order.total_amount).toLocaleString()}</td>
+                    <td className="px-4 py-2">{order.order_status}</td>
                     <td className="px-4 py-2">{new Date(order.created_at).toLocaleDateString()}</td>
                   </tr>
                 ))}
@@ -147,174 +146,3 @@ export default async function StoreDashboard({
     </div>
   );
 }
-
-/* export default async function StoreDashboard() {
-  const store = await requireStoreAccess();
-
-  const {
-    totalProducts,
-    totalOrders,
-    totalCustomers,
-    totalUsers,
-    totalRevenue,
-    monthRevenue,
-    todayOrders,
-    pendingOrders,
-    recentOrders,
-  } = await getStoreDashboardData(store.id);
-
-  return (
-    <div className="page-wrapper">
-      <div className="content">
-
-        <div className="mb-4">
-          <h1 className="custome-heading">
-            Store Dashboard - {store.name}
-          </h1>
-          <p className="text-muted">
-            Overview of your store performance and activity
-          </p>
-        </div>
-
- 
-        <div className="row g-4 mb-4">
-          <div className="col-md-3">
-            <div className="card bg-primary text-white">
-              <div className="card-body">
-                <h6>Total Revenue</h6>
-                <h3>${totalRevenue.toLocaleString()}</h3>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body">
-                <h6>This Month Revenue</h6>
-                <h3>${monthRevenue.toLocaleString()}</h3>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body">
-                <h6>Orders Today</h6>
-                <h3>{todayOrders}</h3>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body">
-                <h6>Pending Orders</h6>
-                <h3>{pendingOrders}</h3>
-              </div>
-            </div>
-          </div>
-        </div>
-
-
-        <div className="row g-4 mb-4">
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body">
-                <h6>Total Products</h6>
-                <h3>{totalProducts}</h3>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body">
-                <h6>Total Orders</h6>
-                <h3>{totalOrders}</h3>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body">
-                <h6>Total Customers</h6>
-                <h3>{totalCustomers}</h3>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-md-3">
-            <div className="card">
-              <div className="card-body">
-                <h6>Store Staff</h6>
-                <h3>{totalUsers}</h3>
-              </div>
-            </div>
-          </div>
-        </div>
-
-
-        <div className="row g-4 mb-4">
-          <div className="col-md-6">
-            <div className="card h-100">
-              <div className="card-body">
-                <h5>Manage Products</h5>
-                <p className="text-muted">
-                  Add, update, and manage store inventory.
-                </p>
-                <a href="/products" className="btn btn-primary">
-                  Go to Products
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <div className="col-md-6">
-            <div className="card h-100">
-              <div className="card-body">
-                <h5>Manage Orders</h5>
-                <p className="text-muted">
-                  View and process customer orders.
-                </p>
-                <a href="/orders" className="btn btn-primary">
-                  View Orders
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-
-
-        <div className="card">
-          <div className="card-body">
-            <h5>Recent Orders</h5>
-
-            <table className="table mt-3">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentOrders.map((order: any) => (
-                  <tr key={order.id}>
-                    <td>#{order.id}</td>
-                    <td>${Number(order.total_amount).toLocaleString()}</td>
-                    <td>{order.status}</td>
-                    <td>
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-} */

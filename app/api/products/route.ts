@@ -60,14 +60,12 @@ export async function GET(req: NextRequest) {
 
   /* ---------------- QUERY ---------------- */
 
-  const result = await pool.query(
-    `
+  const query = `
     SELECT 
       p.*,
       c.name AS category,
       sc.name AS subcategory,
       b.name AS brand,
-      pi.url AS primary_image,
       (
         SELECT price
         FROM store_product_prices spp
@@ -80,14 +78,44 @@ export async function GET(req: NextRequest) {
     LEFT JOIN store_categories c ON c.id = p.category_id
     LEFT JOIN store_subcategories sc ON sc.id = p.subcategory_id
     LEFT JOIN store_brands b ON b.brand_id = p.brand_id
-    LEFT JOIN store_product_images pi 
-      ON pi.product_id = p.id AND pi.is_primary = true
     ${whereClause}
     ${orderBy}
-    `,
-    values,
-  );
+    `;
 
+  // const query = `
+  //   SELECT
+  //     p.*,
+  //     c.name AS category,
+  //     sc.name AS subcategory,
+  //     b.name AS brand,
+  //     (
+  //       SELECT url
+  //       FROM store_product_images spi
+  //       WHERE spi.product_id = p.id
+  //         AND spi.is_primary = true
+  //       LIMIT 1
+  //     ) AS primary_image,
+  //     (
+  //       SELECT price
+  //       FROM store_product_prices spp
+  //       WHERE spp.product_id = p.id
+  //         AND spp.customer_type = 'B2C'
+  //       ORDER BY min_quantity ASC
+  //       LIMIT 1
+  //     ) AS b2c_price
+  //   FROM store_products p
+  //   LEFT JOIN store_categories c ON c.id = p.category_id
+  //   LEFT JOIN store_subcategories sc ON sc.id = p.subcategory_id
+  //   LEFT JOIN store_brands b ON b.brand_id = p.brand_id
+  //   LEFT JOIN store_product_images pi ON pi.product_id = p.id AND pi.is_primary = true
+  //   ${whereClause}
+  //   ${orderBy}
+  //   `;
+
+  // console.log("query product listing === ", query);
+  // console.log("query product values === ", values);
+
+  const result = await pool.query(query, values);
   return NextResponse.json({ items: result.rows });
 }
 /* ------------------ POST (Create Product) ------------------ */
@@ -199,7 +227,7 @@ export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
 
-  console.log('delete id === ',id)
+  console.log("delete id === ", id);
 
   if (!id) {
     return NextResponse.json({ error: "Product ID required" }, { status: 400 });
@@ -208,8 +236,6 @@ export async function DELETE(req: NextRequest) {
   const client = await pool.connect();
 
   try {
-
-    
     await client.query("BEGIN");
 
     await pool.query(

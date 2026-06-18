@@ -49,7 +49,7 @@ export default async function PlatformDashboard() {
                 },
                 {
                   label: "Total Revenue",
-                  value: `$${data.totalRevenue}`,
+                  value: `€${data.totalRevenue}`,
                 },
                 { label: "Platform Users", value: data.totalUsers },
               ].map((stat, i) => (

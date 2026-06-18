@@ -202,6 +202,39 @@ async function getStoreBySlug(slug: string) {
   return store;
 }
 
+
+
+export async function getCurrentStoreAPI(req: NextRequest) {
+
+  let slug = req.headers.get("x-tenant-subdomain");
+
+  if (!slug) {
+    const url = new URL(req.url);
+    const parts = url.pathname.split("/"); 
+
+    if (parts.includes("store")) {
+      slug = parts[parts.indexOf("store") + 1];
+    }
+  }
+
+  if (!slug) {
+    console.error("DEBUG: Subdomain missing at path", req.nextUrl.pathname);
+    throw new Error("STORE_SUBDOMAIN_MISSING");
+  }
+
+  const storeRes = await pool.query(
+    `SELECT id, name, status FROM stores WHERE slug = $1 LIMIT 1`,
+    [slug]
+  );
+
+  if (!storeRes.rowCount) throw new Error("STORE_NOT_FOUND");
+
+  const store = storeRes.rows[0];
+  if (store.status === "suspended") throw new Error("STORE_SUSPENDED");
+
+  return store;
+}
+
 /* export async function requireStorePermission2(
   tenant: string,
   permission: PermissionKey
@@ -266,37 +299,6 @@ async function getStoreBySlug(slug: string) {
   return store;
 } */
 
-
-export async function getCurrentStoreAPI(req: NextRequest) {
-
-  let slug = req.headers.get("x-tenant-subdomain");
-
-  if (!slug) {
-    const url = new URL(req.url);
-    const parts = url.pathname.split("/"); 
-
-    if (parts.includes("store")) {
-      slug = parts[parts.indexOf("store") + 1];
-    }
-  }
-
-  if (!slug) {
-    console.error("DEBUG: Subdomain missing at path", req.nextUrl.pathname);
-    throw new Error("STORE_SUBDOMAIN_MISSING");
-  }
-
-  const storeRes = await pool.query(
-    `SELECT id, name, status FROM stores WHERE slug = $1 LIMIT 1`,
-    [slug]
-  );
-
-  if (!storeRes.rowCount) throw new Error("STORE_NOT_FOUND");
-
-  const store = storeRes.rows[0];
-  if (store.status === "suspended") throw new Error("STORE_SUSPENDED");
-
-  return store;
-}
 
 /**
  * Layer 3: Store + permission based access
