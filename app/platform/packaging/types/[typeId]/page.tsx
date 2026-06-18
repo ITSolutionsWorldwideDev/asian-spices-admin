@@ -1,4 +1,4 @@
-// apps/admin/app/platform/packaging/types/[typeId]/page.tsx
+// app/platform/packaging/types/[typeId]/page.tsx
 
 import { pool } from "@/core/db";
 import { notFound } from "next/navigation";

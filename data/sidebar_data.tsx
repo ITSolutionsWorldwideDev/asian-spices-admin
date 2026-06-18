@@ -1,4 +1,4 @@
-// apps/admin/data/sidebar_data.tsx
+// data/sidebar_data.tsx
 // import { all_routes as route } from "./all_routes";
 
 export interface SidebarSubItem {

@@ -1,4 +1,4 @@
-// apps/admin/app/(store)/users/[userId]/page.tsx
+// app/(store)/users/[userId]/page.tsx
 
 import { pool } from "@/core/db";
 import { headers } from "next/headers"; // Import headers

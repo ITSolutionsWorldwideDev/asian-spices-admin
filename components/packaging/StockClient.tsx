@@ -1,4 +1,4 @@
-// apps/admin/components/packaging/StockClient.tsx
+// components/packaging/StockClient.tsx
 
 "use client";
 

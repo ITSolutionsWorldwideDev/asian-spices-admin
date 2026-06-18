@@ -1,4 +1,4 @@
-// apps/admin/components/platform/partners/PartnersClient.tsx
+// components/platform/partners/PartnersClient.tsx
 
 "use client";
 

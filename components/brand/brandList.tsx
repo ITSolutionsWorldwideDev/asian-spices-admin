@@ -1,4 +1,4 @@
-// apps/admin/components/brand/brandList.tsx
+// components/brand/brandList.tsx
 "use client";
 /* eslint-disable @next/next/no-img-element */
 

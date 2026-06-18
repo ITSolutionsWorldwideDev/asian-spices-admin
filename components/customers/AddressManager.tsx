@@ -1,4 +1,4 @@
-// apps/admin/components/customers/AddressManager.tsx
+// components/customers/AddressManager.tsx
 
 "use client";
 

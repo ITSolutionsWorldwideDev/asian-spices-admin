@@ -1,4 +1,4 @@
-// apps/admin/components/orders/FilterBar.tsx
+// components/orders/FilterBar.tsx
 "use client";
 
 import { useState } from "react";

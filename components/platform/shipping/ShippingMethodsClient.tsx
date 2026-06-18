@@ -1,4 +1,4 @@
-// apps/admin/components/platform/shipping/ShippingMethodsClient.tsx
+// components/platform/shipping/ShippingMethodsClient.tsx
 
 "use client";
 

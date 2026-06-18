@@ -1,4 +1,4 @@
-// apps/admin/app/platform/stores/[storeId]/StoreForm.tsx
+// app/platform/stores/[storeId]/StoreForm.tsx
 
 "use client";
 

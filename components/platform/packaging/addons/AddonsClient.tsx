@@ -1,4 +1,4 @@
-// apps/admin/components/platform/packaging/addons/AddonsClient.tsx
+// components/platform/packaging/addons/AddonsClient.tsx
 
 "use client";
 

@@ -1,4 +1,4 @@
-// apps/admin/components/SmartActionButton.tsx
+// components/SmartActionButton.tsx
 
 type Props = {
   label: string;

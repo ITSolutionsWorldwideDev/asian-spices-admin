@@ -1,4 +1,4 @@
-// apps/admin/components/platform/recipes/actions.ts
+// components/platform/recipes/actions.ts
 
 "use server";
 

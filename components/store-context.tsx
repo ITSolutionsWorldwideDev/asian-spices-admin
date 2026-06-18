@@ -1,4 +1,4 @@
-// apps/admin/components/store-context.tsx
+// components/store-context.tsx
 
 "use client";
 

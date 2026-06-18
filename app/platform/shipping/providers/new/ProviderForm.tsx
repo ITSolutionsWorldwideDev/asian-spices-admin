@@ -1,4 +1,4 @@
-// apps/admin/app/platform/shipping/providers/new/ProviderForm.tsx
+// app/platform/shipping/providers/new/ProviderForm.tsx
 
 "use client";
 

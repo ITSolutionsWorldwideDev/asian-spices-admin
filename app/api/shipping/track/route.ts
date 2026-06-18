@@ -1,4 +1,4 @@
-// apps/admin/app/api/shipping/track/route.ts
+// app/api/shipping/track/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/core/db";
 import { getCurrentStoreAPI } from "@/lib/auth/guards";

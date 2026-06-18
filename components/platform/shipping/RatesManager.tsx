@@ -1,4 +1,4 @@
-// apps/admin/components/platform/shipping/RatesManager.tsx
+// components/platform/shipping/RatesManager.tsx
 
 "use client";
 

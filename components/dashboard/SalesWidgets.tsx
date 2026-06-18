@@ -1,4 +1,4 @@
-// apps/admin/components/SalesWidgets.tsx
+// components/SalesWidgets.tsx
 import React from "react";
 import { 
   HiOutlineDocumentText, 

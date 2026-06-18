@@ -1,4 +1,4 @@
-// apps/admin/app/store/[tenant]/packaging/adjustments/page.tsx
+// app/store/[tenant]/packaging/adjustments/page.tsx
 
 import { pool } from "@/core/db";
 import { notFound } from "next/navigation";

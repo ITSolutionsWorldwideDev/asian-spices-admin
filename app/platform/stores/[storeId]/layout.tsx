@@ -1,4 +1,4 @@
-// apps/admin/app/platform/stores/[storeId]/layout.tsx
+// app/platform/stores/[storeId]/layout.tsx
 
 import StoreTabs from "./StoreTabs";
 

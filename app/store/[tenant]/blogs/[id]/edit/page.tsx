@@ -1,4 +1,4 @@
-// apps/admin/app/(admin)/blogs/edit/[id]/page.tsx
+// app/(admin)/blogs/edit/[id]/page.tsx
 
 import EditBlogClient from "@/components/blogs/EditBlogForm";
 

@@ -1,4 +1,4 @@
-// apps/admin/components/blogs/BlogCard.tsx
+// components/blogs/BlogCard.tsx
 
 import Link from "next/link";
 import { Edit, Trash2 } from "react-feather";

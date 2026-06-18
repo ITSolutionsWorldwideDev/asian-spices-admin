@@ -1,4 +1,4 @@
-// apps/admin/app/(store)/users/new/page.tsx
+// app/(store)/users/new/page.tsx
 
 import { pool } from "@/core/db";
 import ManageUserForm from "@/components/store/users/ManageUserForm";

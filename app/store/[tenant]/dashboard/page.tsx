@@ -1,4 +1,4 @@
-// apps/admin/app/(store)/[tenant]/dashboard/page.tsx
+// app/(store)/[tenant]/dashboard/page.tsx
 
 import { requireStoreAccess } from "@/lib/auth/guards";
 import { getStoreDashboardData } from "@/lib/services/storeDashboard";

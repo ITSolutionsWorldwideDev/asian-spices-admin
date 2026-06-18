@@ -1,4 +1,4 @@
-// apps/admin/components/platform/client/UsersList.tsx
+// components/platform/client/UsersList.tsx
 "use client";
 
 import { useState, useEffect } from "react";

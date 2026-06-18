@@ -1,4 +1,4 @@
-// apps/admin/components/products/tabs/ProductPricingTab.tsx
+// components/products/tabs/ProductPricingTab.tsx
 
 "use client";
 

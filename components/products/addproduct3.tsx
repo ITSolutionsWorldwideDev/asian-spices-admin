@@ -1,4 +1,4 @@
-// apps/admin/components/products/addproduct3.tsx
+// components/products/addproduct3.tsx
 
 "use client";
 

@@ -1,4 +1,4 @@
-// apps/admin/app/store/[tenant]/orders/page.tsx
+// app/store/[tenant]/orders/page.tsx
 
 import OrdersListComponent from "@/components/orders/ordersList";
 

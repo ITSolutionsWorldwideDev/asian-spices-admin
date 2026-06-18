@@ -1,4 +1,4 @@
-// apps/admin/components/packaging/AdjustmentsClient.tsx
+// components/packaging/AdjustmentsClient.tsx
 
 "use client";
 

@@ -1,4 +1,4 @@
-// apps/admin/components/platform/recipes/categories/FiltersBar.tsx
+// components/platform/recipes/categories/FiltersBar.tsx
 
 "use client";
 

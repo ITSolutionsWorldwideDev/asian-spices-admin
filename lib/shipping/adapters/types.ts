@@ -1,4 +1,4 @@
-// apps/admin/lib/shipping/adapters/types.ts (Not in use)
+// lib/shipping/adapters/types.ts (Not in use)
 
 /* export interface ShipmentInput {
   orderId: string;

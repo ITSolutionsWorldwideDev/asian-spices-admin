@@ -1,4 +1,4 @@
-// apps/admin/app/(store)/settings/page.tsx
+// app/(store)/settings/page.tsx
 
 import ManageSettingsComponent from "@/components/store-settings/manage-settings";
 

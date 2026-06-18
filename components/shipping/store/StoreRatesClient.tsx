@@ -1,4 +1,4 @@
-// apps/admin/components/shipping/store/StoreRatesClient.tsx
+// components/shipping/store/StoreRatesClient.tsx
 
 "use client";
 

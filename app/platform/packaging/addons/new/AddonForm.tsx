@@ -1,4 +1,4 @@
-// apps/admin/app/platform/packaging/addons/new/AddonForm.tsx
+// app/platform/packaging/addons/new/AddonForm.tsx
 
 "use client";
 

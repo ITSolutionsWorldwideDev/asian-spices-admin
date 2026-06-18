@@ -1,4 +1,4 @@
-// apps/admin/components/products/FormSections/product.schema.ts
+// components/products/FormSections/product.schema.ts
 import { z } from "zod";
 
 const toNumber = (val: any) =>

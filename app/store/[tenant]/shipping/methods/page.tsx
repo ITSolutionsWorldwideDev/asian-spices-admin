@@ -1,4 +1,4 @@
-// apps/admin/app/store/[tenant]/shipping/methods/page.tsx
+// app/store/[tenant]/shipping/methods/page.tsx
 import { pool } from "@/core/db";
 import { getCurrentStore } from "@/lib/auth/guards";
 import MethodsClient from "@/components/shipping/methods/MethodsClient";

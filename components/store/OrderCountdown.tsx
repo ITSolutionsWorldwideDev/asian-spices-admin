@@ -1,4 +1,4 @@
-// apps/admin/components/store/OrderCountdown.tsx
+// components/store/OrderCountdown.tsx
 "use client";
 
 import { useEffect, useState } from "react";

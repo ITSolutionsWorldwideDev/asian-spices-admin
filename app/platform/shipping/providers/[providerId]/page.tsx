@@ -1,4 +1,4 @@
-// apps/admin/app/platform/shipping/providers/[providerId]/page.tsx
+// app/platform/shipping/providers/[providerId]/page.tsx
 
 import { pool } from "@/core/db";
 import ProviderForm from "../new/ProviderForm";

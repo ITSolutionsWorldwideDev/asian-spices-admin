@@ -1,4 +1,4 @@
-// apps/admin/components/platform/settings/GeneralSettingsForm.tsx
+// components/platform/settings/GeneralSettingsForm.tsx
 
 "use client";
 

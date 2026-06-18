@@ -1,4 +1,4 @@
-// apps/admin/lib/services/partner.service.ts
+// lib/services/partner.service.ts
 
 import { hash } from "bcryptjs";
 import slugify from "slugify";

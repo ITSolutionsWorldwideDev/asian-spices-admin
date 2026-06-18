@@ -1,4 +1,4 @@
-// apps/admin/core/common/texteditor/texteditor.tsx
+// core/common/texteditor/texteditor.tsx
 
 import React from 'react';
 

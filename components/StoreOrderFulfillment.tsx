@@ -1,4 +1,4 @@
-// apps/admin/components/StoreOrderFulfillment.tsx
+// components/StoreOrderFulfillment.tsx
 
 "use client";
 

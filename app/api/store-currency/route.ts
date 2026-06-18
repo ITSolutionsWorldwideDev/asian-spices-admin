@@ -1,4 +1,4 @@
-// apps/admin/app/api/store-currency/route.ts (GET)
+// app/api/store-currency/route.ts (GET)
 
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/core/db";

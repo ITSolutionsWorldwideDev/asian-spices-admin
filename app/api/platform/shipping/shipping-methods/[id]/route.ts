@@ -1,4 +1,4 @@
-// apps/admin/app/api/platform/shipping/shipping-methods/[id]/route.ts
+// app/api/platform/shipping/shipping-methods/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/core/db";
 import { requirePlatformAdmin } from "@/lib/auth/guards";

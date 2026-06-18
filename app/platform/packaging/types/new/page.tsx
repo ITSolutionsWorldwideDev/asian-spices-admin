@@ -1,4 +1,4 @@
-// apps/admin/app/platform/packaging/types/new/page.tsx
+// app/platform/packaging/types/new/page.tsx
 
 import { requirePlatformAdmin } from "@/lib/auth/guards";
 import PackagingTypeForm from "./PackagingTypeForm";

@@ -1,4 +1,4 @@
-// apps/admin/components/products/tabs/ProductMainTab.tsx
+// components/products/tabs/ProductMainTab.tsx
 
 "use client";
 

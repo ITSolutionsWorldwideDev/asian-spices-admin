@@ -1,4 +1,4 @@
-// apps/admin/app/platform/shipping/providers/new/page.tsx
+// app/platform/shipping/providers/new/page.tsx
 
 import { requirePlatformAdmin } from "@/lib/auth/guards";
 import ProviderForm from "./ProviderForm";

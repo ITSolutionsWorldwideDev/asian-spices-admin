@@ -1,4 +1,4 @@
-// // apps/admin/lib/services/platformDashboard.ts
+// // lib/services/platformDashboard.ts
 
 import { pool } from "@/core/db";
 import { cache } from "react";

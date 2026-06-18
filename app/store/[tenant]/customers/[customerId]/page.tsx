@@ -1,4 +1,4 @@
-// apps/admin/app/(store)/customers/[customerId]/page.tsx
+// app/(store)/customers/[customerId]/page.tsx
 
 "use client";
 

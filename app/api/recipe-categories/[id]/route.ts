@@ -1,4 +1,4 @@
-// apps/admin/app/api/recipe-categories/[id]/route.ts
+// app/api/recipe-categories/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/core/db";
 import { requirePlatformAdmin } from "@/lib/auth/guards";

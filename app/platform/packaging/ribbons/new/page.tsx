@@ -1,4 +1,4 @@
-// apps/admin/app/platform/packaging/ribbons/new/page.tsx
+// app/platform/packaging/ribbons/new/page.tsx
 
 import { requirePlatformAdmin } from "@/lib/auth/guards";
 import RibbonForm from "./RibbonForm";

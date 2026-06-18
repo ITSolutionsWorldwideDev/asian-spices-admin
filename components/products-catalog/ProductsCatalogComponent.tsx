@@ -1,4 +1,4 @@
-// apps/admin/components/products-catalog/ProductsCatalogComponent.tsx
+// components/products-catalog/ProductsCatalogComponent.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

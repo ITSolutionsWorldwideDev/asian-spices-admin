@@ -1,4 +1,4 @@
-// apps/admin/components/platform/settings/BillingSettingsForm.tsx
+// components/platform/settings/BillingSettingsForm.tsx
 
 "use client";
 

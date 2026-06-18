@@ -1,4 +1,4 @@
-// apps/admin/app/platform/packaging/types/new/PackagingTypeForm.tsx
+// app/platform/packaging/types/new/PackagingTypeForm.tsx
 
 "use client";
 

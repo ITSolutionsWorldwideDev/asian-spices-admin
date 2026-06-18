@@ -1,4 +1,4 @@
-// apps/admin/components/media/FeaturedImageUpload.tsx
+// components/media/FeaturedImageUpload.tsx
 "use client";
 
 import { UploadButton } from "@uploadthing/react";

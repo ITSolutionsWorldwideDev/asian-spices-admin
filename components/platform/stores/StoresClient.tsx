@@ -1,4 +1,4 @@
-// apps/admin/components/platform/stores/StoresClient.tsx
+// components/platform/stores/StoresClient.tsx
 
 "use client";
 

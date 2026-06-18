@@ -1,4 +1,4 @@
-// apps/admin/lib/auth/guards.ts
+// lib/auth/guards.ts
 
 import { redirect, notFound } from "next/navigation";
 import { headers } from "next/headers";

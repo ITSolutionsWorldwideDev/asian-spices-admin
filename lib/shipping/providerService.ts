@@ -1,4 +1,4 @@
-// apps/admin/lib/shipping/providerService.ts
+// lib/shipping/providerService.ts
 
 import { pool } from "@/core/db";
 import { decrypt } from "@/lib/crypto";

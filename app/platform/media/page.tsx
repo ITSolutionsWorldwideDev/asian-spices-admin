@@ -1,4 +1,4 @@
-// apps/admin/app/(admin)/media/page.tsx
+// app/(admin)/media/page.tsx
 
 "use client";
 

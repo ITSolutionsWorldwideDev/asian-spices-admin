@@ -1,4 +1,4 @@
-// apps/admin/app/(platform)/client/actions.ts
+// app/(platform)/client/actions.ts
 
 "use server";
 

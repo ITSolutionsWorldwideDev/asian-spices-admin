@@ -1,4 +1,4 @@
-// apps/admin/components/products-catalog/PriceInput.tsx
+// components/products-catalog/PriceInput.tsx
 
 
 "use client";

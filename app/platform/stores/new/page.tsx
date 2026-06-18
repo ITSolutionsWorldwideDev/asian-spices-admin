@@ -1,4 +1,4 @@
-// apps/admin/app/(platform)/platform/stores/new/page.tsx
+// app/(platform)/platform/stores/new/page.tsx
 import StoreForm from "../[storeId]/StoreForm";
 
 export default function NewStorePage() {

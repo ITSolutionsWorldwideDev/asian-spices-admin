@@ -1,4 +1,4 @@
-// apps/admin/lib/auth/getSession.ts
+// lib/auth/getSession.ts
 import { getServerSession } from "next-auth";
 import { adminAuthOptions } from "@/core/auth";
 // import { adminAuthOptions } from "@/core/auth/admin";

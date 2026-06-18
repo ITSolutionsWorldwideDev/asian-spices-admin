@@ -1,4 +1,4 @@
-// apps/admin/app/platform/currency-rates/page.tsx
+// app/platform/currency-rates/page.tsx
 
 import CurrencyRates from "@/components/platform/currency-rates/CurrencyRates";
 

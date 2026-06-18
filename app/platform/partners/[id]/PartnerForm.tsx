@@ -1,4 +1,4 @@
-// apps/admin/app/platform/partners/[id]/PartnerForm.tsx
+// app/platform/partners/[id]/PartnerForm.tsx
 "use client";
 
 import { useTransition, useState, useEffect } from "react";

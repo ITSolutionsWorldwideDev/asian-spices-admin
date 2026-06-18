@@ -1,4 +1,4 @@
-// apps/admin/app/api/store-users/[id]/route.ts
+// app/api/store-users/[id]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/core/db";

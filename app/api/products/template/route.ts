@@ -1,4 +1,4 @@
-// apps/admin/app/api/products/template/route.ts
+// app/api/products/template/route.ts
 
 import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";

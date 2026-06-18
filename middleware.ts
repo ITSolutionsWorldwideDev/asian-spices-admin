@@ -1,10 +1,10 @@
-// apps/admin/middleware.ts
+// middleware.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { withAuth } from "next-auth/middleware";
 import { getToken } from "next-auth/jwt";
 
-// apps/admin/middleware.ts
+// middleware.ts
 export default withAuth(
   async function middleware(req: NextRequest) {
     const token = await getToken({ req });

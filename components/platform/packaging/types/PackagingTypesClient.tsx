@@ -1,4 +1,4 @@
-// apps/admin/components/platform/packaging/types/PackagingTypesClient.tsx
+// components/platform/packaging/types/PackagingTypesClient.tsx
 
 "use client";
 

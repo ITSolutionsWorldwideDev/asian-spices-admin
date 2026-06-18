@@ -1,4 +1,4 @@
-// apps/admin/app/_not-found/page.tsx
+// app/_not-found/page.tsx
 export default function NotFound() {
   return (
     <div

@@ -1,4 +1,4 @@
-// apps/admin/components/shipping/store/ShippingTabs.tsx
+// components/shipping/store/ShippingTabs.tsx
 
 "use client";
 

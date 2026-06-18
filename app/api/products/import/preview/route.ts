@@ -1,4 +1,4 @@
-// apps/admin/app/api/products/import/preview/route.ts
+// app/api/products/import/preview/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { pool } from "@/core/db";

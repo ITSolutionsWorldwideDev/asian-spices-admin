@@ -1,4 +1,4 @@
-// apps/admin/components/platform/stores/AdminAnalytics.tsx
+// components/platform/stores/AdminAnalytics.tsx
 "use client";
 
 import { useEffect, useState } from "react";

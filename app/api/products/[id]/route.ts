@@ -1,4 +1,4 @@
-// apps/admin/app/api/products/[id]/route.ts
+// app/api/products/[id]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentStoreAPI, requireStorePermission } from "@/lib/auth/guards";
@@ -49,11 +49,20 @@ export async function GET(
     [id],
   );
 
+  const assignedStores = await pool.query(
+    ` SELECT sp.product_id, s.id, s.name 
+      FROM store_product_catalog AS sp
+      LEFT JOIN stores AS s ON s.id = sp.store_id 
+      WHERE sp.product_id=$1`,
+    [id],
+  );
+
   return NextResponse.json({
     ...product.rows[0],
     prices: prices.rows,
     images: images.rows,
     country_ids: country_ids,
+    assignedStores: assignedStores.rows,
   });
 }
 

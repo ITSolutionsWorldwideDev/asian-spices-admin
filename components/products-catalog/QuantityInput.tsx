@@ -1,4 +1,4 @@
-// apps/admin/components/products-catalog/QuantityInput.tsx
+// components/products-catalog/QuantityInput.tsx
 
 "use client";
 

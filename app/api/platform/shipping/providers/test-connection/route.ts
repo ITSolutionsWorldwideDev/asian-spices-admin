@@ -1,4 +1,4 @@
-// apps/admin/app/api/platform/shipping/providers/test-connection/route.ts
+// app/api/platform/shipping/providers/test-connection/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { testCheapCargoConnection } from "@/lib/shipping/providers/cheapcargo";

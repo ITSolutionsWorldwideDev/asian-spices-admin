@@ -1,4 +1,4 @@
-// apps/admin/components/store-settings/manage-settings.tsx
+// components/store-settings/manage-settings.tsx
 
 "use client";
 

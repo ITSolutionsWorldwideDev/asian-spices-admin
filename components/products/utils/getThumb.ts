@@ -1,4 +1,4 @@
-// apps/admin/components/products/utils/getThumb.ts
+// components/products/utils/getThumb.ts
 
 
 export function getThumb(url: string, size = 300) {

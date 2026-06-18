@@ -1,4 +1,4 @@
-// apps/admin/app/api/products/[id]/images/route.ts
+// app/api/products/[id]/images/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { requireStorePermission } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";

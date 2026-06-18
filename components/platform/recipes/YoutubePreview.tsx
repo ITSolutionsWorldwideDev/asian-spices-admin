@@ -1,4 +1,4 @@
-// apps/admin/components/platform/recipes/YoutubePreview.tsx
+// components/platform/recipes/YoutubePreview.tsx
 
 "use client";
 

@@ -1,4 +1,4 @@
-// apps/admin/components/category/categoryList.tsx
+// components/category/categoryList.tsx
 "use client";
 /* eslint-disable @next/next/no-img-element */
 

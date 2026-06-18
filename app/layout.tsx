@@ -1,4 +1,4 @@
-// apps/admin/app/layout.tsx
+// app/layout.tsx
 import type { Metadata } from "next";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
 import { Geist, Geist_Mono } from "next/font/google";

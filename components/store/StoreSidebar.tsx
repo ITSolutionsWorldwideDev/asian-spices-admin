@@ -1,4 +1,4 @@
-// apps/admin/components/store/StoreSidebar.tsx
+// components/store/StoreSidebar.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";

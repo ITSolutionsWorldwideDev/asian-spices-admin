@@ -1,4 +1,4 @@
-// apps/admin/components/blogs/blogsList.tsx
+// components/blogs/blogsList.tsx
 "use client";
 
 import { useEffect, useState } from "react";

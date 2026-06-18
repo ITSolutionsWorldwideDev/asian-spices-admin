@@ -1,5 +1,5 @@
 <!-- // D:\project\asian-spices\README.md -->
-# 🛒 **Asian Spices | Ecommerce Platform (Turborepo + Next.js)**
+# 🛒 **Asian Spices | Ecommerce Platform (Next.js)**
 
 A modern, scalable ecommerce platform built using Turborepo, featuring a customer-facing website, a powerful admin dashboard, shared UI components, and reusable packages—designed for performance, modularity, and easy team collaboration.
 
@@ -7,8 +7,8 @@ A modern, scalable ecommerce platform built using Turborepo, featuring a custome
 
 ## 🚀 Live Demo
 
-👉 **Website:** https://asian-spices.com/
-👉 **Admin Panel:** https://asian-spices.com/
+👉 **Website:** https://asianspices.online/
+👉 **Admin Panel:** https://asianspices.online/
 
 ---
 
@@ -59,7 +59,7 @@ A modern, scalable ecommerce platform built using Turborepo, featuring a custome
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/ITSolutionsWorldwideDev/asian-spices.git
+git clone https://github.com/ITSolutionsWorldwideDev/asian-spices-admin.git
 
 
 ## 📁 **Monorepo Structure**

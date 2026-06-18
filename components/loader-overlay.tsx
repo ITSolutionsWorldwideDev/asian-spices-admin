@@ -1,4 +1,4 @@
-// apps/admin/components/loader-overlay.tsx
+// components/loader-overlay.tsx
 
 "use client";
 

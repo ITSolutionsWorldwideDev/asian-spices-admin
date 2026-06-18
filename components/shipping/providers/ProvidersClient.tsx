@@ -1,4 +1,4 @@
-// apps/admin/components/shipping/providers/ProvidersClient.tsx
+// components/shipping/providers/ProvidersClient.tsx
 "use client";
 
 import Link from "next/link";

@@ -1,4 +1,4 @@
-// apps/admin/app/platform/recipe-tags/page.tsx
+// app/platform/recipe-tags/page.tsx
 
 "use client";
 

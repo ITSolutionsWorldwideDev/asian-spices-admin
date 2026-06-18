@@ -1,4 +1,4 @@
-// apps/admin/lib/auth/permissions.ts
+// lib/auth/permissions.ts
 export const PERMISSIONS = {
   MANAGE_STORES: "manage_stores",
   MANAGE_PRODUCTS: "manage_products",

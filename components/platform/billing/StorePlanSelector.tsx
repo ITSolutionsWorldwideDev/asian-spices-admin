@@ -1,4 +1,4 @@
-// apps/admin/components/platform/billing/StorePlanSelector.tsx
+// components/platform/billing/StorePlanSelector.tsx
 
 import { pool } from "@/core/db";
 import { requirePlatformAdmin } from "@/lib/auth/guards";

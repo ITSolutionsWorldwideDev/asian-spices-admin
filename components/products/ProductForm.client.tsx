@@ -1,4 +1,4 @@
-// apps/admin/components/products/ProductForm.client.tsx
+// components/products/ProductForm.client.tsx
 
 "use client";
 

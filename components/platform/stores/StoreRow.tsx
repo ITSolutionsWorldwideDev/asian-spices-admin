@@ -1,4 +1,4 @@
-// apps/admin/app/(platform)/platform/stores/StoreRow.tsx
+// app/(platform)/platform/stores/StoreRow.tsx
 "use client";
 
 import DeleteStoreBtn from "./DeleteStoreBtn";

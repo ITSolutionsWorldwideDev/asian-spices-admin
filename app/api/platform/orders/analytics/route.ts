@@ -1,4 +1,4 @@
-// apps/admin/app/api/platform/orders/analytics/route.ts
+// app/api/platform/orders/analytics/route.ts
 
 import { NextResponse } from "next/server";
 import { pool } from "@/core/db";

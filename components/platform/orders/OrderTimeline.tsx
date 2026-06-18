@@ -1,4 +1,4 @@
-// apps/admin/components/platform/orders/OrderTimeline.tsx
+// components/platform/orders/OrderTimeline.tsx
 
 type Event = {
   id: string;

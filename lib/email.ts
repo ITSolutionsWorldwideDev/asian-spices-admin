@@ -1,4 +1,4 @@
-// apps/admin/lib/email.ts
+// lib/email.ts
 
 import nodemailer from "nodemailer";
 

@@ -1,4 +1,4 @@
-// apps/admin/components/platform/shipping/CreateShippingMethodForm.tsx
+// components/platform/shipping/CreateShippingMethodForm.tsx
 
 "use client";
 

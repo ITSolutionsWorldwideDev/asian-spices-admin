@@ -1,4 +1,4 @@
-// /apps/admin/components/platform/currency-rates/CurrencyRates.tsx
+// /components/platform/currency-rates/CurrencyRates.tsx
 
 "use client";
 

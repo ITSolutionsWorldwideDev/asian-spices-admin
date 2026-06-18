@@ -1,4 +1,4 @@
-// apps/admin/components/customers/CustomerForm.tsx
+// components/customers/CustomerForm.tsx
 
 "use client";
 

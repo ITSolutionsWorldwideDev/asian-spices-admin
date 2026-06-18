@@ -1,4 +1,4 @@
-// apps/admin/components/platform/billing/StorePlanSelectorClient.tsx
+// components/platform/billing/StorePlanSelectorClient.tsx
 "use client";
 
 import { useTransition } from "react";

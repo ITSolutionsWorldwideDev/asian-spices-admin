@@ -1,4 +1,4 @@
-// File: apps/admin/app/(store)/settings/roles/page.tsx
+// File: app/(store)/settings/roles/page.tsx
 import { pool } from "@/core/db";
 import Link from "next/link";
 

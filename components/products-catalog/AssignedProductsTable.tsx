@@ -1,4 +1,4 @@
-// apps/admin/components/products-catalog/AssignedProductsTable.tsx
+// components/products-catalog/AssignedProductsTable.tsx
 "use client";
 
 import { CatalogProduct } from "@/core/types";

@@ -1,4 +1,4 @@
-// apps/admin/components/platform/shipping/StoreMethodAssignCard.tsx
+// components/platform/shipping/StoreMethodAssignCard.tsx
 
 "use client";
 

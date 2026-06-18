@@ -1,4 +1,4 @@
-// apps/admin/app/platform/packaging/packages/new/page.tsx
+// app/platform/packaging/packages/new/page.tsx
 
 import { requirePlatformAdmin } from "@/lib/auth/guards";
 import PackageForm from "./PackageForm";

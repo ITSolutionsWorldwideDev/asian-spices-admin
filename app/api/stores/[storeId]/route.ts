@@ -1,4 +1,4 @@
-// apps/admin/app/api/stores/[storeId]/route.ts
+// app/api/stores/[storeId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { buildUpdateQuery, pool } from "@/core/db";
 import { requirePlatformAdmin } from "@/lib/auth/guards";

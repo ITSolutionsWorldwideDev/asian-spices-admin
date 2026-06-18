@@ -1,4 +1,4 @@
-//  apps/admin/lib/validations/roles.ts
+//  lib/validations/roles.ts
 
 import * as z from "zod";
 

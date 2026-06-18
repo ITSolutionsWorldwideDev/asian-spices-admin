@@ -1,4 +1,4 @@
-// apps/admin/components/shipping/providers/configs/CheapCargoConfig.tsx
+// components/shipping/providers/configs/CheapCargoConfig.tsx
 "use client";
 
 import { useState } from "react";

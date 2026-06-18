@@ -1,4 +1,4 @@
-// apps/admin/components/store/users/UsersList.tsx
+// components/store/users/UsersList.tsx
 
 "use client";
 

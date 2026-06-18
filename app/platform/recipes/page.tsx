@@ -1,4 +1,4 @@
-// apps/admin/app/platform/recipes/page.tsx
+// app/platform/recipes/page.tsx
 
 import { pool } from "@/core/db";
 import { requirePlatformAdmin } from "@/lib/auth/guards";

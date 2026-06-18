@@ -1,6 +1,6 @@
 // /app/api/orders/[orderId]/fulfill/route.ts
 
-// apps/admin/app/api/orders/[orderId]/fulfill/route.ts
+// app/api/orders/[orderId]/fulfill/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/core/db";
 import {

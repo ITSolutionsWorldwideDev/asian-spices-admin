@@ -1,4 +1,4 @@
-// apps/admin/components/platform/shipping/Modal.tsx
+// components/platform/shipping/Modal.tsx
 
 "use client";
 

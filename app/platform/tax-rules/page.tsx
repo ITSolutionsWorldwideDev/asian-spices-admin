@@ -1,4 +1,4 @@
-// apps/admin/app/platform/tax-rules/page.tsx
+// app/platform/tax-rules/page.tsx
 
 import TaxListComponent from "@/components/tax/taxList";
 

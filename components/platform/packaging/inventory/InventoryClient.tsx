@@ -1,4 +1,4 @@
-// apps/admin/components/platform/packaging/inventory/InventoryClient.tsx
+// components/platform/packaging/inventory/InventoryClient.tsx
 
 "use client";
 

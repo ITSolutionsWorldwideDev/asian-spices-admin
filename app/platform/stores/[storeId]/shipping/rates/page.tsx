@@ -1,4 +1,4 @@
-// apps/admin/app/platform/stores/[storeId]/shipping/rates/page.tsx
+// app/platform/stores/[storeId]/shipping/rates/page.tsx
 import { pool } from "@/core/db";
 import { requirePlatformAdmin } from "@/lib/auth/guards";
 import StoreRatesClient from "@/components/shipping/store/StoreRatesClient";

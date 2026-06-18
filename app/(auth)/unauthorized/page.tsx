@@ -1,4 +1,4 @@
-// apps/admin/app/(auth)/unauthorized/page.tsx
+// app/(auth)/unauthorized/page.tsx
 
 "use client";
 

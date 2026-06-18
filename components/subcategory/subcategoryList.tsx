@@ -1,4 +1,4 @@
-// apps/admin/components/subcategory/subcategoryList.tsx
+// components/subcategory/subcategoryList.tsx
 "use client";
 
 import React, { useEffect, useState } from "react";

@@ -1,4 +1,4 @@
-// apps/admin/lib/shipping/adapters/CheapCargoAdapter.ts (Not in use)
+// lib/shipping/adapters/CheapCargoAdapter.ts (Not in use)
 /* 
 import {
   ShipmentInput,

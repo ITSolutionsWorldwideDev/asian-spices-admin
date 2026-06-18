@@ -1,4 +1,4 @@
-// apps/admin/app/store/[tenant]/layout.tsx
+// app/store/[tenant]/layout.tsx
 
 import StoreHeader from "@/components/store/Header";
 import StoreSidebar from "@/components/store/StoreSidebar";

@@ -1,4 +1,4 @@
-// apps/admin/app/api/auth/[...nextauth]/route.ts
+// app/api/auth/[...nextauth]/route.ts
 import NextAuth from "next-auth";
 // import { adminAuthOptions } from "@/core/auth/admin";
 import { adminAuthOptions } from "@/core/auth";

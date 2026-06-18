@@ -1,4 +1,4 @@
-// apps/admin/lib/shipping/resolveCredentials.ts
+// lib/shipping/resolveCredentials.ts
 import { pool } from "@/core/db";
 import { decrypt } from "@/lib/crypto";
 

@@ -1,4 +1,4 @@
-// apps/admin/app/platform/packaging/ribbons/[ribbonId]/page.tsx
+// app/platform/packaging/ribbons/[ribbonId]/page.tsx
 
 import { pool } from "@/core/db";
 import { requirePlatformAdmin } from "@/lib/auth/guards";

@@ -1,4 +1,4 @@
-// apps/admin/app/platform/recipe-categories/page.tsx
+// app/platform/recipe-categories/page.tsx
 
 import RecipeCategoriesList from "@/components/platform/recipes/categories/RecipeCategoriesList";
 

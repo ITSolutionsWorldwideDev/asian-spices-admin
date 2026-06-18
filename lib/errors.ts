@@ -1,4 +1,4 @@
-// apps/admin/lib/errors.ts
+// lib/errors.ts
 
 export class AppError extends Error {
   statusCode: number;

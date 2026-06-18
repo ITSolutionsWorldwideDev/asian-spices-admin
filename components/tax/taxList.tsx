@@ -1,4 +1,4 @@
-// apps/admin/components/tax/taxList.tsx
+// components/tax/taxList.tsx
 
 "use client";
 

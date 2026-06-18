@@ -1,4 +1,4 @@
-// apps/admin/app/(store)/settings/roles/[roleId]/page.tsx
+// app/(store)/settings/roles/[roleId]/page.tsx
 
 import ManageRoleForm from "@/components/platform/settings/ManageRoleForm";
 import { pool } from "@/core/db";

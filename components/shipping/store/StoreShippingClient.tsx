@@ -1,4 +1,4 @@
-// apps/admin/components/shipping/store/StoreShippingClient.tsx
+// components/shipping/store/StoreShippingClient.tsx
 "use client";
 
 import { useState } from "react";

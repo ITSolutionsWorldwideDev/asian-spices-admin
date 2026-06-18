@@ -1,4 +1,4 @@
-// apps/admin/app/api/cron/order-timeout/route.ts
+// app/api/cron/order-timeout/route.ts
 
 import { NextResponse } from "next/server";
 import { pool } from "@/core/db";

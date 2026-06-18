@@ -1,4 +1,4 @@
-// apps/admin/app/api/geocode/route.ts
+// app/api/geocode/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {

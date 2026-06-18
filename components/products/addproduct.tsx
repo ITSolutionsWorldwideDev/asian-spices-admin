@@ -1,4 +1,4 @@
-// apps/admin/components/products/addproduct.tsx
+// components/products/addproduct.tsx
 
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";

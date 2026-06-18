@@ -1,4 +1,4 @@
-// apps/admin/app/api/partners/route.ts
+// app/api/partners/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { buildInsertQuery, pool } from "@/core/db";

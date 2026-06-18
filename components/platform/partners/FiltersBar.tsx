@@ -1,4 +1,4 @@
-// apps/admin/components/platform/partners/FiltersBar.tsx
+// components/platform/partners/FiltersBar.tsx
 
 "use client";
 

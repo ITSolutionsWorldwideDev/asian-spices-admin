@@ -1,4 +1,4 @@
-// apps/admin/app/(store)/users/page.tsx
+// app/(store)/users/page.tsx
 
 import UsersListComponent from "@/components/store/users/UsersList";
 

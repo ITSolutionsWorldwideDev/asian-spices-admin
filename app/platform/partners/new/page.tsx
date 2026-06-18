@@ -1,4 +1,4 @@
-// apps/admin/app/(platform)/platform/partners/new/page.tsx;
+// app/(platform)/platform/partners/new/page.tsx;
 
 import PartnerForm from "../[id]/PartnerForm";
 

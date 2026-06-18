@@ -1,4 +1,4 @@
-// apps/admin/app/api/users/[userId]/route.ts
+// app/api/users/[userId]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/auth/guards";

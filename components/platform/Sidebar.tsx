@@ -1,4 +1,4 @@
-// apps/admin/components/platform/Sidebar.tsx
+// components/platform/Sidebar.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";

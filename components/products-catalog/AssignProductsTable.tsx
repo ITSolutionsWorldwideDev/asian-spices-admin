@@ -1,4 +1,4 @@
-// apps/admin/components/products-catalog/AssignProductsTable.tsx
+// components/products-catalog/AssignProductsTable.tsx
 
 "use client";
 

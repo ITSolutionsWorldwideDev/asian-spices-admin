@@ -1,4 +1,4 @@
-// apps/admin/app/platform/shipping/methods/page.tsx
+// app/platform/shipping/methods/page.tsx
 
 import { pool } from "@/core/db";
 import { requirePlatformAdmin } from "@/lib/auth/guards";

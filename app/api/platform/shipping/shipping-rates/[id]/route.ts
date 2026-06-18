@@ -1,4 +1,4 @@
-// apps/admin/app/api/platform/shipping/shipping-rates/[id]/route.ts
+// app/api/platform/shipping/shipping-rates/[id]/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/core/db";

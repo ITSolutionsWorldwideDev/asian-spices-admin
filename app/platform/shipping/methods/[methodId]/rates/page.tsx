@@ -1,4 +1,4 @@
-// 📁 apps/admin/app/platform/shipping/methods/[methodId]/rates/page.tsx
+// 📁 app/platform/shipping/methods/[methodId]/rates/page.tsx
 
 import { pool } from "@/core/db";
 import { requirePlatformAdmin } from "@/lib/auth/guards";

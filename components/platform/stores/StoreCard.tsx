@@ -1,4 +1,4 @@
-// apps/admin/components/platform/stores/StoreCard.tsx
+// components/platform/stores/StoreCard.tsx
 
 "use client";
 

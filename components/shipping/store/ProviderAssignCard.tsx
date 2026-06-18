@@ -1,4 +1,4 @@
-//// apps/admin/components/shipping/store/ProviderAssignCard.tsx
+//// components/shipping/store/ProviderAssignCard.tsx
 
 "use client";
 

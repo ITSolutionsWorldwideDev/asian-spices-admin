@@ -1,4 +1,4 @@
-// /apps/admin/lib/validation/packaging.ts
+// /lib/validation/packaging.ts
 
 import { z } from "zod";
 

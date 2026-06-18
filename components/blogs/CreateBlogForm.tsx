@@ -1,4 +1,4 @@
-// apps/admin/components/blogs/CreateBlogForm.tsx
+// components/blogs/CreateBlogForm.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";

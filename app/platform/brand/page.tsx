@@ -1,4 +1,4 @@
-// apps/admin/app/platform/brand/page.tsx
+// app/platform/brand/page.tsx
 
 import BrandListComponent from "@/components/brand/brandList";
 

@@ -1,4 +1,4 @@
-// apps/admin/app/(platform)/platform/stores/StorePlanSection.tsx
+// app/(platform)/platform/stores/StorePlanSection.tsx
 
 import { pool } from "@/core/db";
 import StorePlanSelectorClient from "@/components/platform/billing/StorePlanSelectorClient";

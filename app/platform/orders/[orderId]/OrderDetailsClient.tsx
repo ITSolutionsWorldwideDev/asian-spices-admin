@@ -1,4 +1,4 @@
-// apps/admin/app/platform/orders/[orderId]/OrderDetailsClient.tsx
+// app/platform/orders/[orderId]/OrderDetailsClient.tsx
 
 "use client";
 

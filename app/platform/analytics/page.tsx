@@ -1,4 +1,4 @@
-// apps/admin/app/platform/analytics/page.tsx
+// app/platform/analytics/page.tsx
 import { pool } from "@/core/db";
 
 export default async function RecipesAnalyticsPage() {

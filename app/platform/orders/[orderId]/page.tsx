@@ -1,4 +1,4 @@
-// apps/admin/app/platform/orders/[orderId]/page.tsx
+// app/platform/orders/[orderId]/page.tsx
 
 import { requirePlatformAdmin } from "@/lib/auth/guards";
 import OrderDetailsClient from "./OrderDetailsClient";

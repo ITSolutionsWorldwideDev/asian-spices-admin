@@ -1,4 +1,4 @@
-// apps/admin/components/header.tsx
+// components/header.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";

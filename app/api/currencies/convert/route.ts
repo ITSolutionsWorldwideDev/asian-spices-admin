@@ -1,4 +1,4 @@
-// apps/admin/app/api/currencies/convert/route.ts
+// app/api/currencies/convert/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/core/db";

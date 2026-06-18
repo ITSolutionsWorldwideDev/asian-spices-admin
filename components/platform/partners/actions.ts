@@ -1,4 +1,4 @@
-// apps/admin/components/platform/partners/actions.ts
+// components/platform/partners/actions.ts
 
 "use server";
 

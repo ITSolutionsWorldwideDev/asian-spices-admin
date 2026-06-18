@@ -1,4 +1,4 @@
-// apps/admin/components/products/productlist.tsx
+// components/products/productlist.tsx
 "use client";
 
 import { useEffect, useState } from "react";

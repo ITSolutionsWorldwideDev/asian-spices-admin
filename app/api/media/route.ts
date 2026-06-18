@@ -1,4 +1,4 @@
-// apps/admin/app/api/media/route.ts
+// app/api/media/route.ts
 
 import { getServerSession } from "next-auth";
 import { adminAuthOptions } from "@/core/auth";

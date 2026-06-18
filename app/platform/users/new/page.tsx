@@ -1,4 +1,4 @@
-// apps/admin/app/(platform)/users/new/page.tsx
+// app/(platform)/users/new/page.tsx
 import UserForm from "@/components/platform/client/UserForm";
 
 export default function NewUserPage() {

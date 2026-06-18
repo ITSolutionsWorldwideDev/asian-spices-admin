@@ -1,4 +1,4 @@
-// apps/admin/lib/services/storeDashboard.ts
+// lib/services/storeDashboard.ts
 
 import { pool } from "@/core/db";
 import { cache } from "react";

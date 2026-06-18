@@ -1,4 +1,4 @@
-// apps/admin/components/platform/packaging/rules/RulesClient.tsx
+// components/platform/packaging/rules/RulesClient.tsx
 
 "use client";
 

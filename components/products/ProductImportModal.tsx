@@ -1,4 +1,4 @@
-// apps/admin/components/products/ProductImportModal.tsx
+// components/products/ProductImportModal.tsx
 "use client";
 
 import { useState } from "react";

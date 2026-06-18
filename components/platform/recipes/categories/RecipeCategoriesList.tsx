@@ -1,4 +1,4 @@
-// apps/admin/components/platform/recipes/categories/RecipeCategoriesList.tsx
+// components/platform/recipes/categories/RecipeCategoriesList.tsx
 
 "use client";
 

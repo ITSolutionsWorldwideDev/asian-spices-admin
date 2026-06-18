@@ -1,4 +1,4 @@
-// apps/admin/components/products/ProductForm.tsx
+// components/products/ProductForm.tsx
 
 "use client";
 
@@ -72,6 +72,12 @@ type Option = {
 type TierPrice = {
   min_quantity: number;
   price: number;
+};
+
+type AssignedStores = {
+  id: string;
+  name: string;
+  product_id: string;
 };
 
 // ------------------ Utils ------------------
@@ -181,6 +187,8 @@ export default function ProductFormComponent({
   const [selectedMedia, setSelectedMedia] = useState<number[]>([]);
   const [primaryMedia, setPrimaryMedia] = useState<number | null>(null);
 
+  const [assignedStores, setassignedStores] = useState<AssignedStores[]>([]);
+
   const [mounted, setMounted] = useState(false);
 
   /* ---------------- RHF ---------------- */
@@ -223,7 +231,6 @@ export default function ProductFormComponent({
     { value: "fixed", label: "Fixed Amount" },
   ];
 
-  
   const formatFileName = (name: string) => {
     let cleaned = name.split("-").slice(1).join("-");
     if (!cleaned) cleaned = name; // Guard variant if name doesn't contain tokens
@@ -423,6 +430,7 @@ export default function ProductFormComponent({
 
   const [accordionOpen, setAccordionOpen] = useState(true);
   const [pricingOpen, setPricingOpen] = useState(true);
+  const [storesOpen, setStoresOpen] = useState(true);
   const [imagesOpen, setImagesOpen] = useState(true);
 
   /* ---------------- B2B ---------------- */
@@ -545,8 +553,7 @@ export default function ProductFormComponent({
 
     // 2. Add an optional chaining check or rely on the safe fallback array
     return itemsToRender?.map((item) => {
-      
-          const displayName = formatFileName(item.file_name);
+      const displayName = formatFileName(item.file_name);
       const isSelected = selectedMedia.includes(item.media_id);
       const isPrimary = primaryMedia === item.media_id;
 
@@ -576,9 +583,9 @@ export default function ProductFormComponent({
           />
 
           {/* Metadata labels row */}
-              <p className="mt-2 text-xs font-medium text-gray-700 truncate px-0.5">
-                {displayName}
-              </p>
+          <p className="mt-2 text-xs font-medium text-gray-700 truncate px-0.5">
+            {displayName}
+          </p>
 
           {isPrimary && (
             <span className="absolute left-1 top-1 rounded bg-blue-600 px-2 py-0.5 text-xs text-white">
@@ -631,12 +638,15 @@ export default function ProductFormComponent({
 
         // console.log("data.images === ", data.images);
 
-        // setSelectedMedia(data.images?.map((i: any) => i.media_id) || []);
         setSelectedMedia(
           data.images
             ?.map((i: any) => Number(i.url))
             .filter((v: number) => !Number.isNaN(v)) || [],
         );
+
+        setassignedStores(data.assignedStores || []);
+
+        console.log("setassignedStores ==== ", data.assignedStores);
 
         // setPrimaryMedia(data.primary_media_id || null);
         const primary = data.images?.find((i: any) => i.is_primary);
@@ -1140,6 +1150,62 @@ export default function ProductFormComponent({
               )}
               {/* {selectedMedia.length} */}
             </Accordion>
+
+            {/* const [storesOpen, setStoresOpen] = useState(true); */}
+
+            <Accordion
+              title={`Assigned Stores (${assignedStores.length})`}
+              icon={LifeBuoy}
+              open={storesOpen}
+              onToggle={() => setStoresOpen(!storesOpen)}
+            >
+              <div className="p-4">
+                {assignedStores.length === 0 ? (
+                  <p className="text-gray-500">No stores assigned.</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {assignedStores.map((store) => (
+                      <div
+                        key={store.id}
+                        className="flex items-center gap-3 p-3 rounded-lg border bg-white shadow-sm hover:shadow-md transition"
+                      >
+                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                          <LifeBuoy size={18} className="text-blue-600" />
+                        </div>
+
+                        <div>
+                          <p className="font-semibold">{store.name}</p>
+                          <p className="text-xs text-gray-500">
+                            Assigned Store
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* <div className="p-4 border-t space-y-4">
+                <ul className="space-y-3">
+                  {assignedStores?.map((store) => (
+                    <li
+                      key={store.id}
+                      className="flex items-center gap-3 rounded-lg border border-gray-200 p-3"
+                    >
+                      <div className="h-3 w-3 rounded-full bg-green-500"></div>
+
+                      <div className="flex-1">
+                        <p className="font-medium">{store.name}</p>
+                      </div>
+
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                        Assigned
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div> */}
+            </Accordion>
           </div>
 
           <div className="flex justify-end gap-3 my-4">
@@ -1165,11 +1231,8 @@ export default function ProductFormComponent({
   );
 }
 
-
-
-
-    // 👇 UPDATE THIS LINE TO EXTRACT THE ARRAY SAFELY 👇
-    /* fetch("/api/media")
+// 👇 UPDATE THIS LINE TO EXTRACT THE ARRAY SAFELY 👇
+/* fetch("/api/media")
       .then((r) => r.json())
       .then((d) => {
         console.log("Raw API Response structure (d) === ", d);
@@ -1183,8 +1246,8 @@ export default function ProductFormComponent({
       .catch((err) =>
         console.error("Error setting media state grid array:", err),
       );*/
-      
-  /* const mediaGrid = useMemo(() => {
+
+/* const mediaGrid = useMemo(() => {
     // If in view mode, only show selected media
     const itemsToRender =
       mode === "view"

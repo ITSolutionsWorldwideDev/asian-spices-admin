@@ -1,4 +1,4 @@
-// apps/admin/components/platform/settings/FeatureFlagsForm.tsx
+// components/platform/settings/FeatureFlagsForm.tsx
 
 "use client";
 

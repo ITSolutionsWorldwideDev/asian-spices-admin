@@ -1,4 +1,4 @@
-// apps/admin/app/platform/products/new/page.tsx
+// app/platform/products/new/page.tsx
 
 import ProductFormComponent from "@/components/products/ProductForm.client";
 

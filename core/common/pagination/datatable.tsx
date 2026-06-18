@@ -1,4 +1,4 @@
-// apps/admin/core/common/pagination/datatable.tsx
+// core/common/pagination/datatable.tsx
 
 /* eslint-disable react/prop-types */
 /* eslint-disable no-unused-vars */

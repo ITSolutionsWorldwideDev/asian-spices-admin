@@ -1,4 +1,4 @@
-// apps/admin/lib/order-actions.ts
+// lib/order-actions.ts
 
 export type OrderActionState = {
   reassign: { disabled: boolean; reason?: string };

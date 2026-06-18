@@ -1,4 +1,4 @@
-// apps/admin/components/packaging/TenantRulesClient.tsx
+// components/packaging/TenantRulesClient.tsx
 
 "use client";
 

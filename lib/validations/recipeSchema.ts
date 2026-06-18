@@ -1,4 +1,4 @@
-//  apps/admin/lib/validations/recipeSchema.ts
+//  lib/validations/recipeSchema.ts
 
 import { z } from "zod";
 

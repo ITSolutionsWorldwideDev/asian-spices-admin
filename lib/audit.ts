@@ -1,4 +1,4 @@
-// apps/admin/lib/audit.ts
+// lib/audit.ts
 import { pool } from "@/core/db";
 
 export async function logAudit({

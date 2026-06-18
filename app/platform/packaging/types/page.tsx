@@ -1,4 +1,4 @@
-//  /apps/admin/app/platform/packaging/types/page.tsx
+//  /app/platform/packaging/types/page.tsx
 
 import { pool } from "@/core/db";
 

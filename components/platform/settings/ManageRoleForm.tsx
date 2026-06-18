@@ -1,4 +1,4 @@
-// apps/admin/components/settings/ManageRoleForm.tsx
+// components/settings/ManageRoleForm.tsx
 
 "use client";
 

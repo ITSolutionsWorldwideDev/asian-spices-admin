@@ -1,4 +1,4 @@
-// apps/admin/app/not-found.tsx
+// app/not-found.tsx
 
 export default function NotFound() {
   return (

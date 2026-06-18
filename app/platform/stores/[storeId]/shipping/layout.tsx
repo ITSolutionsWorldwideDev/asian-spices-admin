@@ -1,4 +1,4 @@
-// ✅ apps/admin/app/platform/stores/[storeId]/shipping/layout.tsx
+// ✅ app/platform/stores/[storeId]/shipping/layout.tsx
 
 import ShippingTabs from "@/components/shipping/store/ShippingTabs";
 

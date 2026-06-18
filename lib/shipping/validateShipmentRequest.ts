@@ -1,4 +1,4 @@
-// apps/admin/lib/shipping/validateShipmentRequest.ts
+// lib/shipping/validateShipmentRequest.ts
 
 export function validateShipmentRequest({
   order,

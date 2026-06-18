@@ -1,4 +1,4 @@
-// apps/admin/app/api/media/save/route.ts
+// app/api/media/save/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/core/db";

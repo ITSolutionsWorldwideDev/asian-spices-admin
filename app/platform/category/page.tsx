@@ -1,4 +1,4 @@
-// apps/admin/app/platform/category/page.tsx
+// app/platform/category/page.tsx
 
 import CategoryListComponent from "@/components/category/categoryList";
 

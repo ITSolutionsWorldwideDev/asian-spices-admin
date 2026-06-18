@@ -1,4 +1,4 @@
-// apps/admin/components/platform/packaging/ribbons/RibbonsClient.tsx
+// components/platform/packaging/ribbons/RibbonsClient.tsx
 
 "use client";
 

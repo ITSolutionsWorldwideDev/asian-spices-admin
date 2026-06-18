@@ -1,4 +1,4 @@
-//  apps/admin/components/platform/currencies/CurrencyList.tsx
+//  components/platform/currencies/CurrencyList.tsx
 
 "use client";
 
