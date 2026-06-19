@@ -145,7 +145,7 @@ export default function RatesManager({
 
       if (!data.success) throw new Error(data.error);
 
-      alert("Rates saved successfully");
+      // alert("Rates saved successfully");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -172,7 +172,6 @@ export default function RatesManager({
         </div>
       ) : (
         <>
-          {/* Scroll container built specifically to safeguard layouts */}
           <div className="w-full border border-gray-200 rounded-xl bg-white shadow-xs overflow-hidden">
             <div className="max-h-[550px] overflow-y-auto overflow-x-auto custom-scrollbar">
               <table className="w-full text-left border-collapse min-w-[900px]">
@@ -199,7 +198,6 @@ export default function RatesManager({
                         {i + 1}
                       </td>
 
-                      {/* Country Select */}
                       <td className="px-2 py-2">
                         <select
                           value={r.country || (countries[0]?.iso2 ?? "NL")}
@@ -216,7 +214,6 @@ export default function RatesManager({
                         </select>
                       </td>
 
-                      {/* City Input */}
                       <td className="px-2 py-2">
                         <input
                           value={r.city || ""}
@@ -226,7 +223,6 @@ export default function RatesManager({
                         />
                       </td>
 
-                      {/* Min Weight */}
                       <td className="px-2 py-2">
                         <input
                           type="number"
@@ -239,7 +235,6 @@ export default function RatesManager({
                         />
                       </td>
 
-                      {/* Max Weight */}
                       <td className="px-2 py-2">
                         <input
                           type="number"
@@ -252,7 +247,6 @@ export default function RatesManager({
                         />
                       </td>
 
-                      {/* Price */}
                       <td className="px-2 py-2">
                         <input
                           type="number"
@@ -265,7 +259,6 @@ export default function RatesManager({
                         />
                       </td>
 
-                      {/* Min Delivery Days */}
                       <td className="px-2 py-2">
                         <input
                           type="number"
@@ -277,7 +270,6 @@ export default function RatesManager({
                         />
                       </td>
 
-                      {/* Max Delivery Days */}
                       <td className="px-2 py-2">
                         <input
                           type="number"
@@ -289,7 +281,6 @@ export default function RatesManager({
                         />
                       </td>
 
-                      {/* Delete Action */}
                       <td className="px-4 py-2 text-center">
                         <button
                           onClick={() => removeRow(i)}
@@ -311,7 +302,6 @@ export default function RatesManager({
             )}
           </div>
 
-          {/* Action buttons footer section */}
           <div className="flex justify-between items-center border-t border-gray-100 pt-4">
             <button
               onClick={addRow}
@@ -333,180 +323,3 @@ export default function RatesManager({
     </div>
   );
 }
-
-/* 
-
-return (
-    <div className="w-full space-y-4">
-
-      {error && (
-        <div className="text-red-600 text-sm bg-red-50 border border-red-200 p-3 rounded-lg">
-          {error}
-        </div>
-      )}
-
-
-      {loading ? (
-        <p className="text-sm text-gray-500">Loading rates...</p>
-      ) : (
-        <>
-
-          <div className="space-y-4">
-            {rates.map((r, i) => (
-              <div
-                key={i}
-                className="border rounded-xl p-4 bg-white shadow-sm space-y-4"
-              >
-
-                <div className="flex justify-between items-center">
-                  <h4 className="text-sm font-semibold text-gray-700">
-                    Rate #{i + 1}
-                  </h4>
-
-                  <button
-                    onClick={() => removeRow(i)}
-                    className="text-red-500 text-xs hover:underline"
-                  >
-                    Remove
-                  </button>
-                </div>
-
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">
-                      Country
-                    </label>
-
-                    <select
-                      value={r.country || (countries[0]?.iso2 ?? "NL")}
-                      onChange={(e) => updateRow(i, "country", e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                    >
-                      {countries?.map((c) => (
-                        <option key={c.id} value={c.iso2}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-      
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">
-                      City (optional)
-                    </label>
-
-                    <input
-                      value={r.city || ""}
-                      onChange={(e) => updateRow(i, "city", e.target.value)}
-                      placeholder="e.g. Amsterdam"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                    />
-                  </div>
-                </div>
-
-        
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">
-                      Min Weight (kg)
-                    </label>
-
-                    <input
-                      type="number"
-                      value={r.min_weight || ""}
-                      onChange={(e) =>
-                        updateRow(i, "min_weight", e.target.value)
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">
-                      Max Weight (kg)
-                    </label>
-
-                    <input
-                      type="number"
-                      value={r.max_weight || ""}
-                      onChange={(e) =>
-                        updateRow(i, "max_weight", e.target.value)
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">
-                      Price
-                    </label>
-
-                    <input
-                      type="number"
-                      value={r.price || ""}
-                      onChange={(e) => updateRow(i, "price", e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                    />
-                  </div>
-
-        
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">
-                      Min Delivery Days
-                    </label>
-                    <input
-                      type="number"
-                      value={r.min_delivery_days || ""}
-                      onChange={(e) =>
-                        updateRow(i, "min_delivery_days", e.target.value)
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">
-                      Max Delivery Days
-                    </label>
-                    <input
-                      type="number"
-                      value={r.max_delivery_days || ""}
-                      onChange={(e) =>
-                        updateRow(i, "max_delivery_days", e.target.value)
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-
-    
-            {rates.length === 0 && (
-              <div className="text-center text-gray-400 py-8 border rounded-lg">
-                No rates configured
-              </div>
-            )}
-          </div>
-
-
-          <div className="flex justify-between items-center border-t pt-4">
-            <button onClick={addRow} className="btn btn-secondary">
-              + Add Rate
-            </button>
-
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="btn btn-primary"
-            >
-              {saving ? "Saving..." : "Save Rates"}
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-*/

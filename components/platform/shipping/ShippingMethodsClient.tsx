@@ -70,16 +70,12 @@ export default function ShippingMethodsClient({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
-        {/* <h2 className="text-xl font-bold">Shipping Methods</h2> */}
-
         <button onClick={() => setEditing({})} className="btn btn-primary">
           + Add Method
         </button>
       </div>
 
-      {/* Search */}
       <form onSubmit={handleSearch} className="flex gap-2">
         <input
           value={query}
@@ -90,7 +86,6 @@ export default function ShippingMethodsClient({
         <button className="btn btn-secondary">Search</button>
       </form>
 
-      {/* Table */}
       <div className="bg-white border rounded-lg overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-left">
@@ -125,20 +120,12 @@ export default function ShippingMethodsClient({
                 </td>
 
                 <td className="p-3 text-right space-x-2">
-                  {/* <button
-                    onClick={() => toggleActive(m)}
-                    className="text-xs text-blue-600"
-                  >
-                    Toggle
-                  </button> */}
-
                   <button
                     onClick={async () => {
                       const res = await fetch(
                         `/api/platform/shipping/shipping-rates?methodId=${m.id}`,
                       );
                       const data = await res.json();
-
                       setRatesMethod({
                         ...m,
                         rates: data.rates || [],
@@ -148,13 +135,6 @@ export default function ShippingMethodsClient({
                   >
                     Rates
                   </button>
-
-                  {/* <Link
-                    href={`/platform/shipping/shipping-methods/${m.id}/rates`}
-                    className="btn btn-sm btn-secondary"
-                  >
-                    Rates
-                  </Link> */}
 
                   <button
                     onClick={() => setEditing(m)}
@@ -176,7 +156,6 @@ export default function ShippingMethodsClient({
         </table>
       </div>
 
-      {/* Pagination */}
       <div className="flex justify-between items-center">
         <span className="text-sm text-gray-500">
           Page {page} of {totalPages}
@@ -197,7 +176,6 @@ export default function ShippingMethodsClient({
         </div>
       </div>
 
-      {/* EDIT MODAL */}
       {editing !== null && (
         <Modal onClose={() => setEditing(null)}>
           <CreateShippingMethodForm
@@ -207,7 +185,6 @@ export default function ShippingMethodsClient({
         </Modal>
       )}
 
-      {/* DELETE MODAL */}
       {deleting && (
         <Modal onClose={() => setDeleting(null)}>
           <div className="p-4 space-y-4">
@@ -237,7 +214,6 @@ export default function ShippingMethodsClient({
               </p>
             </div>
 
-            {/* 🔥 Your existing component */}
             <RatesManager
               methodId={ratesMethod.id}
               initialRates={ratesMethod.rates}
