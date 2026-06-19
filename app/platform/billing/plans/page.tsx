@@ -30,7 +30,7 @@ export default async function PlansPage() {
               {plans.map((p) => (
                 <tr key={p.id} className="border-b">
                   <td>{p.name}</td>
-                  <td>${(p.price_cents / 100).toFixed(2)}</td>
+                  <td>€{(p.price_cents / 100).toFixed(2)}</td>
                   <td>{p.interval}</td>
                   <td>{p.is_active ? "Active" : "Inactive"}</td>
                 </tr>

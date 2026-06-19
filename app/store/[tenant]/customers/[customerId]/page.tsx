@@ -113,7 +113,7 @@ export default function CustomerDetailPage() {
         <div className="grid grid-cols-3 gap-4">
           <div className="card p-4">Orders: {customer.total_orders}</div>
           <div className="card p-4">
-            Spent: ${Number(customer.total_spent)?.toFixed(2)}
+            Spent: €{Number(customer.total_spent)?.toFixed(2)}
           </div>
           <div className="card p-4">Status: {customer.status}</div>
         </div>
@@ -156,7 +156,7 @@ export default function CustomerDetailPage() {
                   </td>
                   <td>{new Date(o.created_at).toLocaleDateString()}</td>
                   <td>{o.status}</td>
-                  <td>${Number(o.total_amount).toFixed(2)}</td>
+                  <td>€{Number(o.total_amount).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>

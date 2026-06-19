@@ -319,7 +319,7 @@ export default function OrderDetailPage() {
                         </span>
                       </td> */}
                       <td className="p-4 text-center font-bold text-gray-900">{item.quantity}</td>
-                      <td className="p-4 text-right font-semibold text-gray-900">${(item.price * item.quantity).toFixed(2)}</td>
+                      <td className="p-4 text-right font-semibold text-gray-900">€{(item.price * item.quantity).toFixed(2)}</td>
                     </tr>
                   );
                 })}
@@ -332,19 +332,19 @@ export default function OrderDetailPage() {
         <div className="bg-white border rounded-xl shadow-sm p-5 ml-auto max-w-xs space-y-2 text-sm">
           <div className="flex justify-between text-gray-500">
             <span>Subtotal</span>
-            <span>${Number(order.subtotal).toFixed(2)}</span>
+            <span>€{Number(order.subtotal).toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-gray-500">
             <span>Tax</span>
-            <span>${Number(order.tax_amount).toFixed(2)}</span>
+            <span>€{Number(order.tax_amount).toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-gray-500 border-b pb-2">
             <span>Shipping Cost</span>
-            <span>${Number(order.shipping_amount).toFixed(2)}</span>
+            <span>€{Number(order.shipping_amount).toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-bold text-gray-900 text-base pt-1">
             <span>Gross Total</span>
-            <span>${total.toFixed(2)}</span>
+            <span>€{total.toFixed(2)}</span>
           </div>
         </div>
 
@@ -353,214 +353,3 @@ export default function OrderDetailPage() {
   );
 
 } 
-
-/*   return (
-    <div className="page-wrapper ">
-      <div className="content space-y-6">
- 
-        <div className="mb-6 flex items-center justify-between bg-gray-50">
-          <Link
-            href="/orders"
-            className="flex items-center text-sm text-gray-600 hover:text-primary transition"
-          >
-            <ChevronLeft size={16} className="mr-1" /> Back to Orders
-          </Link>
-
-          <div className="flex gap-2">
-            <span
-              className={`badge ${order.payment_status === "paid" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"} px-3 py-1 rounded-full text-xs font-medium uppercase`}
-            >
-              {order.payment_status}
-            </span>
-            <span className="badge bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-medium uppercase">
-              {order.order_type}
-            </span>
-          </div>
-        </div>
-
-
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800">
-            Order {order.order_number}
-          </h2>
-          <p className="text-gray-500">
-            Placed on {new Date(order.order_date).toLocaleString()}
-          </p>
-        </div>
-
-        <div className="grid sm:grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 space-y-6">
-          <div className="card bg-white border rounded-lg shadow-sm p-5">
-            <div className="flex items-center gap-2 mb-4 text-gray-800 border-b pb-2">
-              <User size={18} />
-              <h4 className="font-bold pt-2">Customer Details</h4>
-            </div>
-            <p className="text-gray-500 text-sm">
-              Postcode: {order.customer_postcode}
-            </p>
-            <p className="text-gray-500 text-sm">City: {order.customer_city}</p>
-          </div>
-
-          <div className="card bg-white border rounded-lg shadow-sm p-5">
-            <div className="flex items-center gap-2 mb-4 text-gray-800 border-b pb-2">
-              <CreditCard size={18} />
-              <h4 className="font-bold  pt-2">Payment Status</h4>
-            </div>
-            <p className="text-sm capitalize">
-              Status: <strong>{order.payment_status}</strong>
-            </p>
-            <p className="text-gray-500 text-xs mt-1">
-              Transaction verified via Gateway
-            </p>
-          </div>
-
-          <div className="card bg-white border rounded-lg shadow-sm p-5">
-            <div className="flex items-center gap-2 mb-4 text-gray-800 border-b pb-2">
-              <Truck size={18} />
-              <h4 className="font-bold pt-2">Fulfillment</h4>
-            </div>
-
-            <p className="text-sm capitalize mb-2">
-              Current Status: <strong>{order.fulfillment_status}</strong>
-            </p>
-
-         
-            {order.order_status === "pending" && (
-              <div className="flex gap-3">
-                <button
-                  disabled={!isFullPossible}
-                  onClick={() => handleDecision("full")}
-                  className="btn btn-success"
-                >
-                  Accept Full
-                </button>
-
-                <button
-                  disabled={!hasPartialQty}
-                  onClick={() => handleDecision("partial")}
-                  className="btn btn-warning disabled:opacity-50"
-                >
-                  Accept Partial
-                </button>
-
-                <button
-                  onClick={() => handleDecision("reject")}
-                  className="btn btn-danger"
-                >
-                  Reject All
-                </button>
-              </div>
-            )}
-
-            {order.order_status === "rejected" && (
-              <div className="text-red-500 font-semibold">
-                You rejected this order
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="w-full">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="card bg-white border rounded-lg shadow-sm overflow-hidden">
-              <div className="p-4 border-b bg-gray-50 flex items-center gap-2">
-                <Package size={18} className="text-gray-400" />
-                <h4 className="font-semibold pt-2">Items Summary</h4>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b">
-                      <th className="p-4 w-[10%]">Product</th>
-                      <th className="p-4 text-center">SKU</th>
-                      <th className="p-4 text-center">Price</th>
-                      <th className="p-4 text-center">Qty</th>
-                      <th className="p-4 text-right">Total</th>
-                      <th className="p-4 text-center">Ordered</th>
-                      {canEditAllocation && (
-                        <th className="p-4 text-center">Fulfill</th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {order.items.map((item) => (
-                      <tr
-                        key={item.order_item_id}
-                        className="hover:bg-gray-50 transition"
-                      >
-                        <td className="p-4 w-[10%]">
-                          <div className="font-medium text-gray-900">
-                            {item.name}
-                          </div>
-                        </td>
-                        <td className="p-4 text-center text-gray-500 text-sm">
-                          {item.sku}
-                        </td>
-                        <td className="p-4 text-center">
-                          ${Number(item.price).toFixed(2)}
-                        </td>
-                        <td className="p-4 text-center">{item.quantity}</td>
-
-                        <td className="p-4 text-right font-medium">
-                          ${(Number(item.price) * item.quantity).toFixed(2)}
-                        </td>
-                        <td className="p-4 text-center">{item.quantity}</td>
-
-                        {canEditAllocation && (
-                          <td className="p-4 text-center">
-                            <input
-                              type="number"
-                              min={0}
-                              max={Math.min(
-                                item.quantity,
-                                item.available_stock ?? 0,
-                              )}
-                              value={item.fulfilled_quantity ?? 0}
-                              onChange={(e) =>
-                                updateQty(item.order_item_id, e.target.value)
-                              }
-                              className="w-20 border rounded px-2 py-1 text-center"
-                            />
-                            <div className="text-xs text-gray-400 mt-1">
-                              Max:{" "}
-                              {Math.min(
-                                item.quantity,
-                                item.available_stock ?? 0,
-                              )}
-                            </div>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-
-            <div className="card bg-white border rounded-lg shadow-sm p-6 ml-auto max-w-sm">
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between text-gray-600">
-                  <span>Subtotal</span>
-                  <span>${Number(order.subtotal).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Tax</span>
-                  <span>${Number(order.tax_amount).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-gray-600 border-b pb-3">
-                  <span>Shipping</span>
-                  <span>${Number(order.shipping_amount).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-lg text-gray-900 pt-1">
-                  <span>Total Amount</span>
-                  <span>${total.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
- */
-

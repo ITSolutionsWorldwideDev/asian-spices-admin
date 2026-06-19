@@ -42,7 +42,7 @@ export default async function InvoicesPage() {
                 <tr key={i.id} className="border-b">
                   <td className="text-xs">{i.id}</td>
                   <td>{i.store_id}</td>
-                  <td>${(i.amount_cents / 100).toFixed(2)}</td>
+                  <td>€{(i.amount_cents / 100).toFixed(2)}</td>
                   <td>{i.status}</td>
                   <td>{new Date(i.issued_at).toLocaleDateString()}</td>
                 </tr>
