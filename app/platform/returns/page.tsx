@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import ReturnsFilterBar from "@/components/platform/returns/ReturnsFilterBar";
 import { useToast } from "@/core/ui";
-import { RefreshCw, ArrowLeftRight } from "lucide-react";
+import { RefreshCw, ArrowLeftRight, CheckCircle, XCircle } from "lucide-react";
 
 export default function AdminReturnsPage() {
   const [returns, setReturns] = useState<any[]>([]);
@@ -13,6 +13,7 @@ export default function AdminReturnsPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [actioningId, setActioningId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const limit = 10;
@@ -20,7 +21,6 @@ export default function AdminReturnsPage() {
   const fetchReturns = useCallback(async () => {
     try {
       setLoading(true);
-
       const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
@@ -42,7 +42,40 @@ export default function AdminReturnsPage() {
 
   useEffect(() => {
     fetchReturns();
-  }, [page, filters]);
+  }, [page, filters, fetchReturns]);
+
+  const handleUpdateStatus = async (
+    returnId: string,
+    status: "approved" | "rejected",
+  ) => {
+    try {
+      setActioningId(returnId);
+      const res = await fetch(`/api/platform/returns/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ returnId, status }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        // Capture custom structured validation payloads from our API block
+        const detailedMessage = data.message || data.error || "Failed to process workflow step";
+        throw new Error(detailedMessage);
+      }
+
+      showToast(
+        "success",
+        status === "approved"
+          ? "Return approved and split-routed to matching vendors."
+          : "Return rejected successfully.",
+      );
+      fetchReturns();
+    } catch (err: any) {
+      showToast("error", err.message || "Failed to transition return status");
+    } finally {
+      setActioningId(null);
+    }
+  };
 
   const totalPages = Math.ceil(total / limit) || 1;
 
@@ -151,13 +184,38 @@ export default function AdminReturnsPage() {
                       <td className="p-4 text-gray-500">
                         {new Date(r.created_at).toLocaleDateString()}
                       </td>
+
                       <td className="p-4 text-right">
-                        <Link
-                          href={`/platform/orders/${r.order_id}`}
-                          className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition"
-                        >
-                          Audit Source Order →
-                        </Link>
+                        <div className="flex items-center justify-end gap-3">
+                          {r.status === "pending" && (
+                            <>
+                              <button
+                                disabled={actioningId !== null}
+                                onClick={() =>
+                                  handleUpdateStatus(r.id, "approved")
+                                }
+                                className="inline-flex items-center gap-1 text-xs font-bold bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-md hover:bg-green-100 transition disabled:opacity-50"
+                              >
+                                <CheckCircle size={14} /> Approve & Route
+                              </button>
+                              <button
+                                disabled={actioningId !== null}
+                                onClick={() =>
+                                  handleUpdateStatus(r.id, "rejected")
+                                }
+                                className="inline-flex items-center gap-1 text-xs font-bold bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded-md hover:bg-red-100 transition disabled:opacity-50"
+                              >
+                                <XCircle size={14} /> Reject
+                              </button>
+                            </>
+                          )}
+                          <Link
+                            href={`/platform/orders/${r.order_id}`}
+                            className="text-xs font-semibold text-gray-600 hover:text-blue-600 border px-2.5 py-1 rounded-md bg-white hover:bg-gray-50 transition"
+                          >
+                            Audit Source →
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}

@@ -46,6 +46,7 @@ export const SidebarData: SidebarItem[] = [
     submenuItems: [
       { label: "Orders Queue", link: "/orders-queue", icon: "file-invoice", submenu: false },
       { label: "Orders", link: "/orders", icon: "file-invoice", submenu: false },
+      { label: "Returns", link: "/returns", icon: "file-invoice", submenu: false },
       // { label: "Invoices", link: "/invoice", icon: "file-invoice", submenu: false },
     ],
   },
