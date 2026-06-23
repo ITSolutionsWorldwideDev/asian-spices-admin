@@ -27,7 +27,7 @@ export default withAuth(
     if (isApi) {
       const referer = req.headers.get("referer");
       const requestHeaders = new Headers(req.headers);
-      
+
       // If the API is called from a store page, grab the slug from referer
       if (referer && referer.includes("/store/")) {
         const url = new URL(referer);
@@ -41,7 +41,12 @@ export default withAuth(
     }
 
     // 3. Handle Root and Unprefixed Paths
-    if (!isStorePath && !isPlatformPath && !isAuthPath && pathname !== "/login") {
+    if (
+      !isStorePath &&
+      !isPlatformPath &&
+      !isAuthPath &&
+      pathname !== "/login"
+    ) {
       // CASE: Super Admin
       if (token?.isPlatformAdmin) {
         const destination = pathname === "/" ? "/dashboard" : pathname;
@@ -54,7 +59,6 @@ export default withAuth(
       const storeRoles = token?.storeRoles as any[];
 
       if (storeRoles && storeRoles.length > 0) {
-        
         const firstStore = storeRoles[0]?.slug || storeRoles[0].store_id;
         const destination = pathname === "/" ? "/dashboard" : pathname;
 
@@ -90,13 +94,20 @@ export default withAuth(
   },
 );
 
+export const config = {
+  matcher: [
+    "/((?!_next|static|_next/image|assets|favicon.ico|favicon.png|robots.txt|.*\\.svg$|login).*)",
+    "/platform/:path*",
+    "/store/:path*",
+    "/api/:path*",
+  ],
+};
+
 // export const config = {
 //   matcher: ["/", "/platform/:path*", "/store/:path*"],
 // };
 
-
-
-    /* if (pathname === "/") {
+/* if (pathname === "/") {
       console.log("middleware token ====", token);
       // If Super Admin, go to platform
       if (token?.isPlatformAdmin) {
@@ -249,11 +260,3 @@ if (tenant && !pathname.startsWith(`/store/${tenant}`)) {
   },
 );
  */
-export const config = {
-  matcher: [
-    "/((?!_next|static|_next/image|assets|favicon.ico|favicon.png|robots.txt|.*\\.svg$|login).*)",
-    "/platform/:path*",
-    "/store/:path*",
-    "/api/:path*",
-  ],
-};

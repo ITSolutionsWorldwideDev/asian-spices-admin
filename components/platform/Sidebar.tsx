@@ -33,6 +33,12 @@ const PLATFORM_MENU = [
         link: "/platform/orders",
         submenu: false,
       },
+      {
+        label: "Returns",
+        icon: "receipt",
+        link: "/platform/returns",
+        submenu: false,
+      },
     ],
   },
 
