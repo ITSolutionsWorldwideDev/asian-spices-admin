@@ -65,7 +65,8 @@ export default function ReturnsFilterBar({
           <option value="pending">Pending Audit</option>
           <option value="approved">Approved</option>
           <option value="rejected">Rejected</option>
-          <option value="completed">Completed / Refunded</option>
+          <option value="item_received">Item received</option>
+          <option value="refunded">Refunded</option>
         </select>
       </div>
 

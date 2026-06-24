@@ -92,13 +92,13 @@ export async function GET(req: NextRequest) {
         o.shipping_city as city,
         o.payment_status,
         
-        -- Total quantity of item units this store is responsible for fulfilling
+
         COALESCE(SUM(oia.allocated_quantity), 0)::INT as local_items_count,
         
-        -- Calculated economic value of this specific location's split allocation chunk
+
         COALESCE(SUM(oia.allocated_quantity * oi.price), 0)::NUMERIC(10,2) as local_allocated_value,
         
-        -- Safe JSON aggregation of items assigned specifically to this tenant location
+
         json_agg(
           json_build_object(
             'allocation_id', oia.id,
