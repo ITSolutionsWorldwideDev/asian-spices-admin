@@ -13,20 +13,21 @@ export async function getShippingProvider(
 
   const credentials = await resolveProviderCredentials(provider.id, storeId);
 
-  // Determine sandbox status using a platform env var or parsing database flags
-  // const isSandbox = process.env.NEXT_PUBLIC_APP_ENV !== "production" || credentials.mode === "sandbox";
-  const isSandbox = true;
-
   switch (provider.slug) {
     case "cheapcargo":
       return new CheapCargoAdapter({
         apiKey: credentials.apiKey,
         email: credentials.email,
         password: credentials.password,
-        sandbox: isSandbox,
+        sandbox: process.env.IS_CHEAPCARGO_SANDBOX === "true",
       });
 
     default:
       throw new Error(`Unsupported provider: ${slug}`);
   }
 }
+
+
+  // Determine sandbox status using a platform env var or parsing database flags
+  // const isSandbox = process.env.NEXT_PUBLIC_APP_ENV !== "production" || credentials.mode === "sandbox";
+  // const isCheapcargoSandbox = process.env.IS_CHEAPCARGO_SANDBOX || true;

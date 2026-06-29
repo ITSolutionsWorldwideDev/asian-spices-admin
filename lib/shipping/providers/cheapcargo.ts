@@ -4,8 +4,14 @@ import crypto from "crypto";
 import { withRetry } from "@/lib/utils/retry";
 import md5 from "md5";
 
-const BASE_URL = "https://www.cheapcargo-demo.nl/api/rateRequest";
+// const BASE_URL = "https://www.cheapcargo-demo.nl/api/rateRequest";
 // const BASE_URL = "https://www.cheapcargo.com/api/rateRequest";
+
+const BASE_URL =
+  process.env.IS_CHEAPCARGO_SANDBOX === "true"
+    ? "https://www.cheapcargo-demo.nl/api/rateRequest"
+    : "https://www.cheapcargo.com/api/rateRequest";
+
 
 type Credentials = {
   apiKey: string;
