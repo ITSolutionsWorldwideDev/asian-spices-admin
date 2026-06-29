@@ -20,7 +20,6 @@ export class CheapCargoAdapter implements ShippingAdapter {
   private baseUrl: string;
 
   constructor(private creds: Credentials) {
-    console.log("creds ==== ", creds);
 
     this.baseUrl = creds.sandbox
       ? "https://www.cheapcargo-demo.nl/api"

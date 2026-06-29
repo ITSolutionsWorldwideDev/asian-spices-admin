@@ -4,9 +4,6 @@ import crypto from "crypto";
 import { withRetry } from "@/lib/utils/retry";
 import md5 from "md5";
 
-// const BASE_URL = "https://www.cheapcargo-demo.nl/api/rateRequest";
-// const BASE_URL = "https://www.cheapcargo.com/api/rateRequest";
-
 const BASE_URL =
   process.env.IS_CHEAPCARGO_SANDBOX === "true"
     ? "https://www.cheapcargo-demo.nl/api/rateRequest"
@@ -51,23 +48,8 @@ function getStandardizedTimestamp(): string {
   return `${YYYY}${MM}${DD}${HH}`;
 }
 
-/* function getStandardizedTimestamp(useUTC = false): string {
-  const now = new Date();
-
-  const hour = useUTC ? now.getUTCHours() : now.getHours();
-  const roundedHour = Math.floor(hour / 2) * 2;
-
-  const YYYY = useUTC ? now.getUTCFullYear() : now.getFullYear();
-  const MM = String((useUTC ? now.getUTCMonth() : now.getMonth()) + 1).padStart(2, "0");
-  const DD = String(useUTC ? now.getUTCDate() : now.getDate()).padStart(2, "0");
-  const HH = String(roundedHour).padStart(2, "0");
-
-  return `${YYYY}${MM}${DD}${HH}`;
-} */
-
 function getAuthenticationToken(apiKey: any) {
-  // const timestamp = getStandardizedTimestamp(false); // Matches your key setup criteria
-  const timestamp = getStandardizedTimestamp(); // Matches your key setup criteria
+  const timestamp = getStandardizedTimestamp();
   return md5(apiKey + timestamp);
 }
 
@@ -80,15 +62,9 @@ function getPasswordHash(value: string) {
 // -----------------------------
 export async function testCheapCargoConnection(creds: Credentials) {
   try {
-    console.log("creds.password === ", creds.password);
-    console.log("creds.apiKey === ", creds.apiKey);
 
     const authentication = getAuthenticationToken(creds.apiKey);
-    const passwordHash =  getPasswordHash(creds.password.trim()); //"34dbe7e451f2d0b166a292ce0021599d"; //
-
-    console.log("authentication === ", authentication);
-    console.log("creds.email === ", creds.email);
-    console.log("passwordHash === ", passwordHash);
+    const passwordHash =  getPasswordHash(creds.password.trim()); //"34dbe7e451f2d0b166a292ce0021599d";
 
     const payload = {
       shipments: {
