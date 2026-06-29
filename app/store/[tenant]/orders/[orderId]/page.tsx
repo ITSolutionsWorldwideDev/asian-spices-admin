@@ -85,12 +85,14 @@ export default function OrderDetailPage() {
   const { showToast } = useToast();
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [shippingMethodId, setShippingMethodId] = useState("");
   const [methods, setMethods] = useState<any[]>([]);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [provider, setProvider] = useState("cheapcargo");
+  const [lockShippingMethod, setlockShippingMethod] = useState(false);
 
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
@@ -154,6 +156,9 @@ export default function OrderDetailPage() {
   };
 
   const fetchOrder = useCallback(async () => {
+
+    setlockShippingMethod(false);
+
     try {
       const res = await fetch(`/api/orders/${orderId}`);
       if (!res.ok) throw new Error("Order trace endpoint unreachable");
@@ -171,6 +176,7 @@ export default function OrderDetailPage() {
 
       if (data.order?.shipping_provider) {
         setShippingMethodId(data.order.shipping_provider);
+        setlockShippingMethod(true);
       }
     } catch (err) {
       showToast("error", "Failed to resolve active order entity fields");
@@ -865,6 +871,7 @@ export default function OrderDetailPage() {
                 </label>
                 <select
                   value={provider}
+                  disabled={lockShippingMethod}
                   onChange={(e) => setProvider(e.target.value)}
                   className="w-full p-2 border rounded-lg focus:outline-none bg-white"
                 >
@@ -875,10 +882,11 @@ export default function OrderDetailPage() {
 
               <div>
                 <label className="block text-gray-500 font-medium mb-1">
-                  Active Rate Method Node
+                  Shipping Method{/* Active Rate Method Node */}
                 </label>
                 <select
                   value={shippingMethodId}
+                  disabled={lockShippingMethod}
                   onChange={(e) => setShippingMethodId(e.target.value)}
                   className="w-full p-2 border rounded-lg focus:outline-none bg-white text-gray-800"
                 >

@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           error:
-            "Target packaging catalog assignment not found for this store node.",
+            "Target packaging catalog assignment not found for this store.",
         },
         { status: 404 },
       );

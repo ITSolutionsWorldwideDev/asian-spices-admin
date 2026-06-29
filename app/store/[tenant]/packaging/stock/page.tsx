@@ -29,7 +29,7 @@ export default async function StoreStockPage({
   const store = storeRes.rows[0];
   if (!store) notFound();
 
-  // Load physical stock numbers local to this node
+  // Load physical stock numbers local to this Store
   const { rows: stock } = await pool.query(
     `
     SELECT 

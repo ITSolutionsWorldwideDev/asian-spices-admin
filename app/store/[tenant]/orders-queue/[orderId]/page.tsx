@@ -271,7 +271,7 @@ export default function OrderDetailPage() {
               <User size={16} />
               <h4 className="font-bold text-xs uppercase tracking-wider text-gray-400">Target Shipping Region</h4>
             </div>
-            <p className="text-sm text-gray-800 font-medium">City Location: {order.customer_city}, {order.customer_state}, {order.customer_country}</p>
+            <p className="text-sm text-gray-800 font-medium">City Location: {order.customer_city}, {order.customer_state} {order.customer_country}</p>
             <p className="text-sm text-gray-800 font-medium">Postal Address Area: {order.customer_postcode}</p>
           </div>
 

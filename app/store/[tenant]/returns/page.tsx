@@ -87,11 +87,11 @@ export default function StoreReturnsInspectionPage() {
             </h4>
             <p className="text-xs text-gray-500 mt-1">
               Verify incoming multi-tenant returned inventory parcels mapping to
-              your branch node.
+              your branch Store.
             </p>
           </div>
           <div className="text-xs font-semibold bg-gray-100 px-3 py-1.5 border rounded-lg uppercase tracking-wider text-gray-600">
-            Node:{" "}
+            Store:{" "}
             <span className="text-black font-bold font-mono">{tenant}</span>
           </div>
         </div>
@@ -103,7 +103,7 @@ export default function StoreReturnsInspectionPage() {
                 <div className="flex items-center justify-center py-24 space-x-3">
                   <RefreshCw className="animate-spin text-gray-500" size={20} />
                   <p className="text-gray-500 text-sm font-medium">
-                    Scanning node records...
+                    Scanning Store records...
                   </p>
                 </div>
               ) : allocations.length === 0 ? (

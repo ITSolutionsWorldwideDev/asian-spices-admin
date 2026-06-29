@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error("Store returns query breakdown:", error);
     return NextResponse.json(
-      { error: "Failed to load store node allocations" },
+      { error: "Failed to load store allocations" },
       { status: 500 },
     );
   }
@@ -86,7 +86,7 @@ export async function PUT(req: NextRequest) {
 
       if (verifyRes.rows.length === 0) {
         throw new Error(
-          "Target item allocation profile record not found at this node branch.",
+          "Target item allocation profile record not found at this store.",
         );
       }
 

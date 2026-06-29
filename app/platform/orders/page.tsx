@@ -99,7 +99,7 @@ export default function AdminOrdersPage() {
                       <th className="p-4">Order String ID</th>
                       <th className="p-4">Routing State</th>
                       <th className="p-4">Payment</th>
-                      <th className="p-4">Assigned Node</th>
+                      <th className="p-4">Assigned Store</th>
                       <th className="p-4 text-center">Bounces</th>
                       <th className="p-4">Ingested Date</th>
                       <th className="p-4"></th>
@@ -204,85 +204,3 @@ export default function AdminOrdersPage() {
   );
 }
 
-/* 
-<table className="w-full">
-                  <thead className="bg-gray-100 text-xs uppercase">
-                    <tr>
-                      <th className="p-3 text-left">Order</th>
-                      <th>Status</th>
-                      <th>Store</th>
-                      <th>Rejections</th>
-                      <th>Date</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {orders.map((o) => (
-                      <tr key={o.id} className="border-t hover:bg-gray-50">
-                        <td className="p-3 font-medium">{o.order_number}</td>
-
-                        <td>
-                          <span
-                            className={`px-2 py-1 text-xs rounded ${
-                              o.order_status === "rejected"
-                                ? "bg-red-100 text-red-600"
-                                : o.order_status === "confirmed"
-                                  ? "bg-green-100 text-green-600"
-                                  : "bg-gray-100 text-gray-600"
-                            }`}
-                          >
-                            {o.order_status}
-                          </span>
-                        </td>
-
-                        <td>{o.store_name || "-"}</td>
-
-                        <td className="text-center">
-                          <span className="font-semibold">
-                            {o.rejection_count}
-                          </span>
-                        </td>
-
-                        <td className="text-sm text-gray-500">
-                          {new Date(o.created_at).toLocaleDateString()}
-                        </td>
-
-                        <td>
-                          <Link
-                            href={`./orders/${o.id}`}
-                            className="text-blue-600"
-                          >
-                            View
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-*/
-
-{
-  /* ✅ PAGINATION */
-}
-/*         <div className="flex justify-between items-center mt-4">
-          <button
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Prev
-          </button>
-
-          <span>
-            Page {page} / {totalPages}
-          </span>
-
-          <button
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
-            className="px-3 py-1 border rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div> */
