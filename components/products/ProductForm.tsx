@@ -326,27 +326,28 @@ export default function ProductFormComponent({
   // const limit = 12;
 
   const [search, setSearch] = useState("");
-const [debouncedSearch, setDebouncedSearch] = useState("");
-const [page, setPage] = useState(1);
-const [totalPages, setTotalPages] = useState(1);
-const limit = 12;
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 12;
 
-// Debounce the input by 400ms to stop heavy re-fetching while a user types out words
-useEffect(() => {
-  const handler = setTimeout(() => {
-    setDebouncedSearch(search);
-    setPage(1); // Drop back to page 1 whenever search values actually change
-  }, 400);
+  // Debounce the input by 400ms to stop heavy re-fetching while a user types out words
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1); // Drop back to page 1 whenever search values actually change
+    }, 400);
 
-  return () => clearTimeout(handler);
-}, [search]);
-
+    return () => clearTimeout(handler);
+  }, [search]);
 
   useEffect(() => {
     // fetch(`/api/media?page=${page}&limit=${limit}`)
     //   .then((r) => r.json())
-    fetch(`/api/media?page=${page}&limit=${limit}&search=${encodeURIComponent(debouncedSearch)}`)
-    .then((r) => r.json())
+    fetch(
+      `/api/media?page=${page}&limit=${limit}&search=${encodeURIComponent(debouncedSearch)}`,
+    )
+      .then((r) => r.json())
       .then((d) => {
         const mediaArray = d.media || d.items || d.data || d;
         const fetchedMedia: MediaItem[] = Array.isArray(mediaArray)
@@ -444,8 +445,6 @@ useEffect(() => {
   const [pricingOpen, setPricingOpen] = useState(true);
   const [storesOpen, setStoresOpen] = useState(true);
   const [imagesOpen, setImagesOpen] = useState(true);
-  
-
 
   // ---------------- Discount ----------------
 
@@ -924,7 +923,7 @@ useEffect(() => {
 
                   <div>
                     <label className="block mb-1 text-sm font-medium">
-                      Price <span className="text-red-500">*</span>
+                      Base Price (Incl. Tax) <span className="text-red-500">*</span>
                     </label>
 
                     <input
@@ -1082,9 +1081,8 @@ useEffect(() => {
                       </p>
                     )}
                   </div>
-
-                  {/* Final Price */}
-                  <div>
+                  
+                  {/* <div>
                     <label className="block text-sm mb-1">
                       Final Sale Price
                     </label>
@@ -1095,7 +1093,7 @@ useEffect(() => {
                       className="w-full rounded border px-3 py-2 text-sm bg-gray-100"
                       disabled={isView}
                     />
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </Accordion>
@@ -1105,80 +1103,83 @@ useEffect(() => {
               open={imagesOpen}
               onToggle={() => setImagesOpen(!imagesOpen)}
             >
-
               {/* 🔍 SEARCH FIELD */}
-  {mode !== "view" && (
-    <div className="mb-5 max-w-md">
-      <label htmlFor="image-search" className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
-        Search Gallery By Name
-      </label>
-      <div className="relative rounded-md shadow-sm">
-        <input
-          id="image-search"
-          type="text"
-          placeholder="Type image name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-3 pr-10 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-        />
-        {search && (
-          <button
-            type="button"
-            onClick={() => setSearch("")}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X size={16} />
-          </button>
-        )}
-      </div>
-    </div>
-  )}
+              {mode !== "view" && (
+                <div className="mb-5 max-w-md">
+                  <label
+                    htmlFor="image-search"
+                    className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5"
+                  >
+                    Search Gallery By Name
+                  </label>
+                  <div className="relative rounded-md shadow-sm">
+                    <input
+                      id="image-search"
+                      type="text"
+                      placeholder="Type image name..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="w-full pl-3 pr-10 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    />
+                    {search && (
+                      <button
+                        type="button"
+                        onClick={() => setSearch("")}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
-  {/* 🖼️ IMAGE GRID */}
-  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-    {media.length > 0 ? (
-      mediaGrid
-    ) : (
-      <div className="col-span-full py-8 text-center text-sm text-gray-400 border border-dashed border-gray-200 rounded">
-        No images found matching "{search}"
-      </div>
-    )}
-  </div>
+              {/* 🖼️ IMAGE GRID */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {media.length > 0 ? (
+                  mediaGrid
+                ) : (
+                  <div className="col-span-full py-8 text-center text-sm text-gray-400 border border-dashed border-gray-200 rounded">
+                    No images found matching "{search}"
+                  </div>
+                )}
+              </div>
 
-  {/* 🚀 PAGINATION FOOTER CONTROL PANEL */}
-  {mode !== "view" && totalPages > 1 && (
-    <div className="flex items-center justify-between border-t border-gray-100 mt-6 pt-4 text-sm">
-      <span className="text-gray-500">
-        Page <strong>{page}</strong> of <strong>{totalPages}</strong>
-      </span>
-      <div className="flex gap-2">
-        <button
-          type="button"
-          disabled={page === 1}
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          className="px-3 py-1.5 border border-gray-200 rounded text-gray-700 font-medium bg-white hover:bg-gray-50 disabled:opacity-50 transition"
-        >
-          Previous
-        </button>
-        <button
-          type="button"
-          disabled={page === totalPages}
-          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          className="px-3 py-1.5 border border-gray-200 rounded text-gray-700 font-medium bg-white hover:bg-gray-50 disabled:opacity-50 transition"
-        >
-          Next
-        </button>
-      </div>
-    </div>
-  )}
+              {/* 🚀 PAGINATION FOOTER CONTROL PANEL */}
+              {mode !== "view" && totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-gray-100 mt-6 pt-4 text-sm">
+                  <span className="text-gray-500">
+                    Page <strong>{page}</strong> of{" "}
+                    <strong>{totalPages}</strong>
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={page === 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      className="px-3 py-1.5 border border-gray-200 rounded text-gray-700 font-medium bg-white hover:bg-gray-50 disabled:opacity-50 transition"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      disabled={page === totalPages}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
+                      className="px-3 py-1.5 border border-gray-200 rounded text-gray-700 font-medium bg-white hover:bg-gray-50 disabled:opacity-50 transition"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
 
-  {selectedMedia.length === 0 && (
-    <p className="mt-4 text-sm text-gray-500">
-      Select at least one image for this product.
-    </p>
-  )}
-
-
+              {selectedMedia.length === 0 && (
+                <p className="mt-4 text-sm text-gray-500">
+                  Select at least one image for this product.
+                </p>
+              )}
 
               {/* <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 
@@ -1220,7 +1221,6 @@ useEffect(() => {
                   Select at least one image for this product.
                 </p>
               )} */}
-               
             </Accordion>
 
             <Accordion
@@ -1300,7 +1300,6 @@ useEffect(() => {
     </div>
   );
 }
-
 
 /*
   const discountOptions = [
