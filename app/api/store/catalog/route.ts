@@ -98,7 +98,7 @@ export async function GET(req: NextRequest) {
       p.base_price AS base_price,
       spc.price AS store_price,
 
-      COALESCE(spc.price, p.price) AS effective_price,
+      COALESCE(spc.price, p.base_price) AS effective_price,
 
       spc.quantity,
       spc.status,
