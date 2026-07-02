@@ -36,7 +36,7 @@ export default function ProductsCatalogComponent() {
   });
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
 
-  const [showAssignedOnly, setShowAssignedOnly] = useState(false);
+  const [assignedFilter, setAssignedFilter] = useState("all");
 
   /* ------------------------------------
      Debounced API Call
@@ -83,6 +83,20 @@ export default function ProductsCatalogComponent() {
     setTotalCount(data.total);
 
     setLoading(false);
+  };
+
+  const applyAssignedFilter = (baseFilters: any, value = assignedFilter) => {
+    const next = { ...baseFilters };
+
+    if (value === "assigned") {
+      next.assigned = "true";
+    } else if (value === "unassigned") {
+      next.assigned = "false";
+    } else {
+      delete next.assigned;
+    }
+
+    return next;
   };
 
   useEffect(() => {
@@ -135,6 +149,14 @@ export default function ProductsCatalogComponent() {
     if (bulk.type === "INCLUDE") return bulk.ids.has(id);
     return !bulk.ids.has(id);
   };
+
+  const selectedProducts = products.filter((p) => isSelected(p.product_id));
+  const selectedAssignedIds = selectedProducts
+    .filter((p) => p.assigned)
+    .map((p) => p.product_id);
+  const selectedUnassignedIds = selectedProducts
+    .filter((p) => !p.assigned)
+    .map((p) => p.product_id);
 
   const handleSelectRow = (id: string, checked: boolean) => {
     const newIds = new Set(bulk.ids);
@@ -226,7 +248,7 @@ export default function ProductsCatalogComponent() {
   };
 
   const handleBulkAssignSelected = async () => {
-    if (bulk.ids.size === 0) return;
+    if (selectedAssignedIds.length === 0) return;
 
     setLoading(true);
 
@@ -239,12 +261,34 @@ export default function ProductsCatalogComponent() {
         action: "UPSERT",
         selection: {
           type: "INCLUDE",
-          ids: Array.from(bulk.ids),
+          ids: selectedAssignedIds,
         },
         data: {},
         // data: {
         //   price: null, // fallback to base price
         // },
+      }),
+    });
+
+    fetchProducts();
+  };
+
+  const handleBulkUnassignSelected = async () => {
+    if (selectedUnassignedIds.length === 0) return;
+
+    setLoading(true);
+
+    await fetch("/api/store/catalog/bulk", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: "UNASSIGN",
+        selection: {
+          type: "INCLUDE",
+          ids: selectedUnassignedIds,
+        },
       }),
     });
 
@@ -359,8 +403,10 @@ export default function ProductsCatalogComponent() {
           <div className=" justify-between w-full">
             <FilterBar
               onApply={(f) => {
-                setFilters(f);
-                fetchProducts(f, 1);
+                const next = applyAssignedFilter(f, assignedFilter);
+                setFilters(next);
+                setPage(1);
+                fetchProducts(next, 1);
               }}
             />
 
@@ -373,11 +419,19 @@ export default function ProductsCatalogComponent() {
               </button> */}
 
               <button
-                disabled={bulk.ids.size === 0}
+                disabled={selectedAssignedIds.length === 0}
                 onClick={handleBulkAssignSelected}
                 className="bg-blue-600 text-white px-4 py-2 rounded text-sm mt-4 disabled:opacity-50"
               >
-                Assign Selected ({bulk.ids.size})
+                Assign Selected ({selectedAssignedIds.length})
+              </button>
+
+              <button
+                disabled={selectedUnassignedIds.length === 0}
+                onClick={handleBulkUnassignSelected}
+                className="bg-red-600 text-white px-4 py-2 rounded text-sm mt-4 disabled:opacity-50"
+              >
+                Unassign Selected ({selectedUnassignedIds.length})
               </button>
 
               <button
@@ -403,17 +457,25 @@ export default function ProductsCatalogComponent() {
               </button>
             </div>
 
-            <label className="flex items-center gap-2 text-sm mt-3">
-              <input
-                type="checkbox"
-                checked={showAssignedOnly}
+            <div className="flex items-center gap-2 text-sm mt-3">
+              <span className="text-gray-600">Filter assignment:</span>
+              <select
+                value={assignedFilter}
                 onChange={(e) => {
-                  setShowAssignedOnly(e.target.checked);
-                  fetchProducts({ ...filters, assigned: e.target.checked }, 1);
+                  const value = e.target.value;
+                  setAssignedFilter(value);
+                  const next = applyAssignedFilter(filters, value);
+                  setFilters(next);
+                  setPage(1);
+                  fetchProducts(next, 1);
                 }}
-              />
-              Show only assigned products
-            </label>
+                className="px-3 py-2 border rounded text-sm"
+              >
+                <option value="all">All products</option>
+                <option value="assigned">Assigned only</option>
+                <option value="unassigned">Unassigned only</option>
+              </select>
+            </div>
           </div>
         </div>
 
