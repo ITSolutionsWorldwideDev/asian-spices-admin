@@ -213,7 +213,7 @@ export default function ProductFormComponent({
       country_ids: [],
       description: "",
       health_benefits: "",
-      price: 0,
+      base_price: 0,
       quantity: 999999999,
       discount_type: null,
       discount_value: 0,
@@ -239,7 +239,7 @@ export default function ProductFormComponent({
   const categoryId = watch("category_id");
   const brandId = watch("brand_id");
 
-  const price = watch("price") || 0;
+  const base_price = watch("base_price") || 0;
   const discountType = watch("discount_type");
   const discountValue = watch("discount_value") || 0;
   const promoDiscount = watch("promo_discount") || 0;
@@ -449,7 +449,7 @@ export default function ProductFormComponent({
   // ---------------- Discount ----------------
 
   const salePrice = useMemo(() => {
-    let final = price;
+    let final = base_price;
 
     if (discountType === "percentage") {
       final = final - (final * discountValue) / 100;
@@ -465,7 +465,7 @@ export default function ProductFormComponent({
     }
 
     return final > 0 ? final : 0;
-  }, [price, discountType, discountValue, promoDiscount]);
+  }, [base_price, discountType, discountValue, promoDiscount]);
 
   // ------------------------------------
   //   Submit
@@ -630,7 +630,7 @@ export default function ProductFormComponent({
 
         setValue("name", data.name || "");
         setValue("slug", data.slug || "");
-        setValue("price", safeNumber(data.price) ?? 0);
+        setValue("base_price", safeNumber(data.base_price) ?? 0);
         setValue("quantity", safeNumber(data.quantity) ?? 0);
 
         // console.log("data.images === ", data.images);
@@ -928,16 +928,16 @@ export default function ProductFormComponent({
 
                     <input
                       type="number"
-                      {...register("price", { valueAsNumber: true })}
+                      {...register("base_price", { valueAsNumber: true })}
                       placeholder="0.00"
                       min={0}
                       step="0.01"
                       disabled={isView}
                       className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                     />
-                    {errors.price && (
+                    {errors.base_price && (
                       <p className="text-red-600 text-sm">
-                        {errors.price.message as string}
+                        {errors.base_price.message as string}
                       </p>
                     )}
                   </div>

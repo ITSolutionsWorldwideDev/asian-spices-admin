@@ -51,9 +51,9 @@ export async function GET(req: NextRequest) {
   let orderBy = `ORDER BY p.created_at DESC`;
 
   if (sort === "price_asc") {
-    orderBy = `ORDER BY p.price ASC`;
+    orderBy = `ORDER BY p.base_price ASC`;
   } else if (sort === "price_desc") {
-    orderBy = `ORDER BY p.price DESC`;
+    orderBy = `ORDER BY p.base_price DESC`;
   } else if (sort === "newest") {
     orderBy = `ORDER BY p.created_at DESC`;
   }
@@ -82,36 +82,6 @@ export async function GET(req: NextRequest) {
     ${orderBy}
     `;
 
-  // const query = `
-  //   SELECT
-  //     p.*,
-  //     c.name AS category,
-  //     sc.name AS subcategory,
-  //     b.name AS brand,
-  //     (
-  //       SELECT url
-  //       FROM store_product_images spi
-  //       WHERE spi.product_id = p.id
-  //         AND spi.is_primary = true
-  //       LIMIT 1
-  //     ) AS primary_image,
-  //     (
-  //       SELECT price
-  //       FROM store_product_prices spp
-  //       WHERE spp.product_id = p.id
-  //         AND spp.customer_type = 'B2C'
-  //       ORDER BY min_quantity ASC
-  //       LIMIT 1
-  //     ) AS b2c_price
-  //   FROM store_products p
-  //   LEFT JOIN store_categories c ON c.id = p.category_id
-  //   LEFT JOIN store_subcategories sc ON sc.id = p.subcategory_id
-  //   LEFT JOIN store_brands b ON b.brand_id = p.brand_id
-  //   LEFT JOIN store_product_images pi ON pi.product_id = p.id AND pi.is_primary = true
-  //   ${whereClause}
-  //   ${orderBy}
-  //   `;
-
   // console.log("query product listing === ", query);
   // console.log("query product values === ", values);
 
@@ -137,7 +107,7 @@ export async function POST(req: NextRequest) {
       INSERT INTO store_products
       (name, slug, sku, item_code,
        country_id, category_id, subcategory_id, brand_id,
-       description, health_benefits, price, quantity, discount_type, discount_value, status)
+       description, health_benefits, base_price, quantity, discount_type, discount_value, status)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
       RETURNING *
       `,
@@ -152,7 +122,7 @@ export async function POST(req: NextRequest) {
         body.brand_id,
         body.description,
         body.health_benefits,
-        body.price,
+        body.base_price,
         999999999, //body.quantity,
         body.discount_type,
         body.discount_value,

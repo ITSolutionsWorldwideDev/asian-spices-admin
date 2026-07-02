@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
            category_id, subcategory_id, brand_id,
            country_of_origin, country_id,
            description, health_benefits,
-           price, quantity,
+           base_price, quantity,
            discount_type, discount_value, status)
           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
           RETURNING id

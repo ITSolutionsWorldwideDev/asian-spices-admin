@@ -256,7 +256,7 @@ export default function ProductImportModal({
   //   rows.forEach((row, i) => {
   //     if (!row.Name) errors.push(`Row ${i + 2}: Name missing`);
   //     if (!row.SKU) errors.push(`Row ${i + 2}: SKU missing`);
-  //     if (row.Price && isNaN(row.Price))
+  //     if (row.base_price && isNaN(row.base_price))
   //       errors.push(`Row ${i + 2}: Invalid price`);
 
   //     if (row["B2B Prices"]) {

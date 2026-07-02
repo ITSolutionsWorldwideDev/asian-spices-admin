@@ -515,7 +515,7 @@ export default function ProductsCatalogComponent() {
                       <div className="flex justify-between text-sm">
                         <span>Price:</span>
                         <strong>
-                          €{Number(productDetail.price).toFixed(2)}
+                          €{Number(productDetail.base_price).toFixed(2)}
                         </strong>
                       </div>
 
@@ -541,77 +541,3 @@ export default function ProductsCatalogComponent() {
     </div>
   );
 }
-
-/* const toggleAssign = async (record: CatalogProduct) => {
-    setLoading(true);
-    const action = record.assigned ? "UNASSIGN" : "ASSIGN";
-
-    await fetch("/api/store/catalog/bulk", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        action,
-        selection: {
-          type: "INCLUDE",
-          ids: [record.product_id],
-        },
-      }),
-    });
-
-    fetchProducts(); // refresh
-  }; */
-// 1. update UI instantly
-// setProducts((prev) =>
-//   prev.map((p) =>
-//     p.product_id === product_id
-//       ? {
-//           ...p,
-//           ...(field === "price"
-//             ? { store_price: value }
-//             : { quantity: value }),
-//         }
-//       : p,
-//   ),
-// );
-// {
-//   title: "Price",
-//   render: (_: any, record: CatalogProduct) => (
-//     <div className="flex items-center gap-2">
-//       <input
-//         type="number"
-//         value={record.store_price ?? ""}
-//         onChange={(e) =>
-//           updateField(record.product_id, "price", Number(e.target.value))
-//         }
-//         className="w-24 border px-2 py-1"
-//       />
-
-//       {updatingIds.has(record.product_id) && (
-//         <span className="text-xs text-gray-400">Saving...</span>
-//       )}
-//     </div>
-//     // disabled={!record.assigned}
-//   ),
-// },
-
-// {
-//   title: "Qty",
-//   render: (_: any, record: CatalogProduct) => (
-//     <div className="flex items-center gap-2">
-//       <input
-//         type="number"
-//         value={record.quantity ?? ""}
-//         onChange={(e) =>
-//           updateField(record.product_id, "quantity", Number(e.target.value))
-//         }
-//         className="w-20 border px-2 py-1"
-//       />
-
-//       {updatingIds.has(record.product_id) && (
-//         <span className="text-xs text-gray-400">Saving...</span>
-//       )}
-//     </div>
-//   ),
-// },

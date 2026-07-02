@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
         SELECT 
           $1,
           p.id,
-          COALESCE($3::numeric, p.price),
+          COALESCE($3::numeric, p.base_price),
           COALESCE($4, 0),
           1
         FROM store_products p

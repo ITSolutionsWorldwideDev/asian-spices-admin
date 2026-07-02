@@ -167,20 +167,15 @@ export default function AddProductComponent({
     // country_of_origin: "fgdf",
     description: "",
     health_benefits: "",
-    price: 0,
+    base_price: 0,
     quantity: 999999999,
     discount_type: "",
     discount_value: 0,
     status: 1,
   });
 
-  // console.log(formData);
-  // const [name, setName] = useState(formData.name);
+
   const [b2bPrices, setB2bPrices] = useState<TierPrice[]>([]);
-  // const [images, setImages] = useState<ImageItem[]>([]);
-  // const [imageInput, setImageInput] = useState("");
-  // const [price, setPrice] = useState(formData.price);
-  // const [quantity, setQuantity] = useState(formData.quantity);
 
   const [selectedMedia, setSelectedMedia] = useState<number[]>([]);
   const [primaryMedia, setPrimaryMedia] = useState<number | null>(null);
@@ -338,7 +333,7 @@ export default function AddProductComponent({
 
     if (!formData.brand_id) newErrors.brand_id = "Brand is required";
     if (!formData.item_code) newErrors.item_code = "Item code is required";
-    if (!formData.price) newErrors.price = "Price is required";
+    if (!formData.base_price) newErrors.base_price = "Price is required";
     if (!formData.quantity) newErrors.quantity = "Quantity is required";
 
     if (selectedMedia.length === 0)
@@ -367,19 +362,19 @@ export default function AddProductComponent({
   /* ---------------- Discount ---------------- */
 
   const calculateSalePrice = () => {
-    const { price, discount_type, discount_value } = formData;
+    const { base_price, discount_type, discount_value } = formData;
 
-    if (!discount_type || !discount_value) return price;
+    if (!discount_type || !discount_value) return base_price;
 
     if (discount_type === "percentage") {
-      return price - (price * discount_value) / 100;
+      return base_price - (base_price * discount_value) / 100;
     }
 
     if (discount_type === "fixed") {
-      return price - discount_value;
+      return base_price - discount_value;
     }
 
-    return price;
+    return base_price;
   };
 
   const salePrice = calculateSalePrice();
@@ -559,7 +554,7 @@ export default function AddProductComponent({
           // country_of_origin: data.country_of_origin,
           description: data.description,
           health_benefits: data.health_benefits,
-          price: Number(data.price),
+          base_price: Number(data.base_price),
           quantity: Number(data.quantity),
           discount_type: data.discount_type,
           discount_value: Number(data.discount_value),
@@ -867,16 +862,16 @@ export default function AddProductComponent({
 
                   <div>
                     <label className="block mb-1 text-sm font-medium">
-                      Price <span className="text-red-500">*</span>
+                      Base Price (Incl. Tax)<span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
                       disabled={isView}
-                      value={formData.price || 0}
+                      value={formData.base_price || 0}
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
-                          price: Number(e.target.value),
+                          base_price: Number(e.target.value),
                         }))
                       }
                       className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
@@ -884,8 +879,8 @@ export default function AddProductComponent({
                       min={0}
                       step="0.01"
                     />
-                    {errors.price && (
-                      <p className="text-red-600 text-sm">{errors.price}</p>
+                    {errors.base_price && (
+                      <p className="text-red-600 text-sm">{errors.base_price}</p>
                     )}
                   </div>
                 </div>

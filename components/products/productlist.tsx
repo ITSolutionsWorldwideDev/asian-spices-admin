@@ -21,7 +21,7 @@ type Product = {
   category: string;
   subcategory: string;
   brand: string;
-  price: number;
+  base_price: number;
   quantity: number;
   status: number;
 };
@@ -120,9 +120,9 @@ export default function ProductListComponent() {
     },
     {
       title: "Price",
-      dataIndex: "price",
-      sorter: (a: Product, b: Product) => a.price - b.price,
-      render: (price: number) => `€${price.toLocaleString()}`,
+      dataIndex: "base_price",
+      sorter: (a: Product, b: Product) => a.base_price - b.base_price,
+      render: (base_price: number) => `€${base_price.toLocaleString()}`,
     },
     // {
     //   title: "Qty",
@@ -300,8 +300,8 @@ export default function ProductListComponent() {
     },
     {
       title: "Price",
-      dataIndex: "price",
-      sorter: (a: any, b: any) => a.price - b.price,
+      dataIndex: "base_price",
+      sorter: (a: any, b: any) => a.base_price - b.base_price,
     },
     {
       title: "Qty",

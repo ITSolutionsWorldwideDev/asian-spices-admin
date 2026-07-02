@@ -82,7 +82,7 @@ export async function GET() {
       "Available Countries",
       "Description",
       "Health Benefits",
-      "Price",
+      "Base Price",
       "Quantity",
       "Discount Type",
       "Discount Value",

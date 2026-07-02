@@ -33,7 +33,7 @@ export default function ProductPricingTab({
         <input
           type="number"
           step="0.01"
-          {...register("price")}
+          {...register("base_price")}
           disabled={isView}
           className="w-full border rounded p-2"
         />

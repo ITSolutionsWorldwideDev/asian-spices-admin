@@ -27,7 +27,7 @@ export async function GET(
         p.sku,
         p.description,
         p.health_benefits,
-        p.price,
+        p.base_price,
         p.quantity,
         p.created_at
       FROM store_products p

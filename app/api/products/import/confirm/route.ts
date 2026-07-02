@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
             brand_id,
             description,
             health_benefits,
-            price,
+            base_price,
             quantity,
             discount_type,
             discount_value,

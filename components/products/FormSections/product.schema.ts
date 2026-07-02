@@ -30,7 +30,7 @@ export const productSchema = z
 
     country_ids: z.array(z.coerce.number()).optional(),
 
-    price: z.preprocess(toNumber, z.number().min(1)),
+    base_price: z.preprocess(toNumber, z.number().min(1)),
     quantity: z.preprocess(toNumber, z.number().min(1)),
 
     // country_ids: z.array(z.number()).optional(),
@@ -38,7 +38,7 @@ export const productSchema = z
     description: z.string().optional(),
     health_benefits: z.string().optional(),
 
-    // price: z.number().min(1, "Price is required"),
+    // base_price: z.number().min(1, "Price is required"),
     // quantity: z.number().min(1, "Quantity is required"),
 
     // discount_type: z.enum(["percentage", "fixed"]).optional(),
@@ -97,7 +97,7 @@ export const productSchema = z
     const totalDiscount =
       (data.discount_value || 0) + (data.promo_discount || 0);
 
-    if (data.price && totalDiscount > data.price) {
+    if (data.base_price && totalDiscount > data.base_price) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Total discount exceeds product price",
@@ -120,7 +120,7 @@ export const productSchema = z
 
   description: z.string().optional(),
 
-  price: z.number().min(1),
+  base_price: z.number().min(1),
   quantity: z.number().min(1),
 
   discount_type: z.enum(["percentage", "fixed"]).optional(),
