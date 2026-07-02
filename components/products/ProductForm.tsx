@@ -4,6 +4,7 @@
 
 import { memo } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useFormContext, useWatch } from "react-hook-form";
 import Select from "react-select";
 import { Info, LifeBuoy, Figma, PlusCircle, X } from "react-feather";
 
@@ -188,7 +189,6 @@ export default function ProductFormComponent({
   const [primaryMedia, setPrimaryMedia] = useState<number | null>(null);
 
   const [assignedStores, setassignedStores] = useState<AssignedStores[]>([]);
-
   const [mounted, setMounted] = useState(false);
 
   // ---------------- RHF ----------------
@@ -214,9 +214,13 @@ export default function ProductFormComponent({
       description: "",
       health_benefits: "",
       base_price: 0,
+      sale_price: 0,
+      purchase_price: 0,
+      customer_type: "B2C",
       quantity: 999999999,
       discount_type: null,
       discount_value: 0,
+      promo_code: "",
       status: 1,
     },
   });
@@ -239,10 +243,14 @@ export default function ProductFormComponent({
   const categoryId = watch("category_id");
   const brandId = watch("brand_id");
 
-  const base_price = watch("base_price") || 0;
-  const discountType = watch("discount_type");
-  const discountValue = watch("discount_value") || 0;
-  const promoDiscount = watch("promo_discount") || 0;
+  // const base_price = watch("base_price") || 0;
+  // const discountType = watch("discount_type");
+  // const discountValue = watch("discount_value") || 0;
+  // const promoDiscount = watch("promo_discount") || 0;
+
+  const basePrice = useWatch({ control, name: "base_price" }) || 0;
+  const discountType = useWatch({ control, name: "discount_type" });
+  const discountValue = useWatch({ control, name: "discount_value" }) || 0;
 
   useEffect(() => {
     if (!name || slugTouched.current) return;
@@ -449,23 +457,27 @@ export default function ProductFormComponent({
   // ---------------- Discount ----------------
 
   const salePrice = useMemo(() => {
-    let final = base_price;
+  let final = Number(basePrice);
 
-    if (discountType === "percentage") {
-      final = final - (final * discountValue) / 100;
-    }
+  if (discountType === "percentage") {
+    final = final - (final * Number(discountValue)) / 100;
+  } else if (discountType === "fixed") {
+    final = final - Number(discountValue);
+  }
 
-    if (discountType === "fixed") {
-      final = final - discountValue;
-    }
+  // Ensure price doesn't dip below zero, round to 2 decimal places for financial data
+  const calculatedValue = final > 0 ? Math.round(final * 100) / 100 : 0;
+  return calculatedValue;
+}, [basePrice, discountType, discountValue]);
 
-    // promo applies after discount
-    if (promoDiscount) {
-      final = final - promoDiscount;
-    }
+useEffect(() => {
+  setValue("sale_price", salePrice, {
+    shouldValidate: true,
+    shouldDirty: true,
+  });
+}, [salePrice, setValue]);
 
-    return final > 0 ? final : 0;
-  }, [base_price, discountType, discountValue, promoDiscount]);
+
 
   // ------------------------------------
   //   Submit
@@ -892,15 +904,7 @@ export default function ProductFormComponent({
               </div>
             </Accordion>
 
-            <Accordion
-              title="Pricing & Stocks"
-              icon={LifeBuoy}
-              open={pricingOpen}
-              onToggle={() => setPricingOpen(!pricingOpen)}
-            >
-              <div className="p-4 border-t space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* <div>
+            {/* <div>
                     <label className="block mb-1 text-sm font-medium">
                       Quantity <span className="text-red-500">*</span>
                     </label>
@@ -921,9 +925,239 @@ export default function ProductFormComponent({
                     )}
                   </div> */}
 
+            <Accordion
+              title="Pricing & Stocks"
+              icon={LifeBuoy}
+              open={pricingOpen}
+              onToggle={() => setPricingOpen(!pricingOpen)}
+            >
+              <div className="p-4 space-y-6">
+                {/* 🌟 Row 1: Customer Type Segment Selector */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-4">
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-gray-700">
+                      Target Customer Classification{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <RHFSelect
+                      name="customer_type"
+                      control={control}
+                      options={[
+                        { value: "B2C", label: "Business-to-Consumer (B2C)" },
+                        { value: "B2B", label: "Business-to-Business (B2B)" },
+                      ]}
+                      isDisabled={isView}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-gray-700">
+                      Base Price (Incl. Tax){" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      {...register("base_price", { valueAsNumber: true })}
+                      placeholder="0.00"
+                      min={0}
+                      step="0.01"
+                      disabled={isView}
+                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                    {errors.base_price && (
+                      <p className="text-red-600 text-xs mt-1">
+                        {errors.base_price.message as string}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-gray-700">
+                      Purchase Price (Cost)
+                    </label>
+                    <input
+                      type="number"
+                      {...register("purchase_price", { valueAsNumber: true })}
+                      placeholder="0.00"
+                      min={0}
+                      step="0.01"
+                      disabled={isView}
+                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* 🌟 Row 2: Standard Base Discounts & Dynamic Calculations */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-gray-700">
+                      Standard Discount Type
+                    </label>
+                    <RHFSelect
+                      name="discount_type"
+                      control={control}
+                      options={[
+                        { value: "percentage", label: "Percentage (%)" },
+                        { value: "fixed", label: "Fixed Amount" },
+                      ]}
+                      isDisabled={isView}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-gray-700">
+                      Standard Discount Value
+                    </label>
+                    <input
+                      type="number"
+                      {...register("discount_value", { valueAsNumber: true })}
+                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                      placeholder="0.00"
+                      min={0}
+                      disabled={isView}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-gray-700">
+                      Calculated Sale Price (Display Preview)
+                    </label>
+                    <input
+                      type="number"
+                      {...register("sale_price", { valueAsNumber: true })}
+                      placeholder="0.00"
+                      step="0.01"
+                      disabled={isView}
+                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm bg-gray-50 font-semibold"
+                    />
+                  </div>
+                </div>
+
+                {/* 🌟 Row 3: Checkout Promotion Code Link Module */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4">
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-gray-700">
+                      Promo Code
+                    </label>
+                    <input
+                      type="text"
+                      {...register("promo_code")}
+                      placeholder="e.g. ASIANTIGER10"
+                      disabled={isView}
+                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm uppercase"
+                    />
+                  </div>
+
+                  {/* <div>
+                    <label className="block mb-1 text-sm font-medium text-gray-700">
+                      Promo Code Deductible Value
+                    </label>
+                    <input
+                      type="number"
+                      {...register("promo_discount", { valueAsNumber: true })}
+                      placeholder="0.00"
+                      disabled={isView}
+                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                    />
+                  </div> */}
+                </div>
+
+                {/* 🌟 Section 4: Conditional Render - B2B Tier Configurations Grid */}
+                {watch("customer_type") === "B2B" && (
+                  <div className="border-t pt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-gray-800">
+                        B2B Wholesaler Volume Pricing Tiers
+                      </h3>
+                      <button
+                        type="button"
+                        className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition flex items-center gap-1"
+                        onClick={() => append({ min_quantity: 1, price: 0 })}
+                      >
+                        + Add Price Tier
+                      </button>
+                    </div>
+
+                    {fields.length === 0 ? (
+                      <p className="text-xs text-gray-400 italic">
+                        No wholesale pricing brackets assigned yet.
+                      </p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full border text-sm">
+                          <thead>
+                            <tr className="bg-gray-50 text-gray-600 font-medium">
+                              <th className="p-2 text-left border-b">
+                                Minimum Order Quantity
+                              </th>
+                              <th className="p-2 text-left border-b">
+                                Target Base Bracket Unit Price
+                              </th>
+                              <th className="p-2 text-center border-b w-20">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {fields.map((tier, index) => (
+                              <tr
+                                key={tier.id}
+                                className="border-b hover:bg-gray-50/50"
+                              >
+                                <td className="p-2">
+                                  <input
+                                    type="number"
+                                    {...register(
+                                      `b2b_prices.${index}.min_quantity`,
+                                      { valueAsNumber: true },
+                                    )}
+                                    disabled={isView}
+                                    className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    {...register(`b2b_prices.${index}.price`, {
+                                      valueAsNumber: true,
+                                    })}
+                                    disabled={isView}
+                                    className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                                  />
+                                </td>
+                                <td className="p-2 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => remove(index)}
+                                    className="text-red-500 hover:text-red-700 text-xs font-medium"
+                                  >
+                                    Remove
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </Accordion>
+
+            {/* <Accordion
+              title="Pricing & Stocks"
+              icon={LifeBuoy}
+              open={pricingOpen}
+              onToggle={() => setPricingOpen(!pricingOpen)}
+            >
+              <div className="p-4 border-t space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block mb-1 text-sm font-medium">
-                      Base Price (Incl. Tax) <span className="text-red-500">*</span>
+                      Base Price (Incl. Tax){" "}
+                      <span className="text-red-500">*</span>
                     </label>
 
                     <input
@@ -1039,9 +1273,6 @@ export default function ProductFormComponent({
                       </p>
                     )}
                   </div>
-                  {/* , { valueAsNumber: true } */}
-
-                  {/* Promo Code */}
                   <div>
                     <label className="block mb-1 text-sm font-medium">
                       Promo Code
@@ -1061,8 +1292,6 @@ export default function ProductFormComponent({
                       </p>
                     )}
                   </div>
-
-                  {/* Promo Discount */}
                   <div>
                     <label className="block mb-1 text-sm font-medium">
                       Promo Discount
@@ -1081,8 +1310,8 @@ export default function ProductFormComponent({
                       </p>
                     )}
                   </div>
-                  
-                  {/* <div>
+
+                  <div>
                     <label className="block text-sm mb-1">
                       Final Sale Price
                     </label>
@@ -1093,10 +1322,10 @@ export default function ProductFormComponent({
                       className="w-full rounded border px-3 py-2 text-sm bg-gray-100"
                       disabled={isView}
                     />
-                  </div> */}
+                  </div>
                 </div>
               </div>
-            </Accordion>
+            </Accordion> */}
             <Accordion
               title="Images"
               icon={Figma}
