@@ -45,7 +45,7 @@ export default function TaxListComponent() {
       const [taxRes, catRes, countryRes] = await Promise.all([
         fetch("/api/tax-rules"),
         fetch("/api/category"),
-        fetch("/api/countries"),
+        fetch("/api/countries?shippable=true"),
       ]);
       const taxData = await taxRes.json();
       const catData = await catRes.json();
@@ -409,7 +409,7 @@ export default function TaxListComponent() {
       const [taxRes, catRes, countryRes] = await Promise.all([
         fetch("/api/tax-rules"),
         fetch("/api/category"),
-        fetch("/api/countries")
+        fetch("/api/countries?shippable=true")
       ]);
       const taxData = await taxRes.json();
       const catData = await catRes.json();

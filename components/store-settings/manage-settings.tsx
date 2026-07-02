@@ -240,7 +240,7 @@ export default function ManageSettingsComponent() {
 
   /* ------------------ Fetch Data ------------------ */
   useEffect(() => {
-    fetch("/api/countries")
+    fetch("/api/countries?shippable=true")
       .then((res) => res.json())
       .then((data) => setCountries(data));
   }, []);

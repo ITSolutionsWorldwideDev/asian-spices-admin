@@ -56,7 +56,7 @@ export default function FilterBar({
      Fetch Dropdown Data
   ------------------------------------ */
   useEffect(() => {
-    fetch("/api/countries")
+    fetch("/api/countries?shippable=true")
       .then((r) => r.json())
       .then((d) => setCountries(d || []));
 

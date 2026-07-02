@@ -49,7 +49,7 @@ export default function StoreForm({ store }: { store?: any }) {
   useEffect(() => {
     const fetchCountries = async () => {
       try {
-        const res = await fetch("/api/countries");
+        const res = await fetch("/api/countries?shippable=true");
         const data = await res.json();
         setCountries(data || []);
       } catch (err) {

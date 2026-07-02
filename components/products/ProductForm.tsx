@@ -324,7 +324,7 @@ export default function ProductFormComponent({
     fetch("/api/brand")
       .then((r) => r.json())
       .then((d) => setBrands(d.items || []));
-    fetch("/api/countries")
+    fetch("/api/countries?shippable=true")
       .then((r) => r.json())
       .then(setCountries);
   }, []);
