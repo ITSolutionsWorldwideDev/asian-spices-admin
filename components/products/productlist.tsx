@@ -9,6 +9,7 @@ import { TbCirclePlus, TbTrash } from "react-icons/tb";
 import FilterBar from "./FilterBar";
 import { useToast } from "@/core/ui";
 import ProductImportModal from "./ProductImportModal";
+import DiscountImportModal from "./DiscountImportModal";
 
 /* ------------------------------------
    Types
@@ -42,6 +43,7 @@ export default function ProductListComponent() {
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
 
   /* ------------------------------------
        Fetch Products
@@ -198,6 +200,14 @@ export default function ProductListComponent() {
                 <Download className="mr-2" />
                 Import Product
               </button>
+
+              <button
+                onClick={() => setShowDiscountModal(true)}
+                className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm font-medium transition-colors"
+              >
+                <Download className="mr-2" size={16} />
+                Import Discounts
+              </button>
             </div>
           </div>
 
@@ -265,6 +275,21 @@ export default function ProductListComponent() {
           />
         </div>
       )}
+
+      {/* ------------------------- [ADDED] DISCOUNT IMPORT MODAL ------------------------- */}
+      {showDiscountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <DiscountImportModal
+            onClose={() => setShowDiscountModal(false)}
+            onSuccess={() => {
+              fetchProducts(); // Refresh data to accurately reflect new price schemas
+              showToast("success", "Product pricing discount matrix updated successfully");
+            }}
+          />
+        </div>
+      )}
+
+      
     </>
   );
 }

@@ -1,5 +1,4 @@
 // app/platform/products/page.tsx
-// app/(store)/products/page.tsx
 
 import ProductListComponent from "@/components/products/productlist";
 import { requireStorePermission } from "@/lib/auth/guards";
