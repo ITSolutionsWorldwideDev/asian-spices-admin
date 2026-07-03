@@ -5,7 +5,9 @@ import { withRetry } from "@/lib/utils/retry";
 import md5 from "md5";
 
 const BASE_URL =
-  process.env.IS_CHEAPCARGO_SANDBOX === "true"
+  String(process.env.IS_CHEAPCARGO_SANDBOX || "")
+    .trim()
+    .toLowerCase() === "true"
     ? "https://www.cheapcargo-demo.nl/api/rateRequest"
     : "https://www.cheapcargo.com/api/rateRequest";
 
@@ -62,16 +64,18 @@ function getPasswordHash(value: string) {
 // -----------------------------
 export async function testCheapCargoConnection(creds: Credentials) {
   try {
-
-    const authentication = getAuthenticationToken(creds.apiKey);
-    const passwordHash =  getPasswordHash(creds.password.trim()); //"34dbe7e451f2d0b166a292ce0021599d";
+    const apiKey = String(creds.apiKey || "").trim();
+    const email = String(creds.email || "").trim();
+    const password = String(creds.password || "").trim();
+    const authentication = getAuthenticationToken(apiKey);
+    const passwordHash = getPasswordHash(password);
 
     const payload = {
       shipments: {
         authentication: authentication,
         version: "2.1",
         user: {
-          email: creds.email,
+          email: email,
           password: passwordHash,
         },
         shipment: [
