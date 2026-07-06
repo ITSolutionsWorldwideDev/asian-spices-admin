@@ -13,3 +13,14 @@
 //     </>
 //   );
 // }
+
+export default function ProductDiscountsPage() {
+  return (
+    <div className="p-6">
+      <h1 className="text-lg font-semibold">Product Discounts</h1>
+      <p className="text-sm text-gray-500 mt-1">
+        Discounts page is ready. Connect your discounts component here.
+      </p>
+    </div>
+  );
+}
