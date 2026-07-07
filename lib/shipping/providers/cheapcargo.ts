@@ -3,13 +3,14 @@
 import crypto from "crypto";
 import { withRetry } from "@/lib/utils/retry";
 import md5 from "md5";
-
+console.log(process.env.IS_CHEAPCARGO_SANDBOX)
 const BASE_URL =
   process.env.IS_CHEAPCARGO_SANDBOX === "true"
     ? "https://www.cheapcargo-demo.nl/api/rateRequest"
     : "https://www.cheapcargo.com/api/rateRequest";
 
-
+// alert(BASE_URL)
+console.log(BASE_URL)
 type Credentials = {
   apiKey: string;
   email: string;
