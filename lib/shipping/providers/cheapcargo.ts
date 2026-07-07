@@ -5,9 +5,7 @@ import { withRetry } from "@/lib/utils/retry";
 import md5 from "md5";
 
 const BASE_URL =
-  String(process.env.IS_CHEAPCARGO_SANDBOX || "")
-    .trim()
-    .toLowerCase() === "true"
+  process.env.IS_CHEAPCARGO_SANDBOX === "true"
     ? "https://www.cheapcargo-demo.nl/api/rateRequest"
     : "https://www.cheapcargo.com/api/rateRequest";
 
