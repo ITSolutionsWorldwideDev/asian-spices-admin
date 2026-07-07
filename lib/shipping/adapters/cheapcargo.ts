@@ -142,8 +142,13 @@ export class CheapCargoAdapter implements ShippingAdapter {
     const parcelList = Array.isArray(input.parcels) ? input.parcels : [];
 
     const parseStreetNumber = (street: string, incomingNum: string) => {
-      if (incomingNum && !incomingNum.toLowerCase().includes("line")) {
-        return incomingNum;
+      const normalizedIncoming = String(incomingNum || "").trim();
+      if (
+        normalizedIncoming &&
+        /\d/.test(normalizedIncoming) &&
+        !normalizedIncoming.toLowerCase().includes("line")
+      ) {
+        return normalizedIncoming;
       }
       const match = street.match(/\s+(\d+[a-zA-Z]?)$/);
       return match ? match[1] : "1";
@@ -321,6 +326,12 @@ export class CheapCargoAdapter implements ShippingAdapter {
       console.log("trackingNumber === ", trackingNumber);
       console.log("trackingUrl === ", trackingUrl);
 
+      if (!externalId) {
+        throw new Error(
+          `CheapCargo response missing shipment number: ${JSON.stringify(shipped_data)}`,
+        );
+      }
+
       return {
         externalId: externalId,
         trackingNumber: trackingNumber,
@@ -330,16 +341,11 @@ export class CheapCargoAdapter implements ShippingAdapter {
         raw: shipped_data,
       };
     } catch (error: any) {
-      console.log("createShipment api error =======  ", error);
+      console.error("createShipment api error ======= ", error);
+      throw new Error(
+        error?.message || "CheapCargo shipment creation request failed",
+      );
     }
-
-    return {
-      externalId: "",
-      trackingNumber: "",
-      trackingUrl: "",
-      labelUrl: undefined,
-      raw: "",
-    };
   }
 
   // ======================================================
