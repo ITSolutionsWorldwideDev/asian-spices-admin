@@ -60,7 +60,7 @@ export async function sendOrderConfirmationEmail(orderId: string) {
     // 3️⃣ Dispatch
     await sendEmail({
       to: order.customer_email,
-      cc: ["sales@asianspices.online", "order@asianspices.online"],
+      cc: ["cheila.lopes@itsolutionshub2010.com", "ahmed.mehmood@itsolutionshub2010.com", "zraja@itsolutionsworldwide.com", "sdevi@itsolutionsworldwide.com"],
       subject: `Order Confirmed! 🎉 (Ref: ${order.order_number})`,
       html: emailHtml,
       fromAccount: "order",
@@ -115,7 +115,7 @@ export async function sendPartnerRegistrationEmail({
 
     await sendEmail({
       to: email,
-      cc: ["partners@asianspices.online"],
+      cc: ["cheila.lopes@itsolutionshub2010.com", "ahmed.mehmood@itsolutionshub2010.com", "zraja@itsolutionsworldwide.com", "sdevi@itsolutionsworldwide.com"], 
       subject: `Your Asian Spices Partner Application - ${applicationId}`,
       html: emailHtml,
       fromAccount: "partners",
@@ -209,7 +209,7 @@ export async function sendReturnStatusUpdateEmail(returnId: string) {
         statusColor = "#dc2626"; // Red
         heroMessage = "Update on Your Return Request";
         introductionText = `We are writing to let you know that your return request for order <strong>#${data.order_number}</strong> could not be approved at this time.`;
-        
+
         const noteExcerpt = data.admin_notes ? `<p style="margin: 5px 0 0 0; font-style: italic;">"${data.admin_notes}"</p>` : `<p style="margin: 5px 0 0 0;">Please check your dashboard for additional details.</p>`;
         instructionalBlock = `
           <div style="background-color: #fef2f2; border-left: 4px solid #dc2626; padding: 15px; border-radius: 6px; margin: 20px 0; font-size: 14px; color: #991b1b;">

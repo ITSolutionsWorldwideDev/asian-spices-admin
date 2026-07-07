@@ -5,12 +5,9 @@ import { withRetry } from "@/lib/utils/retry";
 import md5 from "md5";
 
 const BASE_URL =
-  String(process.env.IS_CHEAPCARGO_SANDBOX || "")
-    .trim()
-    .toLowerCase() === "true"
+  process.env.IS_CHEAPCARGO_SANDBOX === "true"
     ? "https://www.cheapcargo-demo.nl/api/rateRequest"
     : "https://www.cheapcargo.com/api/rateRequest";
-
 
 type Credentials = {
   apiKey: string;
@@ -70,6 +67,12 @@ export async function testCheapCargoConnection(creds: Credentials) {
     const authentication = getAuthenticationToken(apiKey);
     const passwordHash = getPasswordHash(password);
 
+
+    console.log("CheapCargo test:", {
+      // timestamp,
+      authentication,
+      // response: data,
+    });
     const payload = {
       shipments: {
         authentication: authentication,
@@ -117,16 +120,28 @@ export async function testCheapCargoConnection(creds: Credentials) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        // Accept: "application/json",
+        // "User-Agent": "EcommerceApp/1.0 NextJS-ShippingAdapter",
       },
       body: JSON.stringify(payload),
     });
+
+    // const contentType = res.headers.get("content-type") || "";
+    // if (!contentType.toLowerCase().includes("application/json")) {
+    //   const rawResponse = await res.text();
+    //   return {
+    //     success: false,
+    //     error: `Provider returned non-JSON response (HTTP ${res.status})`,
+    //     details: rawResponse.slice(0, 500),
+    //   };
+    // }
 
     const data = await res.json();
 
     console.log("CheapCargo test:", {
       // timestamp,
       authentication,
-      response: data,
+      // response: data,
     });
 
     // API error
