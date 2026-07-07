@@ -67,6 +67,12 @@ export async function testCheapCargoConnection(creds: Credentials) {
     const authentication = getAuthenticationToken(apiKey);
     const passwordHash = getPasswordHash(password);
 
+
+    console.log("CheapCargo test:", {
+      // timestamp,
+      authentication,
+      // response: data,
+    });
     const payload = {
       shipments: {
         authentication: authentication,
@@ -135,7 +141,7 @@ export async function testCheapCargoConnection(creds: Credentials) {
     console.log("CheapCargo test:", {
       // timestamp,
       authentication,
-      response: data,
+      // response: data,
     });
 
     // API error
