@@ -3,14 +3,12 @@
 import crypto from "crypto";
 import { withRetry } from "@/lib/utils/retry";
 import md5 from "md5";
-console.log(process.env.IS_CHEAPCARGO_SANDBOX)
+
 const BASE_URL =
   process.env.IS_CHEAPCARGO_SANDBOX === "true"
     ? "https://www.cheapcargo-demo.nl/api/rateRequest"
     : "https://www.cheapcargo.com/api/rateRequest";
 
-// alert(BASE_URL)
-console.log(BASE_URL)
 type Credentials = {
   apiKey: string;
   email: string;
@@ -116,9 +114,21 @@ export async function testCheapCargoConnection(creds: Credentials) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Accept: "application/json",
+        "User-Agent": "EcommerceApp/1.0 NextJS-ShippingAdapter",
       },
       body: JSON.stringify(payload),
     });
+
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.toLowerCase().includes("application/json")) {
+      const rawResponse = await res.text();
+      return {
+        success: false,
+        error: `Provider returned non-JSON response (HTTP ${res.status})`,
+        details: rawResponse.slice(0, 500),
+      };
+    }
 
     const data = await res.json();
 
