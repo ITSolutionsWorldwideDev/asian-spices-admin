@@ -88,6 +88,7 @@ const PLATFORM_MENU = [
         submenu: false,
       },
       { label: "Media", link: "/media", icon: "table-plus", submenu: false },
+      { label: "Promos", link: "/products/promos", icon: "gift", submenu: false },
     ],
   },
 
