@@ -120,21 +120,21 @@ export async function testCheapCargoConnection(creds: Credentials) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Accept: "application/json",
-        "User-Agent": "EcommerceApp/1.0 NextJS-ShippingAdapter",
+        // Accept: "application/json",
+        // "User-Agent": "EcommerceApp/1.0 NextJS-ShippingAdapter",
       },
       body: JSON.stringify(payload),
     });
 
-    const contentType = res.headers.get("content-type") || "";
-    if (!contentType.toLowerCase().includes("application/json")) {
-      const rawResponse = await res.text();
-      return {
-        success: false,
-        error: `Provider returned non-JSON response (HTTP ${res.status})`,
-        details: rawResponse.slice(0, 500),
-      };
-    }
+    // const contentType = res.headers.get("content-type") || "";
+    // if (!contentType.toLowerCase().includes("application/json")) {
+    //   const rawResponse = await res.text();
+    //   return {
+    //     success: false,
+    //     error: `Provider returned non-JSON response (HTTP ${res.status})`,
+    //     details: rawResponse.slice(0, 500),
+    //   };
+    // }
 
     const data = await res.json();
 
