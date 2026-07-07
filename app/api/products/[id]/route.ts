@@ -18,7 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const images = await pool.query(`SELECT * FROM store_product_images WHERE product_id = $1`, [id]);
   
   const assignedStores = await pool.query(
-    `SELECT sp.product_id, s.id, s.name 
+    `SELECT sp.product_id, s.id, s.name,sp.price 
      FROM store_product_catalog AS sp
      LEFT JOIN stores AS s ON s.id = sp.store_id 
      WHERE sp.product_id = $1`,

@@ -1,9 +1,11 @@
 // components/products/productlist.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Table from "@/core/common/pagination/datatable";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+
 import { Download, Edit, Eye, Trash2 } from "react-feather";
 import { TbCirclePlus, TbTrash } from "react-icons/tb";
 import FilterBar from "./FilterBar";
@@ -36,6 +38,17 @@ type Filters = {
 };
 
 export default function ProductListComponent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [filters, setFilters] = useState<Filters>({
+    search: searchParams.get("search") || "",
+    category: searchParams.get("category") || "",
+    brand: searchParams.get("brand") || "",
+    status: searchParams.get("status") || "",
+    sort: searchParams.get("sort") || "",
+  });
+
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -49,7 +62,49 @@ export default function ProductListComponent() {
        Fetch Products
     ------------------------------------ */
 
-  const fetchProducts = async (filters: Filters = {}) => {
+  const fetchProducts = useCallback(
+    async (activeFilters: Filters) => {
+      try {
+        setLoading(true);
+
+        const params = new URLSearchParams(
+          Object.entries(activeFilters).filter(
+            ([_, v]) => v !== undefined && v !== null && v !== "",
+          ) as any,
+        );
+
+        const res = await fetch(`/api/products?${params.toString()}`);
+        const data = await res.json();
+
+        setProducts(data.items || []);
+      } catch {
+        showToast("error", "Failed to load products");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showToast],
+  );
+
+  // [ADDED] Monitored trigger sequence to mirror programmatic state mutations directly to active URL string
+  const handleApplyFilters = (newFilters: Filters) => {
+    setFilters(newFilters);
+
+    const params = new URLSearchParams();
+    Object.entries(newFilters).forEach(([key, value]) => {
+      if (value) params.set(key, value.toString());
+    });
+
+    // Pushes state back into window history without hard reloading the full layout wrapper
+    router.push(`/platform/products?${params.toString()}`);
+  };
+
+  // [UPDATED] Runs on mount and fetches based on parameters loaded out of historical path
+  useEffect(() => {
+    fetchProducts(filters);
+  }, [filters, fetchProducts]);
+
+  /* const fetchProducts = async (filters: Filters = {}) => {
     try {
       setLoading(true);
 
@@ -70,7 +125,7 @@ export default function ProductListComponent() {
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, []); */
 
   /* ------------------------------------
      Delete
@@ -85,7 +140,7 @@ export default function ProductListComponent() {
 
       setShowDeleteModal(false);
       setSelectedId(null);
-      fetchProducts();
+      fetchProducts(filters);
     } catch (err) {
       console.error("Delete failed", err);
     }
@@ -215,7 +270,8 @@ export default function ProductListComponent() {
           <div className="card table-list-card mb-4">
             <div className="card-header flex flex-wrap justify-between items-center gap-3">
               {/* <div className="search-set"></div> */}
-              <FilterBar onApply={fetchProducts} />
+              {/* <FilterBar onApply={fetchProducts} /> */}
+              <FilterBar onApply={handleApplyFilters} initialValues={filters} />
             </div>
             {/* ------------------------- TABLE ------------------------- */}
             <div className="card-body">
@@ -269,7 +325,7 @@ export default function ProductListComponent() {
           <ProductImportModal
             onClose={() => setShowImportModal(false)}
             onSuccess={() => {
-              fetchProducts(); // refresh list after import
+              fetchProducts(filters); // refresh list after import
               showToast("success", "Products imported successfully");
             }}
           />
@@ -282,109 +338,15 @@ export default function ProductListComponent() {
           <DiscountImportModal
             onClose={() => setShowDiscountModal(false)}
             onSuccess={() => {
-              fetchProducts(); // Refresh data to accurately reflect new price schemas
-              showToast("success", "Product pricing discount matrix updated successfully");
+              fetchProducts(filters); // Refresh data to accurately reflect new price schemas
+              showToast(
+                "success",
+                "Product pricing discount matrix updated successfully",
+              );
             }}
           />
         </div>
       )}
-
-      
     </>
   );
-}
-
-/* const columns = [
-    {
-      title: "SKU",
-      dataIndex: "sku",
-      sorter: (a: any, b: any) => a.sku.localeCompare(b.sku),
-    },
-    {
-      title: "Product",
-      dataIndex: "name",
-      render: (text: string, record: any) => (
-        <div className="flex items-center">
-          <Link href="#" className="avatar avatar-md mr-2">
-            <img src={record.productImage} alt="product" />
-          </Link>
-          <Link href={`products/${record.id}`}>{text}</Link>
-        </div>
-      ),
-      sorter: (a: any, b: any) => a.product.localeCompare(b.product),
-    },
-    {
-      title: "Category",
-      dataIndex: "category",
-      sorter: (a: any, b: any) => a.category.localeCompare(b.category),
-    },
-    {
-      title: "Brand",
-      dataIndex: "brand",
-      sorter: (a: any, b: any) => a.brand.localeCompare(b.brand),
-    },
-    {
-      title: "Price",
-      dataIndex: "base_price",
-      sorter: (a: any, b: any) => a.base_price - b.base_price,
-    },
-    {
-      title: "Qty",
-      dataIndex: "quantity",
-      sorter: (a: any, b: any) => a.quantity - b.quantity,
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      render: (s: number) => (
-        <span className={`badge ${s ? "badge-success" : "badge-danger"}`}>
-          {s ? "Active" : "Inactive"}
-        </span>
-      ),
-    },
-    {
-      title: "Action",
-      dataIndex: "action",
-      render: (text: any, record: any) => (
-        <div className="flex gap-2">
-          <Link href={`products/${record.id}`} className="p-2">
-            <Eye size={16} />
-          </Link>
-          <Link href={`products/${record.id}/edit`} className="p-2">
-            <Edit size={16} />
-          </Link>
-          <button
-            onClick={() => {
-              setSelectedId(record.category_id);
-              setShowDeleteModal(true);
-            }}
-            className="p-2 text-red-500 hover:text-red-700"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
-      ),
-    },
-  ]; */
-
-{
-  /* <div className="bg-white rounded-lg p-6 max-w-lg w-full">
-            <h4 className="text-lg font-bold mb-4">Import Products</h4>
-            <p className="text-gray-600 mb-4">Upload CSV or Excel file to import products.</p>
-            <input type="file" className="w-full border rounded p-2 mb-4" />
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowImportModal(false)}
-                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => setShowImportModal(false)}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Import
-              </button>
-            </div>
-          </div> */
 }

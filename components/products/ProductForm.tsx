@@ -79,6 +79,7 @@ type AssignedStores = {
   id: string;
   name: string;
   product_id: string;
+  price: number;
 };
 
 // ------------------ Utils ------------------
@@ -484,10 +485,14 @@ useEffect(() => {
   // ------------------------------------
 
   const onSubmit = async (data: FormValues) => {
+    console.log('onSubmit === ');
+
     if (selectedMedia.length === 0) {
       showToast("error", "Select at least one image");
       return;
     }
+
+    
 
     try {
       setSaving(true);
@@ -1474,9 +1479,10 @@ useEffect(() => {
 
                         <div>
                           <p className="font-semibold">{store.name}</p>
-                          <p className="text-xs text-gray-500">
+                          <p className="font-semibold p-0 mb-0">Product Price: €{Number(store.price).toFixed(2)}</p>
+                          {/* <p className="text-xs text-gray-500">
                             Assigned Store
-                          </p>
+                          </p> */}
                         </div>
                       </div>
                     ))}
