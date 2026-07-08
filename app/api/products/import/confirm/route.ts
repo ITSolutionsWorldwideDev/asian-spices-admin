@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
             brandId,
             row.Description || null,
             row["Health Benefits"] || null,
-            Number(row.Price),
+            Number(row.Price3),
             Number(row.Quantity) || 999999999,
             row["Discount Type"] || null,
             row["Discount Value"] ? Number(row["Discount Value"]) : null,
@@ -243,7 +243,7 @@ export async function POST(req: NextRequest) {
           SELECT 
             'afef3fd5-c31a-440a-ae56-99eca0b24359' AS store_id,
             p.id,
-            COALESCE(p.price,0) AS price,
+            COALESCE(p.base_price,0) AS price,
             999999999 AS quantity,
             1 AS status
           FROM store_products p

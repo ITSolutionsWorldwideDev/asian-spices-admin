@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "luyetxymax.ufs.sh",
+        hostname: "nm60drcq00.ufs.sh",
       },
       {
         protocol: "https",
