@@ -70,20 +70,3 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(rows[0]);
 }
 
-/* export async function GET() {
-  await requirePlatformAdmin();
-
-  const result = await pool.query(`SELECT * FROM users ORDER BY created_at DESC`);
-  return NextResponse.json(result.rows);
-}
-
-export async function POST(req: NextRequest) {
-  await requirePlatformAdmin();
-  const body = await req.json();
-
-  const { text, values } = buildInsertQuery("users", body);
-  const result = await pool.query(text, values);
-
-  return NextResponse.json(result.rows[0]);
-}
- */
