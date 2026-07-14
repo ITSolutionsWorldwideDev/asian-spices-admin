@@ -131,6 +131,10 @@ export async function POST(req: NextRequest) {
 
         const productId = productRes.rows[0].id;
 
+        console.log('productId === ',productId);
+        console.log('B2B Prices === ',row["B2B Prices"]);
+        console.log('Available Countries === ',row["Available Countries"]);
+
         /* ---------------- COUNTRIES (optional comma separated) ---------------- */
 
         if (row["Available Countries"]) {
@@ -197,6 +201,8 @@ export async function POST(req: NextRequest) {
 
         inserted++;
       } catch (err: any) {
+
+        console.log('err.message === ',err.message);
         errors.push({
           row: r.row,
           error: err.message,
@@ -254,6 +260,10 @@ export async function POST(req: NextRequest) {
             updated_at = now()`
       );
     }
+
+    console.log('inserted === ',inserted);
+    console.log('skipped === ',skipped);
+    console.log('errors.length === ',errors.length);
 
     await client.query("COMMIT");
 
