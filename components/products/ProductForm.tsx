@@ -458,41 +458,37 @@ export default function ProductFormComponent({
   // ---------------- Discount ----------------
 
   const salePrice = useMemo(() => {
-  let final = Number(basePrice);
+    let final = Number(basePrice);
 
-  if (discountType === "percentage") {
-    final = final - (final * Number(discountValue)) / 100;
-  } else if (discountType === "fixed") {
-    final = final - Number(discountValue);
-  }
+    if (discountType === "percentage") {
+      final = final - (final * Number(discountValue)) / 100;
+    } else if (discountType === "fixed") {
+      final = final - Number(discountValue);
+    }
 
-  // Ensure price doesn't dip below zero, round to 2 decimal places for financial data
-  const calculatedValue = final > 0 ? Math.round(final * 100) / 100 : 0;
-  return calculatedValue;
-}, [basePrice, discountType, discountValue]);
+    // Ensure price doesn't dip below zero, round to 2 decimal places for financial data
+    const calculatedValue = final > 0 ? Math.round(final * 100) / 100 : 0;
+    return calculatedValue;
+  }, [basePrice, discountType, discountValue]);
 
-useEffect(() => {
-  setValue("sale_price", salePrice, {
-    shouldValidate: true,
-    shouldDirty: true,
-  });
-}, [salePrice, setValue]);
-
-
+  useEffect(() => {
+    setValue("sale_price", salePrice, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+  }, [salePrice, setValue]);
 
   // ------------------------------------
   //   Submit
   // ------------------------------------
 
   const onSubmit = async (data: FormValues) => {
-    console.log('onSubmit === ');
+    console.log("onSubmit === ");
 
     if (selectedMedia.length === 0) {
       showToast("error", "Select at least one image");
       return;
     }
-
-    
 
     try {
       setSaving(true);
@@ -553,7 +549,7 @@ useEffect(() => {
     }
   };
 
-  const mediaGrid = useMemo(() => {
+  /* const mediaGrid = useMemo(() => {
     // 1. Fallback to an empty array if media is undefined or null
     const safeMedia = Array.isArray(media) ? media : [];
 
@@ -596,7 +592,7 @@ useEffect(() => {
             className="rounded object-cover"
           />
 
-          {/* Metadata labels row */}
+       
           <p className="mt-2 text-xs font-medium text-gray-700 truncate px-0.5">
             {displayName}
           </p>
@@ -609,6 +605,89 @@ useEffect(() => {
 
           {isSelected && (mode === "edit" || mode === "create") && (
             <div className="absolute inset-0 rounded bg-blue-500/10" />
+          )}
+        </div>
+      );
+    });
+  }, [media, selectedMedia, primaryMedia, mode]); */
+
+  const mediaGrid = useMemo(() => {
+    const safeMedia = Array.isArray(media) ? media : [];
+
+    const itemsToRender =
+      mode === "view"
+        ? safeMedia.filter((item) => selectedMedia.includes(item.media_id))
+        : safeMedia;
+
+    return itemsToRender?.map((item) => {
+      const displayName = formatFileName(item.file_name);
+      const isSelected = selectedMedia.includes(item.media_id);
+      const isPrimary = primaryMedia === item.media_id;
+
+      // Extracted helper function for toggling selections
+      const handleToggleSelection = () => {
+        if (mode === "view") return;
+
+        setSelectedMedia((prev) => {
+          const isCurrentlySelected = prev.includes(item.media_id);
+          if (isCurrentlySelected) {
+            const updated = prev.filter((id) => id !== item.media_id);
+            // Edge Case Management: If we just deleted the primary image, shift the crown to the next item
+            if (primaryMedia === item.media_id) {
+              setPrimaryMedia(updated.length > 0 ? updated[0] : null);
+            }
+            return updated;
+          } else {
+            if (!primaryMedia) setPrimaryMedia(item.media_id);
+            return [...prev, item.media_id];
+          }
+        });
+      };
+
+      return (
+        <div
+          key={item.media_id}
+          onClick={handleToggleSelection}
+          className={`group relative cursor-pointer rounded border bg-white p-1 transition ${
+            isSelected ? "ring-2 ring-blue-500" : "hover:shadow-md"
+          }`}
+        >
+          <Image
+            src={getThumb(item.file_url, 200)}
+            alt={item.file_name}
+            width={200}
+            height={200}
+            className="rounded object-cover w-full h-[200px]"
+          />
+
+          {/* ❌ FLOATING REMOVE/DESELECT BUTTON */}
+          {isSelected && (mode === "edit" || mode === "create") && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation(); // Prevents triggering container's onClick twice
+                handleToggleSelection();
+              }}
+              className="absolute top-1 right-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700 transition-colors opacity-90 sm:opacity-0 sm:group-hover:opacity-100"
+              title="Remove image from product"
+            >
+              <X size={14} />
+            </button>
+          )}
+
+          {/* Metadata labels row */}
+          <p className="mt-2 text-xs font-medium text-gray-700 truncate px-0.5">
+            {displayName}
+          </p>
+
+          {isPrimary && (
+            <span className="absolute left-1 top-1 rounded bg-blue-600 px-2 py-0.5 text-xs text-white">
+              Primary
+            </span>
+          )}
+
+          {isSelected && (mode === "edit" || mode === "create") && (
+            <div className="absolute inset-0 rounded bg-blue-500/10 pointer-events-none" />
           )}
         </div>
       );
@@ -1479,7 +1558,9 @@ useEffect(() => {
 
                         <div>
                           <p className="font-semibold">{store.name}</p>
-                          <p className="font-semibold p-0 mb-0">Product Price: €{Number(store.price).toFixed(2)}</p>
+                          <p className="font-semibold p-0 mb-0">
+                            Product Price: €{Number(store.price).toFixed(2)}
+                          </p>
                           {/* <p className="text-xs text-gray-500">
                             Assigned Store
                           </p> */}
