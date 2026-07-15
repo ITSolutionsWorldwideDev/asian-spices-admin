@@ -214,6 +214,12 @@ const PLATFORM_MENU = [
         link: "/platform/currency-rates",
         submenu: false,
       },
+      {
+        label: "Countries Default Currency",
+        icon: "exchange",
+        link: "/platform/country-currencies",
+        submenu: false,
+      },
 
       {
         label: "Billing",
