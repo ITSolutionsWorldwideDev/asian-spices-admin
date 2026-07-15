@@ -151,12 +151,21 @@ export default function ProductsCatalogComponent() {
   };
 
   const selectedProducts = products.filter((p) => isSelected(p.product_id));
-  const selectedAssignedIds = selectedProducts
-    .filter((p) => p.assigned)
-    .map((p) => p.product_id);
+
   const selectedUnassignedIds = selectedProducts
     .filter((p) => !p.assigned)
     .map((p) => p.product_id);
+
+  const selectedAssignedIds = selectedProducts
+    .filter((p) => p.assigned)
+    .map((p) => p.product_id);
+
+  // const selectedAssignedIds = selectedProducts
+  //   .filter((p) => p.assigned)
+  //   .map((p) => p.product_id);
+  // const selectedUnassignedIds = selectedProducts
+  //   .filter((p) => !p.assigned)
+  //   .map((p) => p.product_id);
 
   const handleSelectRow = (id: string, checked: boolean) => {
     const newIds = new Set(bulk.ids);
@@ -175,7 +184,7 @@ export default function ProductsCatalogComponent() {
       setSelectedProductId(productId);
       setModalLoading(true);
 
-      const res = await fetch(`/api/store/catalog/${productId}`);
+      const res = await fetch(`/api/store/catalog/product/${productId}`);
       const data = await res.json();
 
       if (!res.ok) throw new Error(data.error);
@@ -248,52 +257,113 @@ export default function ProductsCatalogComponent() {
   };
 
   const handleBulkAssignSelected = async () => {
-    if (selectedAssignedIds.length === 0) return;
-
-    setLoading(true);
-
-    await fetch("/api/store/catalog/bulk", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        action: "UPSERT",
-        selection: {
-          type: "INCLUDE",
-          ids: selectedAssignedIds,
-        },
-        data: {},
-        // data: {
-        //   price: null, // fallback to base price
-        // },
-      }),
-    });
-
-    fetchProducts();
-  };
-
-  const handleBulkUnassignSelected = async () => {
     if (selectedUnassignedIds.length === 0) return;
 
     setLoading(true);
 
-    await fetch("/api/store/catalog/bulk", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        action: "UNASSIGN",
-        selection: {
-          type: "INCLUDE",
-          ids: selectedUnassignedIds,
+    try {
+      await fetch("/api/store/catalog/bulk", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          action: "UPSERT",
+          selection: {
+            type: "INCLUDE",
+            ids: selectedUnassignedIds,
+          },
+          data: {},
+        }),
+      });
 
-    fetchProducts();
+      // Clear selection after successful action
+      setBulk({ type: "INCLUDE", ids: new Set() });
+      setAllSelected(false);
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
   };
+
+  const handleBulkUnassignSelected = async () => {
+    if (selectedAssignedIds.length === 0) return;
+
+    setLoading(true);
+
+    try {
+      await fetch("/api/store/catalog/bulk", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "UNASSIGN",
+          selection: {
+            type: "INCLUDE",
+            ids: selectedAssignedIds,
+          },
+        }),
+      });
+
+      // Clear selection after successful action
+      setBulk({ type: "INCLUDE", ids: new Set() });
+      setAllSelected(false);
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
+  };
+
+  // const handleBulkAssignSelected = async () => {
+  //   if (selectedAssignedIds.length === 0) return;
+
+  //   setLoading(true);
+
+  //   await fetch("/api/store/catalog/bulk", {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({
+  //       action: "UPSERT",
+  //       selection: {
+  //         type: "INCLUDE",
+  //         ids: selectedAssignedIds,
+  //       },
+  //       data: {},
+  //       // data: {
+  //       //   price: null, // fallback to base price
+  //       // },
+  //     }),
+  //   });
+
+  //   fetchProducts();
+  // };
+
+  // const handleBulkUnassignSelected = async () => {
+  //   if (selectedUnassignedIds.length === 0) return;
+
+  //   setLoading(true);
+
+  //   await fetch("/api/store/catalog/bulk", {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     body: JSON.stringify({
+  //       action: "UNASSIGN",
+  //       selection: {
+  //         type: "INCLUDE",
+  //         ids: selectedUnassignedIds,
+  //       },
+  //     }),
+  //   });
+
+  //   fetchProducts();
+  // };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -417,21 +487,20 @@ export default function ProductsCatalogComponent() {
               >
                 Assign All Filtered Products
               </button> */}
-
               <button
-                disabled={selectedAssignedIds.length === 0}
+                disabled={selectedUnassignedIds.length === 0}
                 onClick={handleBulkAssignSelected}
                 className="bg-blue-600 text-white px-4 py-2 rounded text-sm mt-4 disabled:opacity-50"
               >
-                Assign Selected ({selectedAssignedIds.length})
+                Assign Selected ({selectedUnassignedIds.length})
               </button>
 
               <button
-                disabled={selectedUnassignedIds.length === 0}
+                disabled={selectedAssignedIds.length === 0}
                 onClick={handleBulkUnassignSelected}
                 className="bg-red-600 text-white px-4 py-2 rounded text-sm mt-4 disabled:opacity-50"
               >
-                Unassign Selected ({selectedUnassignedIds.length})
+                Unassign Selected ({selectedAssignedIds.length})
               </button>
 
               <button
@@ -603,3 +672,21 @@ export default function ProductsCatalogComponent() {
     </div>
   );
 }
+
+              {/* 
+              <button
+                disabled={selectedAssignedIds.length === 0}
+                onClick={handleBulkAssignSelected}
+                className="bg-blue-600 text-white px-4 py-2 rounded text-sm mt-4 disabled:opacity-50"
+              >
+                Assign Selected ({selectedAssignedIds.length})
+              </button>
+
+              <button
+                disabled={selectedUnassignedIds.length === 0}
+                onClick={handleBulkUnassignSelected}
+                className="bg-red-600 text-white px-4 py-2 rounded text-sm mt-4 disabled:opacity-50"
+              >
+                Unassign Selected ({selectedUnassignedIds.length})
+              </button> 
+              */}

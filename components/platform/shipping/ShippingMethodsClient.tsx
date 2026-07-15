@@ -206,7 +206,7 @@ export default function ShippingMethodsClient({
 
       {ratesMethod && (
         <Modal onClose={() => setRatesMethod(null)}>
-          <div className="p-4 space-y-4 w-[700px] max-w-full">
+          <div className="p-4 space-y-4 w-full max-w-full">
             <div>
               <h3 className="text-lg font-semibold">Manage Rates</h3>
               <p className="text-sm text-gray-500">
