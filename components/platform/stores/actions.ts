@@ -82,6 +82,15 @@ export async function createStore(formData: FormData) {
 
     const storeId = storeRes.rows[0].id;
 
+    await client.query(
+      `INSERT INTO store_settings (store_id, store_email, country_code)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (store_id) DO UPDATE 
+       SET store_email = EXCLUDED.store_email,
+           updated_at = NOW()`,
+      [storeId, adminEmail, 'NL'], // Defaulting country code to NL or extract dynamically
+    );
+
     // 2️⃣ Create User
     const passwordHash = await hash(adminPassword, 10);
 
@@ -390,6 +399,32 @@ export async function saveStore(
          VALUES ($1, $2, $3)
          ON CONFLICT (store_id, user_id) DO NOTHING`,
         [finalStoreId, userId, roleRes.rows[0].id],
+      );
+    }
+
+    if (finalStoreId) {
+      await client.query(
+        `
+        INSERT INTO store_settings (
+          store_id, 
+          store_email, 
+          store_phone, 
+          country_code,
+          updated_at
+        )
+        VALUES ($1, $2, $3, $4, NOW())
+        ON CONFLICT (store_id) DO UPDATE SET
+          store_email = EXCLUDED.store_email,
+          store_phone = EXCLUDED.store_phone,
+          country_code = EXCLUDED.country_code,
+          updated_at = NOW()
+        `,
+        [
+          finalStoreId,
+          businessEmail || null,
+          businessPhone || null,
+          country || null
+        ]
       );
     }
 
