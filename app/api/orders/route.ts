@@ -33,19 +33,16 @@ export async function GET(req: NextRequest) {
       "o.order_status != 'processing'",
     ];
 
-    // 🔍 Reference ID Filter
     if (search.trim()) {
       values.push(`%${search.trim()}%`);
       whereConditions.push(`o.order_number ILIKE $${values.length}`);
     }
 
-    // 📌 Internal Status Toggle (Allows sorting through accepted vs shipped locally)
     if (status.trim()) {
       values.push(status.trim().toLowerCase());
       whereConditions.push(`o.order_status = $${values.length}`);
     }
 
-    // 📦 Product Filtering
     if (product.trim()) {
       values.push(`%${product.trim()}%`);
       whereConditions.push(`
@@ -98,54 +95,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
-
-
-    // const search = searchParams.get("search");
-    // const customer = searchParams.get("customer");
-    // const product = searchParams.get("product");
-    // const status = searchParams.get("status");
-    // const sort = searchParams.get("sort");
-    /* let where = `
-      WHERE o.store_id = $1
-    `;
-
-    if (orderStatus) {
-      values.push(orderStatus);
-      where += ` AND o.order_status = $${values.length}`;
-    } else {
-      where += ` AND o.order_status IN (
-      'accepted',
-      'processing',
-      'completed',
-      'confirmed',
-      'fulfilled',
-      'partially_confirmed'
-      )`;
-    } 
-
-    // 🔎 Global search
-    if (search) {
-      values.push(`%${search}%`);
-      where += ` AND (
-        o.order_number ILIKE $${values.length}
-        OR c.company_name ILIKE $${values.length}
-      )`;
-    }
-
-    if (product) {
-      values.push(`%${product}%`);
-      where += ` AND sp.name ILIKE $${values.length}`;
-    }
-
-    if (status) {
-      values.push(status);
-      where += ` AND o.payment_status = $${values.length}`;
-    }
-      
-
-    let orderBy = "ORDER BY o.created_at DESC";
-    if (sort === "date_asc") orderBy = "ORDER BY o.created_at ASC";
-    if (sort === "total_desc") orderBy = "ORDER BY o.total_amount DESC";
-    if (sort === "total_asc") orderBy = "ORDER BY o.total_amount ASC";
-    */
