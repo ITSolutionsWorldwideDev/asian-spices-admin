@@ -7,6 +7,7 @@ import Table from "@/core/common/pagination/datatable";
 import { Edit, Percent, Trash2 } from "react-feather";
 import { TbCirclePlus } from "react-icons/tb";
 import { useToast } from "@/core/ui";
+import TaxImportModal from "./TaxImportModal";
 
 type TaxRule = {
   id: string;
@@ -27,6 +28,7 @@ export default function TaxListComponent() {
 
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const { showToast } = useToast();
 
@@ -216,12 +218,20 @@ export default function TaxListComponent() {
               Manage country-specific taxation profiles rules
             </h6>
           </div>
-          <button
-            onClick={openAddModal}
-            className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition"
-          >
-            <TbCirclePlus size={18} /> Add Tax Rule
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsImportModalOpen(true)}
+              className="px-4 py-2 bg-gray-100 text-gray-800 rounded font-medium hover:bg-gray-200 transition"
+            >
+              Import CSV
+            </button>
+            <button
+              onClick={openAddModal}
+              className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition"
+            >
+              <TbCirclePlus size={18} /> Add Tax Rule
+            </button>
+          </div>
         </div>
 
         <div className="card bg-white p-4 shadow rounded">
@@ -353,6 +363,13 @@ export default function TaxListComponent() {
             </div>
           </div>
         </div>
+      )}
+
+      {isImportModalOpen && (
+        <TaxImportModal
+          onClose={() => setIsImportModalOpen(false)}
+          onSuccess={fetchData}
+        />
       )}
     </div>
   );
