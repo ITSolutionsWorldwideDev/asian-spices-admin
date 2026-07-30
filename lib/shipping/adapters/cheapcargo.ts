@@ -16,13 +16,6 @@ type Credentials = {
   sandbox?: boolean;
 };
 
-function isEnvTrue(value: string | undefined, defaultValue = false) {
-  if (value === undefined || value === null || value.trim() === "") {
-    return defaultValue;
-  }
-  return value.trim().toLowerCase() === "true";
-}
-
 export class CheapCargoAdapter implements ShippingAdapter {
   private baseUrl: string;
 
@@ -147,10 +140,6 @@ export class CheapCargoAdapter implements ShippingAdapter {
     console.log("createShipment API input === ", input);
 
     const parcelList = Array.isArray(input.parcels) ? input.parcels : [];
-    const autoFinalize = isEnvTrue(
-      process.env.CHEAPCARGO_AUTO_FINALIZE_SHIPMENT,
-      true,
-    );
 
     const parseStreetNumber = (street: string, incomingNum: string) => {
       const normalizedIncoming = String(incomingNum || "").trim();
@@ -175,8 +164,10 @@ export class CheapCargoAdapter implements ShippingAdapter {
         },
         shipment: [
           {
-            "@pay": autoFinalize,
-            "@waitForLabel": autoFinalize,
+            "@pay": false,
+            "@waitForLabel": false,
+            // "@pay": true,
+            // "@waitForLabel": true,
             "@id": input.orderId,
             "@orderBy": "price",
             sender: {
