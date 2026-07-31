@@ -44,7 +44,10 @@ export async function GET(
         o.payment_status AS status,
         o.payment_status,
         o.discount_amount,
+        o.subtotal,
+        o.tax_amount,
         o.shipping_amount,
+        o.total_amount,
         o.order_status,
         o.shipping_city as customer_city,
         o.shipping_state as customer_state,
@@ -124,14 +127,18 @@ export async function GET(
       },
     );
 
-    // Mirroring localized tax estimates derived proportional to overall baseline subtotal splits
-    const localTax = Number((localSubtotal * 0.08).toFixed(2)); // Use real store-tax strategies if available
-    const localTotal = localSubtotal + localTax;
+    // Use the order's real tax + shipping from the DB (do not invent an 8% estimate)
+    const localTax = Number(orderData.tax_amount || 0);
+    const localShipping = Number(orderData.shipping_amount || 0);
+    const localTotal = Number(
+      (localSubtotal + localTax + localShipping).toFixed(2),
+    );
 
     const orderDetails = {
       ...orderData,
       subtotal: localSubtotal,
       tax_amount: localTax,
+      shipping_amount: localShipping,
       total_amount: localTotal,
       items: formattedItems,
     };

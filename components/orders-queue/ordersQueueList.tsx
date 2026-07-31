@@ -16,9 +16,10 @@ type Order = {
   order_number: string;
   city: string;
   order_date: string;
-  items_count: number;
+  local_items_count: number;
   total_amount: number;
   payment_status: string;
+  order_status: string;
 };
 
 type Filters = {
@@ -64,7 +65,7 @@ export default function OrdersQueueListComponent() {
     {
       title: "Order",
       dataIndex: "order_number",
-      render: (num: string) => <strong>#{num}</strong>,
+      render: (num: string) => <strong>{num}</strong>,
     },
     {
       title: "Date",
@@ -72,11 +73,11 @@ export default function OrdersQueueListComponent() {
       render: (date: string) => new Date(date).toLocaleDateString(),
     },
     { title: "City", dataIndex: "city" },
-    { title: "Items", dataIndex: "items_count" },
+    { title: "Items", dataIndex: "local_items_count" },
     {
       title: "Total",
-      dataIndex: "local_allocated_value",
-      render: (v: number) => `€${v}`,
+      dataIndex: "total_amount",
+      render: (v: number) => `€${Number(v).toFixed(2)}`,
     },
     {
       title: "Order Status",

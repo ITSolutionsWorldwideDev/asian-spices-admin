@@ -44,8 +44,8 @@ export async function GET(req: NextRequest) {
 
     let orderBy = `ORDER BY o.created_at ASC`;
     if (sort === "date_desc") orderBy = `ORDER BY o.created_at DESC`;
-    if (sort === "total_desc") orderBy = `ORDER BY local_allocated_value DESC`;
-    if (sort === "total_asc") orderBy = `ORDER BY local_allocated_value ASC`;
+    if (sort === "total_desc") orderBy = `ORDER BY (COALESCE(o.subtotal, 0) + COALESCE(o.tax_amount, 0) + COALESCE(o.shipping_amount, 0)) DESC`;
+    if (sort === "total_asc") orderBy = `ORDER BY (COALESCE(o.subtotal, 0) + COALESCE(o.tax_amount, 0) + COALESCE(o.shipping_amount, 0)) ASC`;
 
     const dataQuery = `
       SELECT 
@@ -53,7 +53,16 @@ export async function GET(req: NextRequest) {
         o.order_number,
         o.created_at as order_date,
         o.shipping_city as city,
-        o.payment_status,        
+        o.payment_status,
+        o.order_status,
+        COALESCE(o.subtotal, 0)::NUMERIC(10,2) as subtotal,
+        COALESCE(o.tax_amount, 0)::NUMERIC(10,2) as tax_amount,
+        COALESCE(o.shipping_amount, 0)::NUMERIC(10,2) as shipping_amount,
+        (
+          COALESCE(o.subtotal, 0) +
+          COALESCE(o.tax_amount, 0) +
+          COALESCE(o.shipping_amount, 0)
+        )::NUMERIC(10,2) as total_amount,        
 
         COALESCE(SUM(oia.allocated_quantity), 0)::INT as local_items_count,      
 
@@ -82,7 +91,7 @@ export async function GET(req: NextRequest) {
       JOIN store_orders o ON o.id = oi.order_id
       JOIN store_products p ON p.id = oi.product_id
       ${whereClause}
-      GROUP BY o.id, o.order_number, o.created_at, o.shipping_city, o.payment_status
+      GROUP BY o.id, o.order_number, o.created_at, o.shipping_city, o.payment_status, o.order_status, o.subtotal, o.tax_amount, o.shipping_amount
       ${orderBy}
     `;
 

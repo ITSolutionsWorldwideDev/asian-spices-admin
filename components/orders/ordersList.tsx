@@ -71,7 +71,7 @@ export default function OrdersListComponent() {
     {
       title: "Order",
       dataIndex: "order_number",
-      render: (num: string) => <strong>#{num}</strong>,
+      render: (num: string) => <strong>{num}</strong>,
     },
     {
       title: "Date",

@@ -536,7 +536,13 @@ export default function OrderDetailPage() {
       </div>
     );
 
-  const total = Number(order.total_amount);
+  const total = Number(
+    (
+      Number(order.subtotal || 0) +
+      Number(order.tax_amount || 0) +
+      Number(order.shipping_amount || 0)
+    ).toFixed(2),
+  );
 
   // console.log("order.order_status ==== ", order.order_status);
   const isLocked = [
@@ -873,7 +879,7 @@ export default function OrderDetailPage() {
                   value={provider}
                   disabled={lockShippingMethod}
                   onChange={(e) => setProvider(e.target.value)}
-                  className="w-full p-2 border rounded-lg focus:outline-none bg-white"
+                  className="w-full p-2 border rounded-lg focus:outline-none bg-white appearance-none"
                 >
                   <option value="cheapcargo">CheapCargo Ruleset</option>
                   <option value="dhl">DHL Priority Express</option>
@@ -1026,7 +1032,7 @@ export default function OrderDetailPage() {
               <span>€{Number(order.tax_amount).toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-gray-500 border-b pb-2">
-              <span>Shipping Invoiced Fee</span>
+              <span>Shipping Fee</span>
               <span>€{Number(order.shipping_amount).toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-bold text-gray-900 text-base pt-1">
