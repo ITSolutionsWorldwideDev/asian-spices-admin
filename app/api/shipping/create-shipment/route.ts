@@ -315,14 +315,17 @@ export async function POST(req: NextRequest) {
             shipping_status = $2,
             shipping_paid = COALESCE($3, shipping_paid),
             payment_url = COALESCE($4, payment_url),
+            shipping_label = COALESCE($5, shipping_label),
+            fulfillment_status = CASE WHEN $5 IS NOT NULL THEN 'shipped' ELSE fulfillment_status END,
             updated_at = NOW()
-          WHERE id = $5
+          WHERE id = $6
         `,
         [
           shipmentResult.trackingNumber || null,
           shippingStatus,
           shippingPaid,
           paymentUrl,
+          labelUrl,
           orderId,
         ],
       );
