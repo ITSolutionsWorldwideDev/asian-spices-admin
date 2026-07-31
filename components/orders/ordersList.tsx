@@ -15,6 +15,7 @@ type Order = {
   order_id: string;
   order_number: string;
   order_date: string;
+  city: string;
   items_count: number;
   total_amount: number;
   payment_status: string;

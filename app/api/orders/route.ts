@@ -76,6 +76,7 @@ export async function GET(req: NextRequest) {
         o.payment_status,
         o.order_status,
         o.total_amount,
+        COALESCE(o.shipping_city, c.city) AS city,
         c.company_name AS customer_name,
         (SELECT COALESCE(SUM(quantity), 0) FROM store_order_items WHERE order_id = o.id) as items_count
       FROM store_orders o
