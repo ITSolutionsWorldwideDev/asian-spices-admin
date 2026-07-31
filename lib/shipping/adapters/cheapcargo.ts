@@ -164,10 +164,12 @@ export class CheapCargoAdapter implements ShippingAdapter {
         },
         shipment: [
           {
-            "@pay": false,
-            "@waitForLabel": false,
-            // "@pay": true,
-            // "@waitForLabel": true,
+            // Auto-finalize the shipment on CheapCargo's side using the account
+            // balance, so the merchant never has to click "Finalize shipment"
+            // in the CheapCargo cart. `@waitForLabel` makes the label URL come
+            // back in the same response.
+            "@pay": true,
+            "@waitForLabel": true,
             "@id": input.orderId,
             "@orderBy": "price",
             sender: {
@@ -322,6 +324,15 @@ export class CheapCargoAdapter implements ShippingAdapter {
 
       const paymentUrl = shipped_data?.shipment?.url || undefined;
 
+      // With `@pay: true` + `@waitForLabel: true`, CheapCargo returns the PDF
+      // label URL inline. Accept the common field variants defensively.
+      const labelUrl =
+        shipped_order?.label?.url ||
+        shipped_order?.label?.file ||
+        shipped_order?.details?.label?.url ||
+        shipped_order?.details?.label?.file ||
+        undefined;
+
       console.log("externalId === ", externalId);
       console.log("trackingNumber === ", trackingNumber);
       console.log("trackingUrl === ", trackingUrl);
@@ -336,7 +347,7 @@ export class CheapCargoAdapter implements ShippingAdapter {
         externalId: externalId,
         trackingNumber: trackingNumber,
         trackingUrl: trackingUrl,
-        labelUrl: undefined,
+        labelUrl: labelUrl,
         paymentUrl: paymentUrl,
         raw: shipped_data,
       };
