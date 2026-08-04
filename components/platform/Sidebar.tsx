@@ -82,6 +82,12 @@ const PLATFORM_MENU = [
       { label: "Brands", link: "/brand", icon: "triangles", submenu: false },
       { label: "Products", link: "/products", icon: "box", submenu: false },
       {
+        label: "Store Assignments",
+        link: "/store-assignments",
+        icon: "building-store",
+        submenu: false,
+      },
+      {
         label: "Create Product",
         link: "/products/new",
         icon: "table-plus",
