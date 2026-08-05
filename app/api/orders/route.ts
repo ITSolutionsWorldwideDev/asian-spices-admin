@@ -58,8 +58,12 @@ export async function GET(req: NextRequest) {
 
     let orderBy = `ORDER BY o.updated_at DESC`;
     if (sort === "date_asc") orderBy = `ORDER BY o.created_at ASC`;
-    if (sort === "total_desc") orderBy = `ORDER BY o.total_amount DESC`;
-    if (sort === "total_asc") orderBy = `ORDER BY o.total_amount ASC`;
+    if (sort === "total_desc") {
+      orderBy = `ORDER BY (COALESCE(o.subtotal, 0) + COALESCE(o.tax_amount, 0) + COALESCE(o.shipping_amount, 0)) DESC`;
+    }
+    if (sort === "total_asc") {
+      orderBy = `ORDER BY (COALESCE(o.subtotal, 0) + COALESCE(o.tax_amount, 0) + COALESCE(o.shipping_amount, 0)) ASC`;
+    }
 
     const query = `
       SELECT
@@ -75,7 +79,11 @@ export async function GET(req: NextRequest) {
         o.created_at AS order_date,
         o.payment_status,
         o.order_status,
-        o.total_amount,
+        (
+          COALESCE(o.subtotal, 0) +
+          COALESCE(o.tax_amount, 0) +
+          COALESCE(o.shipping_amount, 0)
+        )::NUMERIC(10,2) AS total_amount,
         COALESCE(o.shipping_city, c.city) AS city,
         c.company_name AS customer_name,
         (SELECT COALESCE(SUM(quantity), 0) FROM store_order_items WHERE order_id = o.id) as items_count

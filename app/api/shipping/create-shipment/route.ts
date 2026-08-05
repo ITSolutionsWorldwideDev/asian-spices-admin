@@ -35,13 +35,17 @@ export async function POST(req: NextRequest) {
       SELECT 
         o.*,
         c.email AS customer_email,
+        c.company_name AS customer_company_name,
+        c.first_name AS customer_first_name,
+        c.last_name AS customer_last_name,
+        c.phone AS customer_phone,
         COALESCE(json_agg(oi.*) FILTER (WHERE oi.id IS NOT NULL), '[]') AS items
       FROM store_orders o
       INNER JOIN order_item_allocations oia ON oia.order_id = o.id
       LEFT JOIN store_customers c ON c.id = o.customer_id
       LEFT JOIN store_order_items oi ON oi.order_id = o.id
       WHERE o.id = $1 AND oia.store_id = $2
-      GROUP BY o.id, c.email
+      GROUP BY o.id, c.email, c.company_name, c.first_name, c.last_name, c.phone
       `,
       [orderId, storeId],
     );
@@ -131,25 +135,89 @@ export async function POST(req: NextRequest) {
     // -----------------------------
     // 📦 Build shipment input
     // -----------------------------
+    const fullCustomerName =
+      `${order.customer_first_name || ""} ${order.customer_last_name || ""}`.trim();
+    const companyCustomerName = String(order.customer_company_name || "").trim();
+    const shippingName = String(
+      order.shipping_name ||
+      order.shipping_full_name ||
+      `${order.shipping_first_name || ""} ${order.shipping_last_name || ""}`.trim() ||
+      "",
+    ).trim();
+    const billingName = String(
+      order.billing_name ||
+      order.billing_full_name ||
+      `${order.billing_first_name || ""} ${order.billing_last_name || ""}`.trim() ||
+      "",
+    ).trim();
+    const customerEmail = String(order.customer_email || "").trim();
+    const looksLikeEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
+    const titleCase = (value: string) =>
+      value
+        .split(" ")
+        .filter(Boolean)
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(" ");
+    const deriveNameFromEmail = (email: string) => {
+      const local = email.split("@")[0] || "";
+      const cleaned = local.replace(/[._-]+/g, " ").trim();
+      return cleaned ? titleCase(cleaned) : "";
+    };
+
+    const preferredName =
+      (!looksLikeEmail(shippingName) && shippingName) ||
+      (!looksLikeEmail(billingName) && billingName) ||
+      (!looksLikeEmail(fullCustomerName) && fullCustomerName) ||
+      (!looksLikeEmail(companyCustomerName) && companyCustomerName) ||
+      deriveNameFromEmail(customerEmail) ||
+      "Customer";
+
+    // Requested label format:
+    // 1) "Private Customer Consignee"
+    // 2) Actual customer name from DB
+    const receiverCompanyName = "Private Customer Consignee";
+    const receiverContactName = preferredName;
+
     const shipmentInput = {
       orderId: order.id,
       to: {
+        companyName: receiverCompanyName,
+        contactPerson: receiverContactName,
         email: order.customer_email,
+        phone: order.customer_phone || "",
         street: order.shipping_address_line1 || order.customer_city,
         number: order.shipping_address_line2 || "",
         city: order.shipping_city || order.customer_city,
         postal_code: order.shipping_postal_code || order.customer_postcode,
         country: order.shipping_country || "NL",
+
+        // companyName:receiverCompanyName ,
+        // contactPerson: receiverContactName,
+        // street: order.shipping_address_line1 || order.customer_city,
+        // number: order.shipping_address_line2 || "",
+        // extra: "Unit 42",
+        // zipcode: order.shipping_postal_code || order.customer_postcode,
+        // city: order.shipping_city || order.customer_city,
+        // country: order.shipping_country,
+        // phone: "+31600000000",
+        // email:  order.customer_email,
+        // vat: "NL123456789B01",
+        // type: "business",
+        // eori: "NL123456789B01"
       },
       from: {
-        name: order.name,
-        street: store_addressRes.address_line1,
+        // Label Afzender format:
+        // asianspices.online
+        // Mandenmakerstraat 100 C
+        // 3194DG Hoogvliet Rotterdam
+        name: "asianspices.online",
+        street: store_addressRes.address_line1 || "",
         number: store_addressRes.address_line2 || "",
-        city: store_addressRes.city,
-        postal_code: store_addressRes.postal_code,
-        country: store_addressRes.country,
-        email: store_addressRes.store_email,
-        phone: store_addressRes.store_phone,
+        city: store_addressRes.city || "",
+        postal_code: store_addressRes.postal_code || "",
+        country: store_addressRes.country || "NL",
+        email: store_addressRes.store_email || "",
+        phone: store_addressRes.store_phone || "",
         currency_code: store_addressRes.currency_code,
       },
       parcels,

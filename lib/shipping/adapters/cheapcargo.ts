@@ -143,16 +143,54 @@ export class CheapCargoAdapter implements ShippingAdapter {
 
     const parseStreetNumber = (street: string, incomingNum: string) => {
       const normalizedIncoming = String(incomingNum || "").trim();
-      if (
-        normalizedIncoming &&
-        /\d/.test(normalizedIncoming) &&
-        !normalizedIncoming.toLowerCase().includes("line")
-      ) {
-        return normalizedIncoming;
+      // Accept clean house numbers including spaced letter suffix (e.g. 100 C).
+      if (/^\d+\s*[a-zA-Z]?(?:[-/]\d+)?$/.test(normalizedIncoming)) {
+        return normalizedIncoming.replace(/\s+/g, " ").trim();
       }
-      const match = street.match(/\s+(\d+[a-zA-Z]?)$/);
-      return match ? match[1] : "1";
+      // "Mandenmakerstraat 100C" or "Mandenmakerstraat 100 C"
+      const match = String(street || "").match(/\s+(\d+\s*[a-zA-Z]?)$/i);
+      return match ? match[1].replace(/\s+/g, " ").trim() : "";
     };
+
+    const sanitizeStreet = (value: string, knownNumber?: string) => {
+      let street = String(value || "")
+        .replace(/\b\d{4}\s?[A-Z]{2}\b/gi, "")
+        .replace(/\s{2,}/g, " ")
+        .replace(/\s+,/g, ",")
+        .trim();
+
+      // Remove trailing house number so CheapCargo doesn't print it twice
+      // (API prints street + number as "Mandenmakerstraat 100 C").
+      if (knownNumber) {
+        const escaped = knownNumber
+          .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+          .replace(/\s+/g, "\\s*");
+        street = street
+          .replace(new RegExp(`\\s+${escaped}$`, "i"), "")
+          .trim();
+      } else {
+        street = street.replace(/\s+\d+\s*[a-zA-Z]?$/i, "").trim();
+      }
+
+      return street;
+    };
+
+    const sanitizeCity = (value: string) =>
+      String(value || "")
+        .split(",")[0]
+        .trim();
+
+    const receiverCompany = String(input.to.companyName || "").trim();
+    const receiverContact = String(input.to.contactPerson || "").trim();
+
+    const senderNumber = parseStreetNumber(
+      input.from.street || "",
+      input.from.number || "",
+    );
+    const receiverNumber = parseStreetNumber(
+      input.to.street || "",
+      input.to.number || "",
+    );
 
     const payload = {
       shipments: {
@@ -173,34 +211,34 @@ export class CheapCargoAdapter implements ShippingAdapter {
             "@id": input.orderId,
             "@orderBy": "price",
             sender: {
-              companyName: input.from.name || "Store Vendor Instance",
-              contactPerson: "Store Administrator",
-              street: input.from.street || "Hoofdstraat",
-              number: parseStreetNumber(
+              companyName: input.from.name || "asianspices.online",
+              contactPerson: "asianspices.online",
+              street: sanitizeStreet(
                 input.from.street || "",
-                input.from.number || "123",
+                senderNumber,
               ),
-              zipcode: (input.from.postal_code || "1000AA").replace(/\s+/g, ""),
-              city: input.from.city || "Amsterdam",
+              number: senderNumber,
+              zipcode: String(input.from.postal_code || "").replace(/\s+/g, ""),
+              city: sanitizeCity(input.from.city || ""),
               country: input.from.country || "NL",
-              phone: input.from.phone || "+31612345678",
+              phone: input.from.phone || "",
               email:
-                input.from.email || this.creds.email || "sender@example.com",
+                input.from.email || this.creds.email || "",
               type: "business",
             },
             receiver: {
-              companyName: input.to.companyName || "Private Customer Consignee",
-              contactPerson: input.to.contactPerson || "Jane Receiver",
-              street: input.to.street || "Kerkstraat",
-              number: parseStreetNumber(
-                input.to.street || "",
-                input.to.number || "456",
-              ),
-              zipcode: (input.to.postal_code || "2000BB").replace(/\s+/g, ""),
-              city: input.to.city || "Rotterdam",
+              companyName:
+                receiverCompany || "Private Customer Consignee",
+              contactPerson: receiverContact || "Jane Receiver",
+              street: sanitizeStreet(input.to.street || "", receiverNumber),
+              number: receiverNumber,
+              zipcode: String(
+                input.to.postal_code || input.to.zipcode || "",
+              ).replace(/\s+/g, ""),
+              city: sanitizeCity(input.to.city || ""),
               country: input.to.country || "NL",
-              phone: input.to.phone || "+31687654321",
-              email: input.to.email || "receiver@example.com",
+              phone: input.to.phone || "+31600000000",
+              email: input.to.email || "",
               type: "business",
             },
             content: {
@@ -300,9 +338,12 @@ export class CheapCargoAdapter implements ShippingAdapter {
       if (shipped_data?.shipment?.status !== "ok") {
         const problemArr =
           shipped_data?.shipment?.order?.[0]?.details?.problems?.problem;
+        const gatewayError = shipped_data?.shipment?.error;
         const reason = problemArr
           ? JSON.stringify(problemArr)
-          : "Unknown operational reason";
+          : gatewayError
+            ? JSON.stringify(gatewayError)
+            : "Unknown operational reason";
         throw new Error(`CheapCargo shipment rejected: ${reason}`);
       }
 

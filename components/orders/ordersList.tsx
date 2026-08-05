@@ -84,7 +84,7 @@ export default function OrdersListComponent() {
     {
       title: "Total",
       dataIndex: "total_amount",
-      render: (v: number) => `€${v}`,
+      render: (v: number) => `€${Number(v).toFixed(2)}`,
     },
     {
       title: "Order Status",
