@@ -3,6 +3,15 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { withAuth } from "next-auth/middleware";
 import { getToken } from "next-auth/jwt";
+import { AUTH_ROLES } from "@/core/auth/core/constants";
+
+// Only these store_users roles count as Partner Portal staff — a "customer"
+// role tag on a store_users row must NOT be enough to reach /store/:slug.
+const PARTNER_ROLES: string[] = [
+  AUTH_ROLES.ADMIN,
+  AUTH_ROLES.MANAGER,
+  AUTH_ROLES.EDITOR,
+];
 
 // middleware.ts
 export default withAuth(
@@ -41,11 +50,14 @@ export default withAuth(
     }
 
     // 3. Handle Root and Unprefixed Paths
+    // (excludes /unauthorized so a denied user's redirect target actually
+    // renders instead of being immediately redirected again into /store/*)
     if (
       !isStorePath &&
       !isPlatformPath &&
       !isAuthPath &&
-      pathname !== "/login"
+      pathname !== "/login" &&
+      pathname !== "/unauthorized"
     ) {
       // CASE: Super Admin
       if (token?.isPlatformAdmin) {
@@ -55,8 +67,11 @@ export default withAuth(
         );
       }
 
-      // CASE: Store User
-      const storeRoles = token?.storeRoles as any[];
+      // CASE: Store User (partner staff only — a "customer"-tagged
+      // store_users row must not count here)
+      const storeRoles = (token?.storeRoles as any[])?.filter((r) =>
+        PARTNER_ROLES.includes(r.role),
+      );
 
       if (storeRoles && storeRoles.length > 0) {
         const firstStore = storeRoles[0]?.slug || storeRoles[0].store_id;
@@ -70,6 +85,22 @@ export default withAuth(
 
     if (isStorePath) {
       const slug = pathname.split("/")[2];
+
+      // Strict role validation: Super Admin bypasses (matches every other
+      // guard in this app), otherwise the token must carry a partner-level
+      // role (admin/manager/editor) for THIS specific store slug — a
+      // customer account, or a partner for a different store, must not
+      // pass through.
+      const hasStoreAccess =
+        token?.isPlatformAdmin === true ||
+        (token?.storeRoles as any[])?.some(
+          (r) => r.slug === slug && PARTNER_ROLES.includes(r.role),
+        );
+
+      if (!hasStoreAccess) {
+        return NextResponse.redirect(new URL("/unauthorized", req.url));
+      }
+
       const requestHeaders = new Headers(req.headers);
       requestHeaders.set("x-tenant-subdomain", slug);
       return NextResponse.next({
