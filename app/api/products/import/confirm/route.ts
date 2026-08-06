@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
             brandId,
             row.Description || null,
             row["Health Benefits"] || null,
-            Number(row.Price3),
+            Number(row["Base Price"]),
             Number(row.Quantity) || 999999999,
             row["Discount Type"] || null,
             row["Discount Value"] ? Number(row["Discount Value"]) : null,

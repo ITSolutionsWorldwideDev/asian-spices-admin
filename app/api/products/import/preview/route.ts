@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
       if (!row.Name) errors.push("Name is required");
       if (!row.SKU) errors.push("SKU is required");
-      if (!row.Price) errors.push("Price is required");
+      if (!row["Base Price"]) errors.push("Base Price is required");
 
       /* ---------------- DUPLICATE SKU CHECK ---------------- */
 
