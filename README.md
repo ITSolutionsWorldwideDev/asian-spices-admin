@@ -1,7 +1,6 @@
-<!-- // D:\project\asian-spices\README.md -->
-# 🛒 **Asian Spices | Ecommerce Platform (Next.js)**
+# 🛒 **Asian Spices | Admin Dashboard (Next.js)**
 
-A modern, scalable ecommerce platform built using Turborepo, featuring a customer-facing website, a powerful admin dashboard, shared UI components, and reusable packages—designed for performance, modularity, and easy team collaboration.
+This repo is the admin dashboard for Asian Spices. It's a standalone Next.js app (App Router, TypeScript, port 3003) — **not** part of a Turborepo/monorepo setup, despite earlier docs here. The customer-facing storefront lives in the sibling repo `asian-spices-web`.
 
 ---
 
