@@ -86,7 +86,13 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
+      authorized: ({ token, req }) => {
+        // Genie must stay reachable for logged-out visitors (e.g. login help).
+        if (req.nextUrl.pathname.startsWith("/api/genie-chat")) {
+          return true;
+        }
+        return !!token;
+      },
     },
     pages: {
       signIn: "/login",
