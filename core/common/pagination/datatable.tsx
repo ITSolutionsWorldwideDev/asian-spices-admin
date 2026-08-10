@@ -100,6 +100,8 @@ const Datatable = ({
       dataSource={dataSource}
       rowKey={rowKey}
       loading={loading}
+      scroll={{ x: "max-content" }}
+      sticky={{ offsetHeader: 88 }}
       pagination={
         pagination
           ? {
