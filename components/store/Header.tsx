@@ -41,7 +41,7 @@ export default function StoreHeader({ collapsed, onToggle }: HeaderProps) {
   // }, [pathname]);
 
   return (
-    <header className="h-16 border-b bg-white flex items-center justify-between px-6 py-2 shrink-0">
+    <header className="h-16 border-b bg-white flex items-center justify-between px-6 py-2 shrink-0 relative z-50">
       <div className="flex items-center gap-4">
         {/* <button
           onClick={handleSidebar}
@@ -78,7 +78,7 @@ export default function StoreHeader({ collapsed, onToggle }: HeaderProps) {
         </button>
 
         {profileDropdownOpen && (
-          <div className="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow-lg">
+          <div className="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow-lg z-50">
             <div className="p-3 border-b">
               <p className="font-medium text-sm">
                 {session?.user?.email ?? "Guest"}
