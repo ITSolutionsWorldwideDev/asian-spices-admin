@@ -11,7 +11,7 @@ declare global {
 export const pool =
   globalThis.varGlobalPool ??
   new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: process.env.DATABASE_URL2,
     // 🟢 OPTIMIZED: Scaled settings tailored to prevent serverless pool exhaustion
     max: 10,// 20, 
     idleTimeoutMillis: 20000,// 30000,
