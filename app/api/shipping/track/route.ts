@@ -83,9 +83,9 @@ export async function POST(req: NextRequest) {
         shipping_status = $1,
         shipping_paid = $2,
         tracking_number = COALESCE($3::TEXT, tracking_number),
-        delivery_date = CASE
-          WHEN $1 = 'delivered' THEN COALESCE(delivery_date, NOW())
-          ELSE delivery_date
+        delivered_at = CASE
+          WHEN $1 = 'delivered' THEN COALESCE(delivered_at, NOW())
+          ELSE delivered_at
         END,
         updated_at = NOW()
       WHERE id = $4
