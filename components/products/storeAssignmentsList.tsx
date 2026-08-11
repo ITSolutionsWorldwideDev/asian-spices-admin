@@ -21,6 +21,7 @@ type Assignment = {
   id: string;
   product_id: string;
   product_name: string;
+  sku: string | null;
   description: string | null;
   base_price: number;
   price: number;
@@ -106,6 +107,7 @@ export default function StoreAssignmentsListComponent() {
       "store-assignments",
       [
         { title: "Product", dataIndex: "product_name" },
+        { title: "SKU", dataIndex: "sku" },
         { title: "Description", dataIndex: "description" },
         {
           title: "Base Price",
@@ -139,6 +141,13 @@ export default function StoreAssignmentsListComponent() {
       ),
       sorter: (a: Assignment, b: Assignment) =>
         a.product_name.localeCompare(b.product_name),
+    },
+    {
+      title: "SKU",
+      dataIndex: "sku",
+      width: 120,
+      sorter: (a: Assignment, b: Assignment) =>
+        (a.sku || "").localeCompare(b.sku || ""),
     },
     {
       title: "Description",
