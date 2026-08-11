@@ -110,6 +110,7 @@ export default function ProductListComponent() {
       "products",
       [
         { title: "Product", dataIndex: "name" },
+        { title: "SKU", dataIndex: "sku" },
         { title: "Category", dataIndex: "category" },
         { title: "Brand", dataIndex: "brand" },
         {
@@ -170,23 +171,26 @@ export default function ProductListComponent() {
   };
 
   const columns = [
-    // {
-    //   title: "SKU",
-    //   dataIndex: "sku",
-    //   sorter: (a: Product, b: Product) => a.sku.localeCompare(b.sku),
-    // },
     {
       title: "Product",
       dataIndex: "name",
+      width: 200,
       render: (text: string, record: Product) => (
         <Link
           href={`products/${record.id}`}
-          className="text-blue-600 hover:underline"
+          title={text}
+          className="block max-w-[180px] truncate text-blue-600 hover:underline"
         >
           {text}
         </Link>
       ),
       sorter: (a: Product, b: Product) => a.name.localeCompare(b.name),
+    },
+    {
+      title: "SKU",
+      dataIndex: "sku",
+      width: 120,
+      sorter: (a: Product, b: Product) => (a.sku || "").localeCompare(b.sku || ""),
     },
     {
       title: "Category",

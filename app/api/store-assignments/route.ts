@@ -47,6 +47,7 @@ export async function GET(req: NextRequest) {
       spc.id,
       p.id AS product_id,
       p.name AS product_name,
+      p.sku,
       p.description,
       p.base_price,
       spc.price,
