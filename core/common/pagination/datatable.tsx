@@ -100,7 +100,7 @@ const Datatable = ({
       dataSource={dataSource}
       rowKey={rowKey}
       loading={loading}
-      scroll={{ x: "max-content" }}
+      scroll={dataSource.length > 0 ? { x: "max-content" } : undefined}
       pagination={
         pagination
           ? {
