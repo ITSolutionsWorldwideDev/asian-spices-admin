@@ -78,9 +78,23 @@ export async function GET(req: NextRequest) {
         o.fulfillment_status,
         o.rejection_count,
         o.created_at,
-        s.name as store_name
+        s.name as store_name,
+        alloc.store_count,
+        alloc.single_store_name
       FROM store_orders o
       LEFT JOIN stores s ON s.id = o.current_store_id
+      LEFT JOIN LATERAL (
+        -- Distinct stores actually holding an allocation for this order,
+        -- regardless of whether current_store_id was ever set - this is
+        -- what tells us "split to 1 real store" vs "split across N stores".
+        SELECT
+          COUNT(DISTINCT oia.store_id) AS store_count,
+          MAX(s2.name) AS single_store_name
+        FROM order_item_allocations oia
+        JOIN store_order_items oi ON oi.id = oia.order_item_id
+        JOIN stores s2 ON s2.id = oia.store_id
+        WHERE oi.order_id = o.id
+      ) alloc ON true
       ${whereClause}
       ${orderBy}
       LIMIT ${limit} OFFSET ${offset}

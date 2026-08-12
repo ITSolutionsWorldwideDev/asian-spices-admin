@@ -149,7 +149,11 @@ export default function AdminOrdersPage() {
                             </span>
                           </td>
                           <td className="p-4 font-medium text-gray-600">
-                            {o.store_name || "— (Unallocated)"}
+                            {o.store_name ||
+                              (Number(o.store_count) > 1
+                                ? `${o.store_count} stores assigned`
+                                : o.single_store_name) ||
+                              "— (Unallocated)"}
                           </td>
                           <td className="p-4 text-center">
                             <span
