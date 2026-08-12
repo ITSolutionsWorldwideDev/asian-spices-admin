@@ -123,16 +123,16 @@ export default function AdminOrdersPage() {
                           <td className="p-4">
                             <span
                               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-                                o.order_status === "rejected"
-                                  ? "bg-red-50 text-red-700 border-red-200"
-                                  : o.order_status === "processing"
+                                o.routing_status === "split"
+                                  ? "bg-purple-50 text-purple-700 border-purple-200"
+                                  : o.routing_status === "assigned"
                                     ? "bg-blue-50 text-blue-700 border-blue-200"
-                                    : o.order_status === "shipped"
+                                    : o.routing_status === "accepted"
                                       ? "bg-green-50 text-green-700 border-green-200"
                                       : "bg-gray-50 text-gray-700 border-gray-200"
                               }`}
                             >
-                              {o.order_status}
+                              {o.routing_status || "not yet routed"}
                             </span>
                             {isStuck && (
                               <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-600 text-white animate-pulse">

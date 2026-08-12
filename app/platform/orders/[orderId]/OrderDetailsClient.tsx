@@ -156,7 +156,12 @@ export default function OrderDetailsClient({ orderId }: { orderId: string }) {
 
           <div className="bg-white p-4 rounded shadow">
             <h3 className="font-semibold mb-2">Store</h3>
-            <p className="font-semibold">{order?.store_name || "-"}</p>
+            <p className="font-semibold">
+              {order?.store_name ||
+                (order?.routing_status === "split"
+                  ? "Split across multiple stores"
+                  : "-")}
+            </p>
           </div>
 
           <div className="bg-white p-4 rounded shadow">

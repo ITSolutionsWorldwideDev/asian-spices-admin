@@ -69,10 +69,12 @@ export async function GET(req: NextRequest) {
 
     // Append limit and offset securely to the data query using safe string numbers
     const dataQuery = `
-      SELECT 
+      SELECT
         o.id,
         o.order_number,
         o.order_status,
+        o.routing_status,
+        o.payment_status,
         o.fulfillment_status,
         o.rejection_count,
         o.created_at,

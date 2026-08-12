@@ -52,11 +52,16 @@ export const getOrderActionState = (order: any): OrderActionState => {
     };
   }
 
-  // 🔴 No store assigned
+  // 🔴 No single store assigned - either genuinely unrouted, or split across
+  // multiple stores (routing_status = 'split'), which has no single store to
+  // reassign away from.
   if (!order.current_store_id) {
     state.reassign = {
       disabled: true,
-      reason: "No store assigned yet",
+      reason:
+        order.routing_status === "split"
+          ? "Order is split across multiple stores - see Order Items below"
+          : "No store assigned yet",
     };
   }
 
