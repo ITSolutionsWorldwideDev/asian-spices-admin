@@ -245,6 +245,12 @@ const PLATFORM_MENU = [
         link: "/platform/settings",
         submenu: false,
       },
+      {
+        label: "Activity",
+        icon: "activity",
+        link: "/platform/activity",
+        submenu: false,
+      },
     ],
   },
 ];
