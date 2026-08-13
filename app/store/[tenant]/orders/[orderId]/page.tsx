@@ -894,7 +894,7 @@ export default function OrderDetailPage() {
                   value={shippingMethodId}
                   disabled={lockShippingMethod}
                   onChange={(e) => setShippingMethodId(e.target.value)}
-                  className="w-full p-2 border rounded-lg focus:outline-none bg-white text-gray-800"
+                  className="w-full p-2 border rounded-lg focus:outline-none bg-white text-gray-800 appearance-none"
                 >
                   <option value="">
                     Select Shipping Courier Pipeline Target...
@@ -1045,13 +1045,6 @@ export default function OrderDetailPage() {
               <span className="block text-xs font-mono font-bold text-gray-600 tracking-wider">
                 TRACKING BARCODE: {order.tracking_number}
               </span>
-              {order.shipping_label && (
-                <img
-                  src={order.shipping_label}
-                  alt="Logistics Router Tracking Stamp Map"
-                  className="w-28 h-28 mx-auto border rounded-md shadow-inner bg-white mt-1"
-                />
-              )}
             </div>
             {/* )} */}
           </div>
