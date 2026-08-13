@@ -181,6 +181,7 @@ export default function ProductFormComponent({
   const [countries, setCountries] = useState<Countries[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [subcategoriesLoaded, setSubcategoriesLoaded] = useState(false);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [saving, setSaving] = useState(false);
@@ -284,6 +285,12 @@ export default function ProductFormComponent({
       return;
     }
 
+    // Wait for the subcategory list to actually arrive before judging validity —
+    // otherwise this races the edit-mode product load (which sets category_id and
+    // subcategory_id together) and wipes a legitimate subcategory_id because the
+    // list to check it against hasn't loaded yet.
+    if (!subcategoriesLoaded) return;
+
     const validSubcategories = subcategories.filter(
       (s) => s.category_id === categoryId,
     );
@@ -295,7 +302,7 @@ export default function ProductFormComponent({
     if (!exists) {
       setValue("subcategory_id", null);
     }
-  }, [categoryId, subcategories]);
+  }, [categoryId, subcategories, subcategoriesLoaded]);
 
   useEffect(() => {
     if (!discountType) {
@@ -321,7 +328,10 @@ export default function ProductFormComponent({
       .then((d) => setCategories(d.items || []));
     fetch("/api/subcategory")
       .then((r) => r.json())
-      .then((d) => setSubcategories(d.items || []));
+      .then((d) => {
+        setSubcategories(d.items || []);
+        setSubcategoriesLoaded(true);
+      });
     fetch("/api/brand")
       .then((r) => r.json())
       .then((d) => setBrands(d.items || []));
