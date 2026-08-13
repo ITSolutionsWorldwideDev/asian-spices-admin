@@ -57,7 +57,9 @@ export default async function StoresPage({
             pr.application_id,
             COUNT(*) OVER() AS total
       FROM stores s
-      LEFT JOIN partner_registration pr ON pr.partner_id::text = s.partner_registration_id
+      LEFT JOIN partner_registration pr
+        ON pr.partner_id::text = s.partner_registration_id
+        OR pr.application_id = s.partner_registration_id
       ${whereClause}
       ORDER BY s.created_at DESC
       LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
