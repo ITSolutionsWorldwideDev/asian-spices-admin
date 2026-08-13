@@ -26,7 +26,7 @@ export default function PartnerCard({ partner, onApprove, onReject }: any) {
         </p>
 
         <p className="text-xs text-gray-500">
-          Application ID: {partner.application_id}
+          Applicant ID: {partner.application_id}
         </p>
       </div>
 
