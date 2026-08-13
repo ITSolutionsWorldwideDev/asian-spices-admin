@@ -46,7 +46,7 @@ export default function StoreCard({
         </div>
 
         <p className="text-xs text-gray-500">
-          Application ID: {store.application_id || "—"}
+          Partner ID: {store.application_id || "—"}
         </p>
 
         <p className="text-xs text-gray-500 mb-3">
