@@ -34,16 +34,16 @@ export default async function StoresPage({
     values.push(`%${q}%`);
     where.push(`
       (
-        name ILIKE $${values.length}
-        OR slug ILIKE $${values.length}
-        OR partner_registration_id ILIKE $${values.length}
+        s.name ILIKE $${values.length}
+        OR s.slug ILIKE $${values.length}
+        OR pr.application_id ILIKE $${values.length}
       )
     `);
   }
 
   if (status) {
     values.push(status);
-    where.push(`status = $${values.length}`);
+    where.push(`s.status = $${values.length}`);
   }
 
   const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
@@ -53,12 +53,14 @@ export default async function StoresPage({
   const offsetParamIndex = values.length;
 
   const query = `
-      SELECT id, name, slug, status,partner_registration_id, created_at,
+      SELECT s.id, s.name, s.slug, s.status, s.partner_registration_id, s.created_at,
+            pr.application_id,
             COUNT(*) OVER() AS total
-      FROM stores
+      FROM stores s
+      LEFT JOIN partner_registration pr ON pr.partner_id::text = s.partner_registration_id
       ${whereClause}
-      ORDER BY created_at DESC
-      LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}      
+      ORDER BY s.created_at DESC
+      LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
       `;
   // LIMIT ${PAGE_SIZE} OFFSET ${offset}
 
