@@ -155,6 +155,14 @@ export async function GET() {
     const catSheet = workbook.addWorksheet("Categories");
     categories.rows.forEach((r, i) => {
       catSheet.getCell(`A${i + 1}`).value = r.name;
+      // Column B holds the exact named-range key for this category (see
+      // safeName() below) so the dependent dropdown can look it up instead
+      // of re-deriving it with an Excel formula that has to replicate
+      // safeName()'s escaping — those two previously drifted apart for any
+      // category name with punctuation other than space/hyphen/ampersand
+      // (or with adjacent special characters, e.g. "Foods & Beverages"),
+      // silently breaking the Subcategory dropdown for that row.
+      catSheet.getCell(`B${i + 1}`).value = safeName(r.name);
     });
 
     const brandSheet = workbook.addWorksheet("Brands");
@@ -239,15 +247,17 @@ export async function GET() {
         formulae: [`Countries!$A$1:$A$${countries.rows.length}`],
       };
 
-      // Dependent dropdown: Subcategory options depend on the Category
-      // chosen in the same row (named range per category, see above).
+      // Dependent dropdown: looks up the exact named-range key for the
+      // chosen Category from Categories!B (computed with the same
+      // safeName() used to create the named ranges), instead of
+      // re-deriving it inline with a formula that could drift out of sync.
       sheet.getCell(`F${i}`).dataValidation = {
         type: "list",
         allowBlank: true,
         showErrorMessage: true,
         error: "Select a valid Subcategory",
         formulae: [
-          `INDIRECT(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE($E${i}," ","_"),"-","_"),"&","_"))`,
+          `INDIRECT(VLOOKUP($E${i},Categories!$A:$B,2,0))`,
         ],
       };
     }
