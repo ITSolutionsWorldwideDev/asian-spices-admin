@@ -13,6 +13,17 @@ type ImportRow = {
 
 type ProductSkuRow = { sku: string };
 
+const DEFAULT_STORE_ID = "afef3fd5-c31a-440a-ae56-99eca0b24359";
+
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
 export async function POST(req: NextRequest) {
   await requirePlatformAdmin();
 
@@ -30,6 +41,7 @@ export async function POST(req: NextRequest) {
     let inserted = 0;
     let skipped = 0;
     const errors: any[] = [];
+    const insertedProductIds: number[] = [];
 
     /* ---------------- EXISTING SKU CACHE ---------------- */
 
@@ -59,7 +71,11 @@ export async function POST(req: NextRequest) {
 
         skuSet.add(row.SKU);
 
-        /* ---------------- RESOLVE RELATIONSHIP ID ENTITIES ---------------- */
+        /* ---------------- RESOLVE RELATIONSHIP ID ENTITIES ----------------
+           Looked up by name only (no status filter) so a category/brand
+           that's selectable on the manual Add Product form is always
+           importable here too. */
+
         let categoryId: number | null = null;
         let subcategoryId: number | null = null;
         let brandId: number | null = null;
@@ -88,6 +104,8 @@ export async function POST(req: NextRequest) {
           if (bRes.rows.length) brandId = bRes.rows[0].brand_id;
         }
 
+        const slug = row.Slug?.trim() || slugify(row.Name);
+
         /* ---------------- INSERT PRODUCT ---------------- */
 
         const productRes = await client.query<{ id: number }>(
@@ -113,7 +131,7 @@ export async function POST(req: NextRequest) {
           `,
           [
             row.Name,
-            row.Slug,
+            slug,
             row.SKU,
             row["Item Code"] || null,
             categoryId,
@@ -122,18 +140,15 @@ export async function POST(req: NextRequest) {
             row.Description || null,
             row["Health Benefits"] || null,
             Number(row["Base Price"]),
-            Number(row.Quantity) || 999999999,
+            Number(row.Quantity),
             row["Discount Type"] || null,
             row["Discount Value"] ? Number(row["Discount Value"]) : null,
-            row.Status === "Active" ? 1 : 0,
+            row.Status === "Inactive" ? 0 : 1,
           ],
         );
 
         const productId = productRes.rows[0].id;
-
-        console.log('productId === ',productId);
-        console.log('B2B Prices === ',row["B2B Prices"]);
-        console.log('Available Countries === ',row["Available Countries"]);
+        insertedProductIds.push(productId);
 
         /* ---------------- COUNTRIES (optional comma separated) ---------------- */
 
@@ -144,11 +159,6 @@ export async function POST(req: NextRequest) {
             .filter(Boolean);
 
           for (const countryName of countries) {
-            // const cRes = await client.query(
-            //   `SELECT country_id FROM countries WHERE country_name = $1`,
-            //   [countryName]
-            // );
-
             const cRes = await client.query<{ country_id: number }>(
               `SELECT country_id FROM countries WHERE LOWER(TRIM(country_name)) = LOWER(TRIM($1))`,
               [countryName],
@@ -170,11 +180,37 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        /* ---------------- IMAGES (comma separated URLs) ----------------
+           Inserted straight from the row instead of fuzzy-matching the
+           media library by product name, which could attach the wrong
+           image or crash on a non-numeric url in an unrelated row. */
+
+        if (row.Images) {
+          const imageUrls = String(row.Images)
+            .split(",")
+            .map((u: string) => u.trim())
+            .filter(Boolean);
+
+          for (let idx = 0; idx < imageUrls.length; idx++) {
+            await client.query(
+              `
+              INSERT INTO store_product_images (
+                product_id,
+                url,
+                alt_text,
+                is_primary
+              )
+              VALUES ($1, $2, $3, $4)
+              `,
+              [productId, imageUrls[idx], row.Name, idx === 0],
+            );
+          }
+        }
+
         /* ---------------- B2B PRICES ---------------- */
 
         if (row["B2B Prices"]) {
           try {
-            // const tiers = JSON.parse(row["B2B Prices"]);
             const tiers = JSON.parse(row["B2B Prices"]) as Array<{
               min_quantity: number;
               price: number;
@@ -201,8 +237,6 @@ export async function POST(req: NextRequest) {
 
         inserted++;
       } catch (err: any) {
-
-        console.log('err.message === ',err.message);
         errors.push({
           row: r.row,
           error: err.message,
@@ -211,59 +245,38 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (inserted > 0) {
+    /* ---------------- DEFAULT STORE ASSIGNMENT ----------------
+       Scoped to just-inserted products only — this used to run against
+       every row in store_products, resetting price/quantity for the
+       entire catalog on every import. */
 
-      // Product Primary Images Link
-
+    if (insertedProductIds.length > 0) {
       await client.query(
-        `INSERT INTO public.store_product_images (
-              product_id, 
-              url, 
-              alt_text, 
-              is_primary
-          )
-            SELECT 
-              p.id AS product_id,
-              media_id AS url, 
-              COALESCE(m.alt_text, p.name) AS alt_text,
-              true AS is_primary
-          FROM public.store_products p
-          JOIN public.media m ON m.file_name ILIKE '%' || p.name || '%'
-          WHERE NOT EXISTS (
-            SELECT 1 
-            FROM public.store_product_images spi
-            WHERE spi.product_id = p.id 
-              AND spi.url::int = m.media_id)`
-      );
-
-      // Default Store Assignment
-      
-      await client.query(
-        ` INSERT INTO store_product_catalog (
-            store_id, 
-            product_id, 
-            price, 
-            quantity, 
-            status
-          )
-          SELECT 
-            'afef3fd5-c31a-440a-ae56-99eca0b24359' AS store_id,
-            p.id,
-            COALESCE(p.base_price,0) AS price,
-            999999999 AS quantity,
-            1 AS status
-          FROM store_products p
-          ON CONFLICT (store_id, product_id)
-          DO UPDATE SET
-            price = COALESCE(EXCLUDED.price, store_product_catalog.price),
-            quantity = COALESCE(EXCLUDED.quantity, store_product_catalog.quantity),
-            updated_at = now()`
+        `
+        INSERT INTO store_product_catalog (
+          store_id,
+          product_id,
+          price,
+          quantity,
+          status
+        )
+        SELECT
+          $2 AS store_id,
+          p.id,
+          COALESCE(p.base_price, 0) AS price,
+          p.quantity,
+          1 AS status
+        FROM store_products p
+        WHERE p.id = ANY($1)
+        ON CONFLICT (store_id, product_id)
+        DO UPDATE SET
+          price = EXCLUDED.price,
+          quantity = EXCLUDED.quantity,
+          updated_at = now()
+        `,
+        [insertedProductIds, DEFAULT_STORE_ID],
       );
     }
-
-    console.log('inserted === ',inserted);
-    console.log('skipped === ',skipped);
-    console.log('errors.length === ',errors.length);
 
     await client.query("COMMIT");
 
