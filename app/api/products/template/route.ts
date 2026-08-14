@@ -21,50 +21,37 @@ export async function GET() {
   const client = await pool.connect();
 
   try {
-    /* ---------------- FETCH DATA ---------------- */
+    /* ---------------- FETCH DATA ----------------
+       Same source as the manual "Add Product" form (/api/category,
+       /api/subcategory): no status filter, so anything selectable there
+       is also importable here. A single pg Client can't run concurrent
+       queries, so these run sequentially. */
 
-    // const [categories, subcategories, brands, countries] = await Promise.all([
-    //   client.query(`SELECT id, name FROM store_categories ORDER BY name`),
-    //   client.query(`SELECT id, name, category_id FROM store_subcategories ORDER BY name`),
-    //   client.query(`SELECT id, name FROM store_brands ORDER BY name`),
-    //   client.query(`SELECT id, name FROM countries ORDER BY name`)
-    // ]);
+    const categories = await client.query<QueryRowItem>(`
+      SELECT id, name
+      FROM store_categories
+      ORDER BY name
+    `);
 
-    const [categories, subcategories, brands, countries] = await Promise.all([
-      client.query<QueryRowItem>(`
-        SELECT id, name 
-        FROM store_categories 
-        WHERE status = 1
-        ORDER BY name
-    `),
+    const subcategories = await client.query<SubcategoryRowItem>(`
+      SELECT id, name, category_id
+      FROM store_subcategories
+      ORDER BY name
+    `);
 
-      client.query<SubcategoryRowItem>(`
-        SELECT id, name, category_id 
-        FROM store_subcategories 
-        WHERE status = 1
-        ORDER BY name
-    `),
+    const brands = await client.query<QueryRowItem>(`
+      SELECT brand_id AS id, name
+      FROM store_brands
+      ORDER BY name
+    `);
 
-      client.query<QueryRowItem>(`
-        SELECT brand_id AS id, name 
-        FROM store_brands 
-        WHERE status = true
-        ORDER BY name
-    `),
-
-      client.query<QueryRowItem>(`
-        SELECT country_id AS id, country_name AS name 
-        FROM countries
-        ORDER BY country_name
-    `),
-    ]);
+    const countries = await client.query<QueryRowItem>(`
+      SELECT country_id AS id, country_name AS name
+      FROM countries
+      ORDER BY country_name
+    `);
 
     const workbook = new ExcelJS.Workbook();
-
-    // console.log("Categories:", categories.rows.length);
-    // console.log("Subcategories:", subcategories.rows.length);
-    // console.log("Brands:", brands.rows.length);
-    // console.log("Countries:", countries.rows.length);
 
     /* ---------------- PRODUCTS SHEET ---------------- */
 
@@ -91,9 +78,10 @@ export async function GET() {
       "B2B Prices",
     ];
 
-    sheet.columns?.forEach((col) => {
-      col.width = 22;
-    });
+    // `sheet.columns` is empty until rows exist, so setting `.width` on it
+    // here was a no-op — every column rendered at Excel's default (narrow)
+    // width. Assigning column defs up front actually sizes them.
+    sheet.columns = headers.map(() => ({ width: 24 }));
 
     sheet.views = [{ state: "frozen", ySplit: 1 }];
 
@@ -107,16 +95,26 @@ export async function GET() {
 
     sheet.addRow(headers);
 
+    // Sample row uses a real category/subcategory/brand from this store
+    // so it validates as-is instead of a generic "Electronics/Apple"
+    // placeholder that doesn't exist in the catalog.
+    const sampleCategory = categories.rows[0];
+    const sampleSubcategory = subcategories.rows.find(
+      (s) => String(s.category_id) === String(sampleCategory?.id),
+    );
+    const sampleBrand = brands.rows[0];
+    const sampleCountry = countries.rows[0];
+
     sheet.addRow([
       "Sample Product",
       "sample-product",
       "SKU001",
       "ITM001",
-      "Electronics",
-      "Mobiles",
-      "Apple",
-      "USA",
-      "USA,India",
+      sampleCategory?.name ?? "",
+      sampleSubcategory?.name ?? "",
+      sampleBrand?.name ?? "",
+      sampleCountry?.name ?? "",
+      sampleCountry?.name ?? "",
       "Sample description",
       "Sample benefits",
       100,
@@ -129,27 +127,28 @@ export async function GET() {
     ]);
 
     sheet.addRow([
-      "👉 Select from dropdowns",
-      "",
-      "",
-      "",
-      "Click cell ▼",
-      "Depends on Category",
-      "Dropdown",
-      "Dropdown",
-      "Comma separated",
-      "",
-      "",
-      "",
-      "",
-      "PERCENT/FLAT",
-      "",
-      "Active/Inactive",
-      "Comma URLs",
-      "JSON format",
+      "Required",
+      "Optional — auto-generated from Name if blank",
+      "Required, must be unique",
+      "Required",
+      "Required — click cell ▼",
+      "Required — depends on Category",
+      "Required — click cell ▼",
+      "Optional",
+      "Optional, comma separated",
+      "Optional",
+      "Optional",
+      "Required, number > 0",
+      "Required, whole number ≥ 0",
+      "Optional — PERCENT or FLAT",
+      "Optional",
+      "Optional — Active or Inactive (default Active)",
+      "Required, comma separated URLs",
+      "Optional — JSON, e.g. the sample above",
     ]);
 
     sheet.getRow(1).font = { bold: true };
+    sheet.getRow(3).font = { italic: true, color: { argb: "FF6B7280" } };
 
     /* ---------------- LOOKUP SHEETS ---------------- */
 
@@ -167,24 +166,6 @@ export async function GET() {
     countries.rows.forEach((r, i) => {
       countrySheet.getCell(`A${i + 1}`).value = r.name;
     });
-
-    // const catSheet = workbook.addWorksheet("Categories");
-
-    // categories.rows.forEach((r: { name: string }, i) => {
-    //   catSheet.getCell(`A${i + 1}`).value = r.name;
-    // });
-
-    // const brandSheet = workbook.addWorksheet("Brands");
-
-    // brands.rows.forEach((r: { name: string }, i) => {
-    //   brandSheet.getCell(`A${i + 1}`).value = r.name;
-    // });
-
-    // const countrySheet = workbook.addWorksheet("Countries");
-
-    // countries.rows.forEach((r: { name: string }, i) => {
-    //   countrySheet.getCell(`A${i + 1}`).value = r.name;
-    // });
 
     /* ---------------- SUBCATEGORY (DEPENDENT) ---------------- */
 
@@ -205,23 +186,6 @@ export async function GET() {
       grouped[cat].push(r.name);
     });
 
-    // const subSheet = workbook.addWorksheet("Subcategories");
-
-    // const grouped: Record<string, string[]> = {};
-
-    // const categoryMap = new Map<string, string>(
-    //   categories.rows.map((c: { id: number | string; name: string }) => [String(c.id), c.name]),
-    // );
-
-
-    // subcategories.rows.forEach((r: { category_id: number | string; name: string }) => {
-    //   const cat = categoryMap.get(String(r.category_id));
-    //   if (!cat) return;
-
-    //   if (!grouped[cat]) grouped[cat] = [];
-    //   grouped[cat].push(r.name);
-    // });
-
     // Create named ranges per category
     let colIndex = 1;
 
@@ -231,11 +195,6 @@ export async function GET() {
       });
 
       const colLetter = subSheet.getColumn(colIndex).letter;
-
-      //   workbook.definedNames.add(
-      //     category.replace(/\s/g, "_"),
-      //     `Subcategories!$${colLetter}$1:$${colLetter}$${subs.length}`,
-      //   );
       const safe = safeName(category);
 
       workbook.definedNames.add(
@@ -256,10 +215,6 @@ export async function GET() {
     /* ---------------- DROPDOWNS ---------------- */
 
     for (let i = 2; i <= 200; i++) {
-      //   sheet.getCell(`E${i}`).dataValidation = {
-      //     type: "list",
-      //     formulae: [`Categories!$A$1:$A$${categories.rows.length}`],
-      //   };
       sheet.getCell(`E${i}`).dataValidation = {
         type: "list",
         allowBlank: true,
@@ -284,7 +239,8 @@ export async function GET() {
         formulae: [`Countries!$A$1:$A$${countries.rows.length}`],
       };
 
-      // 🔥 DEPENDENT DROPDOWN
+      // Dependent dropdown: Subcategory options depend on the Category
+      // chosen in the same row (named range per category, see above).
       sheet.getCell(`F${i}`).dataValidation = {
         type: "list",
         allowBlank: true,
@@ -294,10 +250,6 @@ export async function GET() {
           `INDIRECT(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE($E${i}," ","_"),"-","_"),"&","_"))`,
         ],
       };
-      //   sheet.getCell(`F${i}`).dataValidation = {
-      //     type: "list",
-      //     formulae: [`INDIRECT(SUBSTITUTE($E${i}," ","_"))`],
-      //   };
     }
 
     /* ---------------- RESPONSE ---------------- */
