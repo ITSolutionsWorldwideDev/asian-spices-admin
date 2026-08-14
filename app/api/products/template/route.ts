@@ -13,10 +13,6 @@ interface SubcategoryRowItem extends QueryRowItem {
   category_id: number | string;
 }
 
-function safeName(name: string) {
-  return name.replace(/[^a-zA-Z0-9]/g, "_").replace(/_+/g, "_");
-}
-
 export async function GET() {
   const client = await pool.connect();
 
@@ -132,7 +128,7 @@ export async function GET() {
       "Required, must be unique",
       "Required",
       "Required — click cell ▼",
-      "Required — depends on Category",
+      "Required — must match Category (checked on import)",
       "Required — click cell ▼",
       "Optional",
       "Optional, comma separated",
@@ -155,14 +151,6 @@ export async function GET() {
     const catSheet = workbook.addWorksheet("Categories");
     categories.rows.forEach((r, i) => {
       catSheet.getCell(`A${i + 1}`).value = r.name;
-      // Column B holds the exact named-range key for this category (see
-      // safeName() below) so the dependent dropdown can look it up instead
-      // of re-deriving it with an Excel formula that has to replicate
-      // safeName()'s escaping — those two previously drifted apart for any
-      // category name with punctuation other than space/hyphen/ampersand
-      // (or with adjacent special characters, e.g. "Foods & Beverages"),
-      // silently breaking the Subcategory dropdown for that row.
-      catSheet.getCell(`B${i + 1}`).value = safeName(r.name);
     });
 
     const brandSheet = workbook.addWorksheet("Brands");
@@ -175,42 +163,18 @@ export async function GET() {
       countrySheet.getCell(`A${i + 1}`).value = r.name;
     });
 
-    /* ---------------- SUBCATEGORY (DEPENDENT) ---------------- */
+    /* ---------------- SUBCATEGORY ----------------
+       Flat list of every subcategory rather than a per-category dependent
+       dropdown: Excel's INDIRECT-based dependent dropdowns are brittle
+       across Excel/Google Sheets versions and broke here even after being
+       kept in sync with the named ranges. The import already validates
+       that the chosen Subcategory belongs to the chosen Category and
+       shows a clear error if not, so the sheet doesn't need to enforce it
+       itself — a flat list is simpler and just works. */
 
     const subSheet = workbook.addWorksheet("Subcategories");
-
-    // Group subcategories by category
-    const grouped: Record<string, string[]> = {};
-
-    const categoryMap = new Map<string, string>(
-      categories.rows.map((c) => [String(c.id), c.name]),
-    );
-
-    subcategories.rows.forEach((r) => {
-      const cat = categoryMap.get(String(r.category_id));
-      if (!cat) return;
-
-      if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push(r.name);
-    });
-
-    // Create named ranges per category
-    let colIndex = 1;
-
-    Object.entries(grouped).forEach(([category, subs]) => {
-      subs.forEach((s, i) => {
-        subSheet.getCell(i + 1, colIndex).value = s;
-      });
-
-      const colLetter = subSheet.getColumn(colIndex).letter;
-      const safe = safeName(category);
-
-      workbook.definedNames.add(
-        safe,
-        `Subcategories!$${colLetter}$1:$${colLetter}$${subs.length}`,
-      );
-
-      colIndex++;
+    subcategories.rows.forEach((r, i) => {
+      subSheet.getCell(`A${i + 1}`).value = r.name;
     });
 
     /* ---------------- HIDE LOOKUPS ---------------- */
@@ -247,18 +211,14 @@ export async function GET() {
         formulae: [`Countries!$A$1:$A$${countries.rows.length}`],
       };
 
-      // Dependent dropdown: looks up the exact named-range key for the
-      // chosen Category from Categories!B (computed with the same
-      // safeName() used to create the named ranges), instead of
-      // re-deriving it inline with a formula that could drift out of sync.
+      // Flat list of all subcategories — must match the chosen Category,
+      // which the import validates and reports clearly if it doesn't.
       sheet.getCell(`F${i}`).dataValidation = {
         type: "list",
         allowBlank: true,
         showErrorMessage: true,
         error: "Select a valid Subcategory",
-        formulae: [
-          `INDIRECT(VLOOKUP($E${i},Categories!$A:$B,2,0))`,
-        ],
+        formulae: [`Subcategories!$A$1:$A$${subcategories.rows.length}`],
       };
     }
 
