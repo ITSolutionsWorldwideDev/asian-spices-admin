@@ -131,6 +131,17 @@ export default function SigninComponent() {
                         {errorMsg && <p className="text-red-500">{errorMsg}</p>}
                       </div>
 
+                      <p className="mt-4 text-center text-white text-sm">
+                        <a
+                          href="https://www.asianspices.online/signup"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline hover:text-orange-400"
+                        >
+                          Sign up as a partner
+                        </a>
+                      </p>
+
                       <div className="my-6 flex justify-center items-center copyright-text">
                         <p>Copyright &copy; 2026 Asian Spices</p>
                       </div>

@@ -9,6 +9,9 @@ import { logAudit } from "@/lib/audit";
 import { redirect } from "next/navigation";
 import { recipeSchema } from "@/lib/validations/recipeSchema";
 import { extractYoutubeData } from "@/core/utils";
+import {
+  replaceRecipeNutrition,
+} from "@/lib/recipes/nutrition";
 import { ZodError } from "zod";
 
 function formatZodError(error: ZodError) {
@@ -100,6 +103,9 @@ export async function saveRecipe(
   const data = Object.fromEntries(formData.entries());
 
   const tagIds = JSON.parse((data.tagIds as string) || "[]");
+  const ingredients = JSON.parse((data.ingredients as string) || "[]");
+  const instructions = JSON.parse((data.instructions as string) || "[]");
+  const nutrition = JSON.parse((data.nutrition as string) || "[]");
 
   const validated = recipeSchema.safeParse(data);
 
@@ -280,6 +286,10 @@ export async function saveRecipe(
       });
     }
 
+    if (!finalRecipeId) {
+      throw new Error("Recipe ID is missing");
+    }
+
     await client.query(
       `
       DELETE FROM recipe_recipe_tags
@@ -300,6 +310,78 @@ export async function saveRecipe(
         [finalRecipeId, tagId],
       );
     }
+
+    await client.query(
+      `DELETE FROM recipe_ingredients WHERE recipe_id = $1`,
+      [finalRecipeId],
+    );
+
+    for (const item of ingredients) {
+      const name = String(item.ingredient_name || "").trim();
+      if (!name) continue;
+
+      await client.query(
+        `
+        INSERT INTO recipe_ingredients (
+          ingredients_id,
+          recipe_id,
+          ingredient_name,
+          quantity,
+          unit,
+          created_at,
+          updated_at
+        )
+        VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW(), NOW())
+        `,
+        [
+          finalRecipeId,
+          name,
+          item.quantity === "" || item.quantity == null
+            ? null
+            : Number(item.quantity),
+          item.unit || null,
+        ],
+      );
+    }
+
+    await client.query(
+      `DELETE FROM recipe_instructions WHERE recipe_id = $1`,
+      [finalRecipeId],
+    );
+
+    for (let i = 0; i < instructions.length; i++) {
+      const item = instructions[i];
+      const title = String(item.step_title || "").trim();
+      const description = String(item.step_description || "").trim();
+      if (!title && !description) continue;
+
+      await client.query(
+        `
+        INSERT INTO recipe_instructions (
+          instruction_id,
+          recipe_id,
+          step_number,
+          step_title,
+          step_description,
+          duration_minutes,
+          created_at,
+          updated_at
+        )
+        VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, NOW(), NOW())
+        `,
+        [
+          finalRecipeId,
+          i + 1,
+          title || `Step ${i + 1}`,
+          description || null,
+          item.duration_minutes === "" || item.duration_minutes == null
+            ? null
+            : Number(item.duration_minutes),
+        ],
+      );
+    }
+
+    await replaceRecipeNutrition(finalRecipeId, nutrition, client);
 
     await client.query("COMMIT");
 
@@ -387,11 +469,49 @@ export async function duplicateRecipe(recipeId: string) {
       ],
     );
 
+    const newId = duplicated.rows[0].id;
+
+    await client.query(
+      `
+      INSERT INTO recipe_ingredients (
+        ingredients_id, recipe_id, ingredient_name, quantity, unit, created_at, updated_at
+      )
+      SELECT gen_random_uuid(), $2, ingredient_name, quantity, unit, NOW(), NOW()
+      FROM recipe_ingredients
+      WHERE recipe_id = $1
+      `,
+      [recipeId, newId],
+    );
+
+    await client.query(
+      `
+      INSERT INTO recipe_instructions (
+        instruction_id, recipe_id, step_number, step_title, step_description, duration_minutes, created_at, updated_at
+      )
+      SELECT gen_random_uuid(), $2, step_number, step_title, step_description, duration_minutes, NOW(), NOW()
+      FROM recipe_instructions
+      WHERE recipe_id = $1
+      `,
+      [recipeId, newId],
+    );
+
+    await client.query(
+      `
+      INSERT INTO recipe_nutrition (
+        nutrition_id, recipe_id, nutrient_name, value, unit, daily_value_percent
+      )
+      SELECT gen_random_uuid(), $2, nutrient_name, value, unit, daily_value_percent
+      FROM recipe_nutrition
+      WHERE recipe_id = $1
+      `,
+      [recipeId, newId],
+    );
+
     await client.query("COMMIT");
 
     revalidatePath("/platform/recipes");
 
-    redirect(`/platform/recipes/${duplicated.rows[0].id}`);
+    redirect(`/platform/recipes/${newId}`);
   } catch (err) {
     await client.query("ROLLBACK");
 

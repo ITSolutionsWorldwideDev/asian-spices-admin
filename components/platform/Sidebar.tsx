@@ -111,6 +111,12 @@ const PLATFORM_MENU = [
       },
       { label: "All Recipes", link: "/recipes", icon: "box", submenu: false },
       {
+        label: "Recipe Likes",
+        link: "/recipes/favorites",
+        icon: "heart",
+        submenu: false,
+      },
+      {
         label: "Recipe Tags",
         link: "/recipe-tags",
         icon: "box",
