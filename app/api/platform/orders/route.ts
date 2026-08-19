@@ -69,10 +69,15 @@ export async function GET(req: NextRequest) {
 
     // Append limit and offset securely to the data query using safe string numbers
     const dataQuery = `
-      SELECT 
+      SELECT
         o.id,
         o.order_number,
         o.order_status,
+        CASE
+          WHEN LOWER(o.order_status) = 'cancelled' THEN 'cancelled'
+          ELSE o.routing_status
+        END as routing_status,
+        o.payment_status,
         o.fulfillment_status,
         o.payment_status,
         o.rejection_count,
@@ -83,6 +88,18 @@ export async function GET(req: NextRequest) {
         END as store_name
       FROM store_orders o
       LEFT JOIN stores s ON s.id = o.current_store_id
+      LEFT JOIN LATERAL (
+        -- Distinct stores actually holding an allocation for this order,
+        -- regardless of whether current_store_id was ever set - this is
+        -- what tells us "split to 1 real store" vs "split across N stores".
+        SELECT
+          COUNT(DISTINCT oia.store_id) AS store_count,
+          MAX(s2.name) AS single_store_name
+        FROM order_item_allocations oia
+        JOIN store_order_items oi ON oi.id = oia.order_item_id
+        JOIN stores s2 ON s2.id = oia.store_id
+        WHERE oi.order_id = o.id
+      ) alloc ON true
       ${whereClause}
       ${orderBy}
       LIMIT ${limit} OFFSET ${offset}

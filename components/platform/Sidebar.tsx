@@ -82,6 +82,12 @@ const PLATFORM_MENU = [
       { label: "Brands", link: "/brand", icon: "triangles", submenu: false },
       { label: "Products", link: "/products", icon: "box", submenu: false },
       {
+        label: "Store Assignments",
+        link: "/platform/store-assignments",
+        icon: "building-store",
+        submenu: false,
+      },
+      {
         label: "Create Product",
         link: "/products/new",
         icon: "table-plus",
@@ -104,6 +110,12 @@ const PLATFORM_MENU = [
         submenu: false,
       },
       { label: "All Recipes", link: "/recipes", icon: "box", submenu: false },
+      {
+        label: "Recipe Likes",
+        link: "/recipes/favorites",
+        icon: "heart",
+        submenu: false,
+      },
       {
         label: "Recipe Tags",
         link: "/recipe-tags",
@@ -237,6 +249,12 @@ const PLATFORM_MENU = [
         label: "Settings",
         icon: "settings-cog",
         link: "/platform/settings",
+        submenu: false,
+      },
+      {
+        label: "Activity",
+        icon: "activity",
+        link: "/platform/activity",
         submenu: false,
       },
     ],

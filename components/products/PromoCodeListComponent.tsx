@@ -93,15 +93,21 @@ export default function PromoCodeListComponent() {
   const handleDelete = async () => {
     if (!selectedId) return;
     try {
-      await fetch(`/api/products/promos?id=${selectedId}`, {
+      const res = await fetch(`/api/products/promos?id=${selectedId}`, {
         method: "DELETE",
       });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Failed to destroy targeted database entry");
+      }
+
       setShowDeleteModal(false);
       setSelectedId(null);
       fetchPromos();
       showToast("success", "Rule detached successfully");
-    } catch {
-      showToast("error", "Failed to destroy targeted database entry");
+    } catch (err: any) {
+      showToast("error", err.message || "Failed to destroy targeted database entry");
     }
   };
 

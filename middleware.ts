@@ -35,6 +35,26 @@ export default withAuth(
         requestHeaders.set("x-tenant-subdomain", slug);
       }
 
+      // Activity logging: fire-and-forget for all mutations
+      const MUTATION_METHODS = ["POST", "PUT", "PATCH", "DELETE"];
+      const SKIP_LOG = ["/api/log", "/api/auth", "/api/activity", "/api/uploadthing"];
+
+      if (
+        MUTATION_METHODS.includes(req.method) &&
+        !SKIP_LOG.some((p) => pathname.startsWith(p))
+      ) {
+        fetch(`${req.nextUrl.origin}/api/log`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            actorId: token?.sub ?? null,
+            actorEmail: token?.email ?? null,
+            method: req.method,
+            path: pathname,
+          }),
+        }).catch(() => {});
+      }
+
       return NextResponse.next({
         request: { headers: requestHeaders },
       });
@@ -86,7 +106,17 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
+      authorized: ({ token, req }) => {
+        // Genie must stay reachable for logged-out visitors (e.g. login help).
+        if (req.nextUrl.pathname.startsWith("/api/genie-chat")) {
+          return true;
+        }
+
+        if (req.nextUrl.pathname === "/api/log") return true;
+
+
+        return !!token;
+      },
     },
     pages: {
       signIn: "/login",

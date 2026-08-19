@@ -12,6 +12,7 @@ import FilterBar from "./FilterBar";
 import { useToast } from "@/core/ui";
 import ProductImportModal from "./ProductImportModal";
 import DiscountImportModal from "./DiscountImportModal";
+import { exportToCsv } from "@/core/utils/exportCsv";
 
 /* ------------------------------------
    Types
@@ -104,6 +105,29 @@ export default function ProductListComponent() {
     fetchProducts(filters);
   }, [filters, fetchProducts]);
 
+  const handleExportCsv = () => {
+    exportToCsv<Product>(
+      "products",
+      [
+        { title: "Product", dataIndex: "name" },
+        { title: "SKU", dataIndex: "sku" },
+        { title: "Category", dataIndex: "category" },
+        { title: "Brand", dataIndex: "brand" },
+        {
+          title: "Price",
+          dataIndex: "base_price",
+          format: (v) => `€${Number(v).toLocaleString()}`,
+        },
+        {
+          title: "Status",
+          dataIndex: "status",
+          format: (v) => (v ? "Active" : "Inactive"),
+        },
+      ],
+      products,
+    );
+  };
+
   /* const fetchProducts = async (filters: Filters = {}) => {
     try {
       setLoading(true);
@@ -147,23 +171,26 @@ export default function ProductListComponent() {
   };
 
   const columns = [
-    // {
-    //   title: "SKU",
-    //   dataIndex: "sku",
-    //   sorter: (a: Product, b: Product) => a.sku.localeCompare(b.sku),
-    // },
     {
       title: "Product",
       dataIndex: "name",
+      width: 200,
       render: (text: string, record: Product) => (
         <Link
           href={`products/${record.id}`}
-          className="text-blue-600 hover:underline"
+          title={text}
+          className="block max-w-[180px] truncate text-blue-600 hover:underline"
         >
           {text}
         </Link>
       ),
       sorter: (a: Product, b: Product) => a.name.localeCompare(b.name),
+    },
+    {
+      title: "SKU",
+      dataIndex: "sku",
+      width: 120,
+      sorter: (a: Product, b: Product) => (a.sku || "").localeCompare(b.sku || ""),
     },
     {
       title: "Category",
@@ -263,6 +290,14 @@ export default function ProductListComponent() {
                 <Download className="mr-2" size={16} />
                 Import Discounts
               </button>
+
+              <button
+                onClick={handleExportCsv}
+                className="flex items-center px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 text-sm font-medium transition-colors"
+              >
+                <Download className="mr-2" size={16} />
+                Export
+              </button>
             </div>
           </div>
 
@@ -275,16 +310,14 @@ export default function ProductListComponent() {
             </div>
             {/* ------------------------- TABLE ------------------------- */}
             <div className="card-body">
-              <div className="overflow-x-auto">
-                {loading ? (
-                  <div className="flex items-center justify-center py-24 space-x-3">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black" />
-                    <p className="text-gray-500 font-medium">Loading...</p>
-                  </div>
-                ) : (
-                  <Table columns={columns} dataSource={products} rowKey="id" />
-                )}
-              </div>
+              {loading ? (
+                <div className="flex items-center justify-center py-24 space-x-3">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black" />
+                  <p className="text-gray-500 font-medium">Loading...</p>
+                </div>
+              ) : (
+                <Table columns={columns} dataSource={products} rowKey="id" />
+              )}
             </div>
           </div>
         </div>

@@ -41,6 +41,30 @@ export async function authorizeUser(email: string, password: string): Promise<Au
     [user.id]
   );
 
+  // Platform admins aren't tied to a partner application. Everyone else must have
+  // every store they belong to backed by an *approved* partner_registration - a
+  // store created before approval (or never routed through the approval flow)
+  // must not grant a working login. The FK linking stores back to their
+  // application is inconsistent (some rows store partner_registration.partner_id,
+  // others store partner_registration.application_id), so this checks both.
+  if (!user.is_platform_admin && rolesRes.rows.length > 0) {
+    const pendingRes = await runQuery(
+      `SELECT 1
+       FROM stores s
+       JOIN partner_registration pr
+         ON pr.partner_id::text = s.partner_registration_id
+         OR pr.application_id = s.partner_registration_id
+       WHERE s.id = ANY($1::uuid[])
+         AND pr.status <> 'approved'
+       LIMIT 1`,
+      [rolesRes.rows.map((r) => r.store_id)]
+    );
+
+    if ((pendingRes.rowCount ?? 0) > 0) {
+      throw new Error("Your account is pending approval");
+    }
+  }
+
   return {
     id: user.id,
     email: user.email,

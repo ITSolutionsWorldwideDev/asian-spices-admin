@@ -76,6 +76,25 @@ export default function OrderDetailsClient({ orderId }: { orderId: string }) {
   <LoaderOverlay show={loadingOverlay} message="Saving store settings..." />;
   if (loading) return <p className="p-6">Loading...</p>;
 
+  // Distinct stores actually holding an allocation for this order - lets us
+  // show the real store name even when it was routed via the split path
+  // (current_store_id unset) but every item landed on the same one store,
+  // instead of a generic "split" label that hides which store it really is.
+  const allocatedStoreNames: string[] = Array.from(
+    new Set(
+      (order?.items || []).flatMap((item: any) =>
+        (item.allocations || []).map((a: any) => a.store_name).filter(Boolean),
+      ),
+    ),
+  );
+  const storeDisplay =
+    order?.store_name ||
+    (allocatedStoreNames.length === 1
+      ? allocatedStoreNames[0]
+      : allocatedStoreNames.length > 1
+        ? `${allocatedStoreNames.length} stores assigned`
+        : null);
+
   return (
     <div className="page-wrapper">
       <div className="content p-6 mb-6">
@@ -156,7 +175,7 @@ export default function OrderDetailsClient({ orderId }: { orderId: string }) {
 
           <div className="bg-white p-4 rounded shadow">
             <h3 className="font-semibold mb-2">Store</h3>
-            <p className="font-semibold">{order?.store_name || "-"}</p>
+            <p className="font-semibold">{storeDisplay || "-"}</p>
           </div>
 
           <div className="bg-white p-4 rounded shadow">

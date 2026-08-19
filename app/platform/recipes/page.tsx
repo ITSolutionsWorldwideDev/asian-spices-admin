@@ -55,7 +55,17 @@ export default async function RecipesPage({
       r.status,
       r.created_at,
       rc.name as category_name,
-      COUNT(*) OVER() AS total
+      COUNT(*) OVER() AS total,
+      (
+        SELECT COUNT(*)::int
+        FROM recipe_ingredients ri
+        WHERE ri.recipe_id = r.id
+      ) AS ingredients_count,
+      (
+        SELECT COUNT(*)::int
+        FROM recipe_instructions ins
+        WHERE ins.recipe_id = r.id
+      ) AS instructions_count
 
     FROM recipes r
 

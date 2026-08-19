@@ -50,6 +50,10 @@ export default function RecipeCard({
           {recipe.slug}
         </p>
 
+        <p className="text-xs text-gray-500 mt-2">
+          {recipe.ingredients_count || 0} ingredients · {recipe.instructions_count || 0} steps
+        </p>
+
         <div className="flex gap-2 mt-5">
           <Link
             href={`/platform/recipes/${recipe.id}`}

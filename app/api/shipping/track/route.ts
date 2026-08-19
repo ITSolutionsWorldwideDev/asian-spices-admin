@@ -78,12 +78,16 @@ export async function POST(req: NextRequest) {
 
     await pool.query(
       `
-      UPDATE store_orders 
-      SET 
-        shipping_status = $1,
+      UPDATE store_orders
+      SET
+        shipping_status = $1::VARCHAR,
         shipping_paid = $2,
         tracking_number = COALESCE($3::TEXT, tracking_number),
-        updated_at = NOW() 
+        delivered_at = CASE
+          WHEN $1::VARCHAR = 'delivered' THEN COALESCE(delivered_at, NOW())
+          ELSE delivered_at
+        END,
+        updated_at = NOW()
       WHERE id = $4
       `,
       [simplifiedStatus, isPaidOnGateway, awbTrackingCode, orderId],
