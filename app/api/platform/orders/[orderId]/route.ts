@@ -16,7 +16,10 @@ export async function GET(
         o.*,
         o.created_at as assigned_at,
         (o.created_at + interval '1 hour') as deadline,
-        s.name as store_name,
+        CASE
+          WHEN LOWER(o.order_status) = 'cancelled' THEN NULL
+          ELSE s.name
+        END as store_name,
         c.first_name || ' ' || c.last_name as customer_name,
         c.email,
         c.phone,
@@ -24,7 +27,7 @@ export async function GET(
         o.shipping_city,
         o.shipping_country
         FROM store_orders o
-        LEFT JOIN stores s ON (s.id = o.current_store_id OR s.id = o.store_id)
+        LEFT JOIN stores s ON s.id = o.current_store_id
         LEFT JOIN store_customers c ON c.id = o.customer_id
         WHERE o.id = $1
     `,

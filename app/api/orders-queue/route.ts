@@ -28,6 +28,7 @@ export async function GET(req: NextRequest) {
       "oia.store_id = $1",
       "o.payment_status = 'paid'",
       "oia.status = 'pending'",
+      "o.order_status != 'cancelled'",
     ];
 
     if (search.trim()) {

@@ -74,9 +74,13 @@ export async function GET(req: NextRequest) {
         o.order_number,
         o.order_status,
         o.fulfillment_status,
+        o.payment_status,
         o.rejection_count,
         o.created_at,
-        s.name as store_name
+        CASE
+          WHEN LOWER(o.order_status) = 'cancelled' THEN NULL
+          ELSE s.name
+        END as store_name
       FROM store_orders o
       LEFT JOIN stores s ON s.id = o.current_store_id
       ${whereClause}

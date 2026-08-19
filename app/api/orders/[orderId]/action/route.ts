@@ -90,8 +90,29 @@ export async function POST(req: NextRequest, { params }: any) {
       await client.query(
         `
         UPDATE store_orders
-        SET order_status = 'cancelled'
+        SET order_status = 'cancelled',
+            routing_status = 'cancelled',
+            current_store_id = NULL
         WHERE id = $1
+      `,
+        [orderId],
+      );
+
+      await client.query(
+        `
+        UPDATE order_item_allocations
+        SET status = 'rejected'
+        WHERE order_id = $1
+          AND status IN ('pending', 'assigned')
+      `,
+        [orderId],
+      );
+
+      await client.query(
+        `
+        UPDATE order_routing_attempts
+        SET status = 'expired'
+        WHERE order_id = $1 AND status = 'pending'
       `,
         [orderId],
       );

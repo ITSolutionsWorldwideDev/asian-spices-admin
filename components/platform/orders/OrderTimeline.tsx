@@ -18,22 +18,30 @@ const getColor = (type: string) => {
       return "text-green-600";
     case "partial":
       return "text-yellow-600";
+    case "cancelled":
+      return "text-red-700";
+    case "refund_pending":
+      return "text-amber-600";
+    case "refund_initiated":
+      return "text-blue-700";
+    case "refunded":
+      return "text-green-700";
     default:
       return "text-gray-600";
   }
 };
 
-export default function OrderTimeline({ events }: { events: Event[] }) {
+export default function OrderTimeline({ events }: { events?: Event[] }) {
   return (
     <div className="space-y-4 border-l pl-4 mb-6">
-      {events.map((e) => (
+      {(events || []).map((e) => (
         <div key={e.id}>
           <p className="text-xs text-gray-400">
             {new Date(e.created_at).toLocaleString()}
           </p>
 
           <p className={`font-semibold ${getColor(e.event_type)}`}>
-            {e.event_type.toUpperCase()}
+            {String(e.event_type || "").replace(/_/g, " ").toUpperCase()}
           </p>
 
           <p>{e.message}</p>

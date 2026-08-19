@@ -23,8 +23,11 @@ export const getOrderActionState = (order: any): OrderActionState => {
 
   // console.log("order ==== ", order);
 
+  const status = String(order.order_status || "").toLowerCase();
+  const routingStatus = String(order.routing_status || "").toLowerCase();
+
   // 🔴 Cancelled orders
-  if (order.order_status === "cancelled") {
+  if (status === "cancelled" || routingStatus === "cancelled") {
     return {
       reassign: { disabled: true, reason: "Order is cancelled" },
       forceDefault: { disabled: true, reason: "Order is cancelled" },

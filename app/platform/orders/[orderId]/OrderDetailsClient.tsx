@@ -35,7 +35,7 @@ export default function OrderDetailsClient({ orderId }: { orderId: string }) {
     const eventsData = await eventsRes.json();
 
     setOrder(orderData.order);
-    setEvents(eventsData.events);
+    setEvents(withStatusEvents(orderData.order, eventsData.events || []));
 
     setLoading(false);
     setLoadingOverlay(false);
@@ -254,6 +254,56 @@ export default function OrderDetailsClient({ orderId }: { orderId: string }) {
       </div>
     </div>
   );
+}
+
+function withStatusEvents(order: any, events: any[]) {
+  const list = Array.isArray(events) ? [...events] : [];
+  if (String(order?.order_status || "").toLowerCase() !== "cancelled") {
+    return list;
+  }
+
+  const when = order.updated_at || order.created_at || new Date().toISOString();
+
+  if (!list.some((e) => String(e.event_type || "").toLowerCase() === "cancelled")) {
+    list.push({
+      id: "order-status-cancelled",
+      event_type: "cancelled",
+      message: "Order cancelled",
+      created_at: when,
+    });
+  }
+
+  const payment = String(order.payment_status || "").toLowerCase().replace(/[\s-]+/g, "_");
+  const hasRefund = list.some((e) =>
+    String(e.event_type || "").toLowerCase().startsWith("refund"),
+  );
+
+  if (!hasRefund) {
+    let refundType = "";
+    let refundLabel = "";
+
+    if (["refunded", "refund_completed", "refund_success"].includes(payment)) {
+      refundType = "refunded";
+      refundLabel = "Refunded";
+    } else if (["refund_initiated", "refund_processing"].includes(payment)) {
+      refundType = "refund_initiated";
+      refundLabel = "Refund Initiated";
+    } else if (["paid", "captured", "completed", "refund_pending"].includes(payment)) {
+      refundType = "refund_pending";
+      refundLabel = "Refund Pending";
+    }
+
+    if (refundType) {
+      list.push({
+        id: "order-status-refund",
+        event_type: refundType,
+        message: `Refund status: ${refundLabel}`,
+        created_at: when,
+      });
+    }
+  }
+
+  return list;
 }
 
 const getStatusIcon = (status: string) => {
