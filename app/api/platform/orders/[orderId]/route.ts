@@ -18,7 +18,17 @@ export async function GET(
         (o.created_at + interval '1 hour') as deadline,
         CASE
           WHEN LOWER(o.order_status) = 'cancelled' THEN NULL
-          ELSE s.name
+          WHEN s.name IS NOT NULL THEN s.name
+          ELSE (
+            SELECT s2.name
+            FROM order_item_allocations oia
+            JOIN stores s2 ON s2.id = oia.store_id
+            WHERE oia.order_id = o.id
+            GROUP BY s2.id, s2.name
+            HAVING COUNT(*) > 0
+            ORDER BY COUNT(*) DESC
+            LIMIT 1
+          )
         END as store_name,
         c.first_name || ' ' || c.last_name as customer_name,
         c.email,

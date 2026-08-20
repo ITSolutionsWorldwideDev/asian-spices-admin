@@ -75,6 +75,8 @@ export async function GET(req: NextRequest) {
         o.order_status,
         CASE
           WHEN LOWER(o.order_status) = 'cancelled' THEN 'cancelled'
+          WHEN LOWER(COALESCE(o.routing_status, '')) = 'split'
+            AND COALESCE(alloc.store_count, 0) <= 1 THEN 'assigned'
           ELSE o.routing_status
         END as routing_status,
         o.payment_status,
@@ -84,14 +86,16 @@ export async function GET(req: NextRequest) {
         o.created_at,
         CASE
           WHEN LOWER(o.order_status) = 'cancelled' THEN NULL
-          ELSE s.name
-        END as store_name
+          WHEN s.name IS NOT NULL THEN s.name
+          WHEN COALESCE(alloc.store_count, 0) = 1 THEN alloc.single_store_name
+          WHEN COALESCE(alloc.store_count, 0) > 1 THEN alloc.store_count || ' stores assigned'
+          ELSE NULL
+        END as store_name,
+        alloc.store_count,
+        alloc.single_store_name
       FROM store_orders o
       LEFT JOIN stores s ON s.id = o.current_store_id
       LEFT JOIN LATERAL (
-        -- Distinct stores actually holding an allocation for this order,
-        -- regardless of whether current_store_id was ever set - this is
-        -- what tells us "split to 1 real store" vs "split across N stores".
         SELECT
           COUNT(DISTINCT oia.store_id) AS store_count,
           MAX(s2.name) AS single_store_name

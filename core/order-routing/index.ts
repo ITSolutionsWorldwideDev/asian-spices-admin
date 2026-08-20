@@ -451,13 +451,20 @@ export const assignNextStore = async (client: any, orderId: string) => {
     };
   }
 
-  // FALLBACK TO SPLIT
-  return assignMultiStore(client, orderId);
+  // No eligible open store → assign fully to Asian Spices Head Office
+  return assignDefaultStore(client, orderId);
 };
 
 /* ================= MULTI STORE ================= */
 
 export const assignMultiStore = async (client: any, orderId: string) => {
+  // Split routing disabled — always assign the full order to Head Office
+  return assignDefaultStore(client, orderId);
+};
+
+/* ================= MULTI STORE (disabled) ================= */
+
+async function _legacyAssignMultiStore(client: any, orderId: string) {
   const order = await getOrderContext(client, orderId);
 
   const { rows: orderItems } = await client.query(

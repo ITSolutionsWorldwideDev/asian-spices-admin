@@ -397,8 +397,8 @@ export const assignNextStore = async (client: any, orderId: string) => {
   );
 
   if (!stores.length) {
-    // ❗ fallback to multi-store
-    return assignMultiStore(client, orderId);
+    // Split disabled — assign fully to Head Office
+    return assignDefaultStore(client, orderId);
   }
 
   const sorted = sortStores(stores, order.latitude, order.longitude);

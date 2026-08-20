@@ -104,8 +104,6 @@ export async function GET(
     );
 
     // 3️⃣ Dynamically compute financial aggregates for this local partition string context
-    let localSubtotal = 0;
-
     const formattedItems = itemsResult.rows.map(
       (item: {
         price: string | number;
@@ -115,7 +113,6 @@ export async function GET(
       }) => {
         const itemPrice = Number(item.price);
         const allocatedQty = Number(item.quantity);
-        localSubtotal += itemPrice * allocatedQty;
 
         return {
           ...item,
@@ -127,19 +124,13 @@ export async function GET(
       },
     );
 
-    // Use the order's real tax + shipping from the DB (do not invent an 8% estimate)
-    const localTax = Number(orderData.tax_amount || 0);
-    const localShipping = Number(orderData.shipping_amount || 0);
-    const localTotal = Number(
-      (localSubtotal + localTax + localShipping).toFixed(2),
-    );
-
+    // Use order totals directly from store_orders
     const orderDetails = {
       ...orderData,
-      subtotal: localSubtotal,
-      tax_amount: localTax,
-      shipping_amount: localShipping,
-      total_amount: localTotal,
+      subtotal: Number(orderData.subtotal || 0),
+      tax_amount: Number(orderData.tax_amount || 0),
+      shipping_amount: Number(orderData.shipping_amount || 0),
+      total_amount: Number(orderData.total_amount || 0),
       items: formattedItems,
     };
 

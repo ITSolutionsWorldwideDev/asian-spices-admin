@@ -6,6 +6,7 @@ import { AppError } from "@/lib/errors";
 
 import {
   assignNextStore,
+  assignDefaultStore,
   logOrderEvent,
   ORDER_EVENTS,
 } from "@/core/order-routing";
@@ -55,8 +56,29 @@ export async function POST(req: NextRequest, { params }: any) {
     }
 
     // =====================
-    // FORCE ASSIGN
+    // FORCE ASSIGN / DEFAULT STORE
     // =====================
+
+    if (action === "force_default") {
+      await client.query(
+        `
+        UPDATE order_item_allocations
+        SET status = 'rejected'
+        WHERE order_id = $1
+          AND status IN ('pending', 'assigned')
+        `,
+        [orderId],
+      );
+
+      await assignDefaultStore(client, orderId);
+
+      await logOrderEvent(client, {
+        orderId,
+        eventType: ORDER_EVENTS.ADMIN_FORCE_ASSIGN,
+        storeId: DEFAULT_STORE_ID,
+        message: "Admin assigned order fully to Asian Spices Head Office",
+      });
+    }
 
     if (action === "force_assign") {
       await client.query(
@@ -79,7 +101,6 @@ export async function POST(req: NextRequest, { params }: any) {
 
       await logOrderEvent(client, {
         orderId,
-        // eventType: "admin_force_assign",
         eventType: ORDER_EVENTS.ADMIN_FORCE_ASSIGN,
         storeId,
         message: "Admin force assigned store",
