@@ -19,6 +19,35 @@ export async function GET(req: NextRequest) {
 
   // Parse and validate pagination bounds from URL query parameters
   const { searchParams } = new URL(req.url);
+
+  // Optional: fetch specific media by id list (used when selected product images
+  // are not on the current gallery page)
+  const idsParam = searchParams.get("ids")?.trim();
+  if (idsParam) {
+    const ids = idsParam
+      .split(",")
+      .map((id) => parseInt(id, 10))
+      .filter((id) => !Number.isNaN(id));
+
+    try {
+      const dataResult = await pool.query(
+        `
+        SELECT media_id, file_name, file_url, file_type, created_at
+        FROM media
+        WHERE media_id = ANY($1::int[])
+        `,
+        [ids],
+      );
+      return NextResponse.json({ media: dataResult.rows });
+    } catch (err: any) {
+      console.error("MEDIA FETCH BY IDS ERROR:", err);
+      return NextResponse.json(
+        { error: "Failed to parse system assets" },
+        { status: 500 },
+      );
+    }
+  }
+
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
   const limit = Math.max(
     1,
@@ -68,8 +97,34 @@ export async function GET(req: NextRequest) {
       [search, `%${search}%`, limit, offset],
     );
 
+    const includeIdsParam = searchParams.get("includeIds")?.trim();
+    const includeIds = includeIdsParam
+      ? includeIdsParam
+          .split(",")
+          .map((id) => parseInt(id, 10))
+          .filter((id) => !Number.isNaN(id))
+      : [];
+
+    let rows = dataResult.rows;
+    if (includeIds.length > 0) {
+      const existingIds = new Set(rows.map((row) => row.media_id));
+      const missingIds = includeIds.filter((id) => !existingIds.has(id));
+
+      if (missingIds.length > 0) {
+        const extraResult = await pool.query(
+          `
+          SELECT media_id, file_name, file_url, file_type, created_at
+          FROM media
+          WHERE media_id = ANY($1::int[])
+          `,
+          [missingIds],
+        );
+        rows = [...extraResult.rows, ...rows];
+      }
+    }
+
     return NextResponse.json({
-      media: dataResult.rows,
+      media: rows,
       pagination: {
         page,
         limit,

@@ -12,10 +12,10 @@ export const pool =
   globalThis.varGlobalPool ??
   new Pool({
     connectionString: process.env.DATABASE_URL,
-    // 🟢 OPTIMIZED: Scaled settings tailored to prevent serverless pool exhaustion
-    max: 10,// 20, 
-    idleTimeoutMillis: 20000,// 30000,
-    connectionTimeoutMillis: 15000,//10000, // Raised to 10s to gracefully survive sudden server lag spikes
+    // Keep this low — hosted DB roles (e.g. prisma_migration) often allow only a few connections
+    max: Number(process.env.DB_POOL_MAX ?? 3),
+    idleTimeoutMillis: 20000,
+    connectionTimeoutMillis: 15000,
   });
 
 if (process.env.NODE_ENV !== "production") {

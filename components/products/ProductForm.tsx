@@ -308,13 +308,19 @@ export default function ProductFormComponent({
   }, [search]);
 
   useEffect(() => {
-    // fetch(`/api/media?page=${page}&limit=${limit}`)
-    //   .then((r) => r.json())
-    fetch(
-      `/api/media?page=${page}&limit=${limit}&search=${encodeURIComponent(debouncedSearch)}`,
-    )
-      .then((r) => r.json())
-      .then((d) => {
+    let cancelled = false;
+
+    const loadMedia = async () => {
+      try {
+        const includeIdsQuery =
+          page === 1 && selectedMedia.length > 0
+            ? `&includeIds=${selectedMedia.join(",")}`
+            : "";
+
+        const r = await fetch(
+          `/api/media?page=${page}&limit=${limit}&search=${encodeURIComponent(debouncedSearch)}${includeIdsQuery}`,
+        );
+        const d = await r.json();
         const mediaArray = d.media || d.items || d.data || d;
         const fetchedMedia: MediaItem[] = Array.isArray(mediaArray)
           ? mediaArray
@@ -324,8 +330,6 @@ export default function ProductFormComponent({
           setTotalPages(d.pagination.totalPages || 1);
         }
 
-        // 🔥 SORTING & PREPENDING LOGIC:
-        // Separate fetched items into selected and unselected categories
         const selectedInPayload = fetchedMedia.filter((item) =>
           selectedMedia.includes(item.media_id),
         );
@@ -333,31 +337,18 @@ export default function ProductFormComponent({
           (item) => !selectedMedia.includes(item.media_id),
         );
 
-        // Put selected items first, followed by the rest of the page items
-        let orderedMedia = [...selectedInPayload, ...unselectedInPayload];
+        const orderedMedia = [...selectedInPayload, ...unselectedInPayload];
 
-        // 💡 EDGE CASE GUARD: If we are on page 1, double-check if any selected items
-        // are missing from the current page payload (e.g., they were chosen from a deeper page).
-        if (page === 1 && selectedMedia.length > 0) {
-          const missingSelectedIds = selectedMedia.filter(
-            (id) => !orderedMedia.some((item) => item.media_id === id),
-          );
+        if (!cancelled) setMedia(orderedMedia);
+      } catch (err) {
+        console.error("Error setting media state grid array:", err);
+      }
+    };
 
-          if (missingSelectedIds.length > 0) {
-            // Fetch the individual profiles of those missing assets so they don't look broken
-            // Alternatively, if your project allows it, pass selectedMedia to your API to handle this server-side.
-            console.warn(
-              "Some selected media items live on subsequent pagination windows:",
-              missingSelectedIds,
-            );
-          }
-        }
-
-        setMedia(orderedMedia);
-      })
-      .catch((err) =>
-        console.error("Error setting media state grid array:", err),
-      );
+    loadMedia();
+    return () => {
+      cancelled = true;
+    };
   }, [page, selectedMedia, debouncedSearch]);
 
   // ---------------- Options ----------------
