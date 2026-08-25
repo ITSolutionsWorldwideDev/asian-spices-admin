@@ -3,6 +3,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/auth/guards";
 import { pool } from "@/core/db";
+import {
+  findProductCodeConflict,
+  normalizeProductCode,
+  uniqueViolationResponse,
+} from "@/lib/products/uniqueCodes";
 
 /* ------------------ GET (Single Product) ------------------ */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -43,6 +48,31 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     await client.query("BEGIN");
     const body = await req.json();
+    const sku = normalizeProductCode(body.sku);
+    const itemCode = normalizeProductCode(body.item_code);
+
+    if (!sku || !itemCode) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        { error: !sku ? "SKU is required" : "Item code is required" },
+        { status: 400 },
+      );
+    }
+
+    const conflict = await findProductCodeConflict(client, {
+      sku,
+      item_code: itemCode,
+      excludeId: id,
+    });
+    if (conflict) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(conflict, { status: 409 });
+    }
+
+    const weight =
+      body.weight === undefined || body.weight === null || String(body.weight).trim() === ""
+        ? null
+        : String(body.weight).trim();
 
     const product = await client.query(
       `
@@ -50,15 +80,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         name=$1, slug=$2, sku=$3, item_code=$4, category_id=$5, subcategory_id=$6, brand_id=$7,
         description=$8, base_price=$9, quantity=$10, discount_type=$11, discount_value=$12,
         status=$13, health_benefits=$14, sale_price=$15, purchase_price=$16, customer_type=$17, 
-        promo_code=$18, updated_at=NOW()
-      WHERE id=$19
+        promo_code=$18, weight=$19, updated_at=NOW()
+      WHERE id=$20
       RETURNING *
       `,
       [
         body.name,
         body.slug,
-        body.sku,
-        body.item_code,
+        sku,
+        itemCode,
         body.category_id,
         body.subcategory_id,
         body.brand_id,
@@ -73,6 +103,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         body.purchase_price || null,
         body.customer_type || "B2C",
         body.promo_code || null,
+        weight,
         id,
       ]
     );
@@ -118,6 +149,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   } catch (e: any) {
     await client.query("ROLLBACK");
     console.error(e);
+    if (e.code === "23505") {
+      return NextResponse.json(uniqueViolationResponse(e.constraint), { status: 409 });
+    }
     return NextResponse.json({ error: "Failed to update product specs", detail: e.message }, { status: 500 });
   } finally {
     client.release();

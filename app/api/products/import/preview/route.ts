@@ -2,10 +2,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { pool } from "@/core/db";
+import { normalizeProductCode } from "@/lib/products/uniqueCodes";
+import {
+  createSequentialSkuAllocator,
+  getMaxNumericSkuSequence,
+} from "@/lib/products/sku";
+import {
+  createSequentialItemCodeAllocator,
+  getMaxNumericItemCodeSequence,
+} from "@/lib/products/itemCode";
+import { excelWeight, normalizeExcelRow } from "@/lib/products/excelRow";
 
 const REQUIRED_HEADERS = [
   "Name",
-  "SKU",
   "Category",
   "Subcategory",
   "Brand",
@@ -23,7 +32,9 @@ export async function POST(req: NextRequest) {
   const buffer = Buffer.from(await file.arrayBuffer());
   const workbook = XLSX.read(buffer, { type: "buffer" });
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json<any>(sheet);
+  const rows = XLSX.utils.sheet_to_json<any>(sheet).map((row) =>
+    normalizeExcelRow(row),
+  );
 
   /* ---------------- WRONG-TEMPLATE GUARDRAIL ---------------- */
   // Catches a legacy/foreign export uploaded by mistake before it turns
@@ -48,44 +59,29 @@ export async function POST(req: NextRequest) {
 
   try {
     /* ---------------- STRUCTURAL LOOKUPS ----------------
-       Same source as the manual "Add Product" form (/api/category,
-       /api/subcategory, /api/... brands): no status filter, so anything
-       selectable there is also importable here. A single pg Client can't
-       run concurrent queries, so these run sequentially. */
+       Category, subcategory, and brand are auto-created on confirm. */
 
-    const existingSkus = await client.query(`SELECT sku FROM store_products`);
-    const categories = await client.query(
-      `SELECT id, name FROM store_categories`,
+    const existingCodes = await client.query(
+      `SELECT sku, item_code FROM store_products`,
     );
-    const subcategories = await client.query(
-      `SELECT id, name, category_id FROM store_subcategories`,
-    );
-    const brands = await client.query(`SELECT brand_id AS id, name FROM store_brands`);
 
     const skuSet = new Set(
-      existingSkus.rows.map((r: { sku: string }) => r.sku),
+      existingCodes.rows
+        .map((r: { sku: string }) => normalizeProductCode(r.sku).toLowerCase())
+        .filter(Boolean),
+    );
+    const itemCodeSet = new Set(
+      existingCodes.rows
+        .map((r: { item_code: string }) =>
+          normalizeProductCode(r.item_code).toLowerCase(),
+        )
+        .filter(Boolean),
     );
 
-    const categoryByName = new Map(
-      categories.rows.map((r: { id: number; name: string }) => [
-        r.name.toLowerCase().trim(),
-        r,
-      ]),
-    );
-    const subcategoriesByName = new Map(
-      subcategories.rows.map(
-        (r: { id: number; name: string; category_id: number }) => [
-          r.name.toLowerCase().trim(),
-          r,
-        ],
-      ),
-    );
-    const brandByName = new Map(
-      brands.rows.map((r: { id: number; name: string }) => [
-        r.name.toLowerCase().trim(),
-        r,
-      ]),
-    );
+    const maxSkuSeq = await getMaxNumericSkuSequence(client);
+    const skuAllocator = createSequentialSkuAllocator(maxSkuSeq);
+    const maxItemCodeSeq = await getMaxNumericItemCodeSequence(client);
+    const itemCodeAllocator = createSequentialItemCodeAllocator(maxItemCodeSeq);
 
     const result: Array<{
       row: number;
@@ -96,9 +92,14 @@ export async function POST(req: NextRequest) {
     }> = [];
 
     const skusSeenInFile = new Set<string>();
+    const itemCodesSeenInFile = new Set<string>();
 
     for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
+      const row = { ...rows[i] };
+      const weight = excelWeight(row);
+      if (weight) row.Weight = weight;
+      else delete row.Weight;
+
       const fieldErrors: Record<string, string> = {};
 
       /* ---------------- REQUIRED FIELDS ----------------
@@ -106,12 +107,9 @@ export async function POST(req: NextRequest) {
          would be rejected there is rejected here too, and vice versa. */
 
       if (!row.Name) fieldErrors.Name = "required";
-      if (!row.SKU) fieldErrors.SKU = "required";
-      if (!row["Item Code"]) fieldErrors["Item Code"] = "required";
       if (!row.Category) fieldErrors.Category = "required";
       if (!row.Subcategory) fieldErrors.Subcategory = "required";
-      if (!row.Brand) fieldErrors.Brand = "required";
-      if (!row.Images) fieldErrors.Images = "required";
+      if (!String(row.Brand ?? "").trim()) fieldErrors.Brand = "required";
 
       if (!row["Base Price"]) {
         fieldErrors["Base Price"] = "required";
@@ -119,49 +117,44 @@ export async function POST(req: NextRequest) {
         fieldErrors["Base Price"] = "must be a number > 0";
       }
 
-      if (row.Quantity === undefined || row.Quantity === "") {
-        fieldErrors.Quantity = "required";
-      } else if (Number.isNaN(Number(row.Quantity)) || Number(row.Quantity) < 0) {
+      if (
+        row.Quantity !== undefined &&
+        row.Quantity !== "" &&
+        (Number.isNaN(Number(row.Quantity)) || Number(row.Quantity) < 0)
+      ) {
         fieldErrors.Quantity = "must be a whole number ≥ 0";
       }
 
-      /* ---------------- SKU DUPLICATES ---------------- */
+      /* ---------------- SKU / ITEM CODE DUPLICATES ---------------- */
 
-      if (row.SKU) {
-        if (skuSet.has(row.SKU)) {
+      const providedSku = normalizeProductCode(row.SKU);
+      const providedItemCode = normalizeProductCode(row["Item Code"]);
+
+      if (providedSku) {
+        const skuKey = providedSku.toLowerCase();
+        if (skuSet.has(skuKey)) {
           fieldErrors.SKU = "already exists";
-        } else if (skusSeenInFile.has(row.SKU)) {
+        } else if (skusSeenInFile.has(skuKey)) {
           fieldErrors.SKU = "duplicated in this file";
-        }
-        skusSeenInFile.add(row.SKU);
-      }
-
-      /* ---------------- CATEGORY / SUBCATEGORY / BRAND EXISTENCE ---------------- */
-
-      let matchedCategory: { id: number; name: string } | undefined;
-
-      if (row.Category) {
-        matchedCategory = categoryByName.get(
-          String(row.Category).toLowerCase().trim(),
-        ) as { id: number; name: string } | undefined;
-        if (!matchedCategory) fieldErrors.Category = "not found";
-      }
-
-      if (row.Subcategory) {
-        const matchedSub = subcategoriesByName.get(
-          String(row.Subcategory).toLowerCase().trim(),
-        ) as { id: number; name: string; category_id: number } | undefined;
-
-        if (!matchedSub) {
-          fieldErrors.Subcategory = "not found";
-        } else if (matchedCategory && matchedSub.category_id !== matchedCategory.id) {
-          fieldErrors.Subcategory = `doesn't belong to "${row.Category}"`;
+        } else {
+          skusSeenInFile.add(skuKey);
         }
       }
 
-      if (row.Brand && !brandByName.has(String(row.Brand).toLowerCase().trim())) {
-        fieldErrors.Brand = "not found";
+      if (providedItemCode) {
+        const itemCodeKey = providedItemCode.toLowerCase();
+        if (itemCodeSet.has(itemCodeKey)) {
+          fieldErrors["Item Code"] = "already exists";
+        } else if (itemCodesSeenInFile.has(itemCodeKey)) {
+          fieldErrors["Item Code"] = "duplicated in this file";
+        } else {
+          itemCodesSeenInFile.add(itemCodeKey);
+        }
       }
+
+      /* ---------------- CATEGORY / SUBCATEGORY / BRAND ----------------
+         Names from the sheet are accepted even if not in DB yet —
+         they are created automatically during confirm import. */
 
       /* ---------------- STATUS ---------------- */
 
@@ -173,10 +166,30 @@ export async function POST(req: NextRequest) {
 
       if (row["B2B Prices"]) {
         try {
-          JSON.parse(row["B2B Prices"]);
+          JSON.parse(String(row["B2B Prices"]));
         } catch {
           fieldErrors["B2B Prices"] = "invalid JSON";
         }
+      }
+
+      /* ---------------- AUTO SKU (optional column) ---------------- */
+
+      if (providedSku) {
+        row.SKU = providedSku;
+      } else if (Object.keys(fieldErrors).length === 0) {
+        const assignedSku = skuAllocator.next();
+        row.SKU = assignedSku;
+        skuSet.add(assignedSku.toLowerCase());
+      }
+
+      /* ---------------- AUTO ITEM CODE (optional column) ---------------- */
+
+      if (providedItemCode) {
+        row["Item Code"] = providedItemCode;
+      } else if (Object.keys(fieldErrors).length === 0) {
+        const assignedItemCode = itemCodeAllocator.next();
+        row["Item Code"] = assignedItemCode;
+        itemCodeSet.add(assignedItemCode.toLowerCase());
       }
 
       /* ---------------- ROW RESULT ---------------- */

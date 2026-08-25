@@ -1,8 +1,20 @@
 // app/api/products/import/confirm/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
+import type { PoolClient } from "pg";
 import { pool } from "@/core/db";
 import { requirePlatformAdmin } from "@/lib/auth/guards";
+import { normalizeProductCode } from "@/lib/products/uniqueCodes";
+import {
+  createSequentialSkuAllocator,
+  getMaxNumericSkuSequence,
+} from "@/lib/products/sku";
+import {
+  createSequentialItemCodeAllocator,
+  getMaxNumericItemCodeSequence,
+} from "@/lib/products/itemCode";
+import { productSlug, slugify } from "@/lib/utils/slugify";
+import { excelWeight, normalizeExcelRow } from "@/lib/products/excelRow";
 
 type ImportRow = {
   row: number;
@@ -11,17 +23,23 @@ type ImportRow = {
   errors: string[];
 };
 
-type ProductSkuRow = { sku: string };
+type ProductCodeRow = { sku: string; item_code: string };
 
 const DEFAULT_STORE_ID = "afef3fd5-c31a-440a-ae56-99eca0b24359";
+const DEFAULT_QUANTITY = 9999;
 
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
+const EU_COUNTRY_CODES = [
+  "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR",
+  "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK",
+  "SI", "ES", "SE",
+];
+
+function normalizeName(name: string) {
+  return String(name ?? "").trim();
+}
+
+function nameKey(name: string) {
+  return normalizeName(name).toLowerCase();
 }
 
 export async function POST(req: NextRequest) {
@@ -43,13 +61,26 @@ export async function POST(req: NextRequest) {
     const errors: any[] = [];
     const insertedProductIds: number[] = [];
 
-    /* ---------------- EXISTING SKU CACHE ---------------- */
+    /* ---------------- EXISTING SKU / ITEM CODE CACHE ---------------- */
 
-    const existing = await client.query<ProductSkuRow>(
-      `SELECT sku FROM store_products`,
+    const existing = await client.query<ProductCodeRow>(
+      `SELECT sku, item_code FROM store_products`,
     );
 
-    const skuSet = new Set(existing.rows.map((r: ProductSkuRow) => r.sku));
+    const itemCodeSet = new Set(
+      existing.rows
+        .map((r: ProductCodeRow) =>
+          normalizeProductCode(r.item_code).toLowerCase(),
+        )
+        .filter(Boolean),
+    );
+    const maxSkuSeq = await getMaxNumericSkuSequence(client);
+    const skuAllocator = createSequentialSkuAllocator(maxSkuSeq);
+    const maxItemCodeSeq = await getMaxNumericItemCodeSequence(client);
+    const itemCodeAllocator = createSequentialItemCodeAllocator(maxItemCodeSeq);
+    const categoryCache = new Map<string, number>();
+    const subcategoryCache = new Map<string, number>();
+    const brandCache = new Map<string, number>();
 
     /* ---------------- INSERT LOOP ---------------- */
 
@@ -60,56 +91,68 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
-        const row = r.data;
+        const row = normalizeExcelRow(r.data ?? {});
+
+        const providedSku = normalizeProductCode(row.SKU);
+        const sku = providedSku || skuAllocator.next();
+        const providedItemCode = normalizeProductCode(row["Item Code"]);
+        const itemCode = providedItemCode || itemCodeAllocator.next();
+        const itemCodeKey = itemCode.toLowerCase();
 
         /* ---------------- DUPLICATE CHECK (SERVER SAFETY) ---------------- */
 
-        if (skuSet.has(row.SKU)) {
+        if (itemCodeSet.has(itemCodeKey)) {
           skipped++;
           continue;
         }
 
-        skuSet.add(row.SKU);
+        itemCodeSet.add(itemCodeKey);
 
         /* ---------------- RESOLVE RELATIONSHIP ID ENTITIES ----------------
-           Looked up by name only (no status filter) so a category/brand
-           that's selectable on the manual Add Product form is always
-           importable here too. */
+           Category, subcategory, and brand are created automatically if missing. */
 
         let categoryId: number | null = null;
         let subcategoryId: number | null = null;
         let brandId: number | null = null;
 
         if (row.Category) {
-          const cRes = await client.query<{ id: number }>(
-            `SELECT id FROM store_categories WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) LIMIT 1`,
-            [row.Category],
+          categoryId = await resolveOrCreateCategory(
+            client,
+            String(row.Category),
+            categoryCache,
           );
-          if (cRes.rows.length) categoryId = cRes.rows[0].id;
         }
 
-        if (row.Subcategory) {
-          const scRes = await client.query<{ id: number }>(
-            `SELECT id FROM store_subcategories WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) LIMIT 1`,
-            [row.Subcategory],
+        if (row.Subcategory && categoryId) {
+          subcategoryId = await resolveOrCreateSubcategory(
+            client,
+            String(row.Subcategory),
+            categoryId,
+            subcategoryCache,
           );
-          if (scRes.rows.length) subcategoryId = scRes.rows[0].id;
         }
 
         if (row.Brand) {
-          const bRes = await client.query<{ brand_id: number }>(
-            `SELECT brand_id FROM store_brands WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) LIMIT 1`,
-            [row.Brand],
+          brandId = await resolveOrCreateBrand(
+            client,
+            String(row.Brand),
+            brandCache,
           );
-          if (bRes.rows.length) brandId = bRes.rows[0].brand_id;
         }
 
-        const slug = row.Slug?.trim() || slugify(row.Name);
+        const weight = excelWeight(row);
+        const slug = productSlug(
+          String(row.Slug ?? "").trim() || String(row.Name ?? ""),
+          weight,
+        );
 
-        /* ---------------- INSERT PRODUCT ---------------- */
+        await client.query("SAVEPOINT product_row");
 
-        const productRes = await client.query<{ id: number }>(
-          `
+        try {
+          /* ---------------- INSERT PRODUCT ---------------- */
+
+          const productRes = await client.query<{ id: number }>(
+            `
           INSERT INTO store_products (
             name,
             slug,
@@ -121,104 +164,63 @@ export async function POST(req: NextRequest) {
             description,
             health_benefits,
             base_price,
+            weight,
             quantity,
             discount_type,
             discount_value,
             status
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
           RETURNING id
           `,
-          [
-            row.Name,
-            slug,
-            row.SKU,
-            row["Item Code"] || null,
-            categoryId,
-            subcategoryId,
-            brandId,
-            row.Description || null,
-            row["Health Benefits"] || null,
-            Number(row["Base Price"]),
-            Number(row.Quantity),
-            row["Discount Type"] || null,
-            row["Discount Value"] ? Number(row["Discount Value"]) : null,
-            row.Status === "Inactive" ? 0 : 1,
-          ],
-        );
+            [
+              row.Name,
+              slug,
+              sku,
+              itemCode,
+              categoryId,
+              subcategoryId,
+              brandId,
+              row.Description || null,
+              row["Health Benefits"] || null,
+              Number(row["Base Price"]),
+              weight,
+              row.Quantity === undefined || row.Quantity === ""
+                ? DEFAULT_QUANTITY
+                : Number(row.Quantity),
+              row["Discount Type"] || null,
+              row["Discount Value"] ? Number(row["Discount Value"]) : null,
+              row.Status === "Inactive" ? 0 : 1,
+            ],
+          );
 
-        const productId = productRes.rows[0].id;
-        insertedProductIds.push(productId);
+          const productId = productRes.rows[0].id;
 
-        /* ---------------- COUNTRIES (optional comma separated) ---------------- */
+          /* ---------------- EU AVAILABILITY (all EU countries) ---------------- */
 
-        if (row["Available Countries"]) {
-          const countries = row["Available Countries"]
-            .split(",")
-            .map((c: string) => c.trim())
-            .filter(Boolean);
+          await client.query(
+            `
+          INSERT INTO store_product_countries (product_id, country_id)
+          SELECT $1, country_id
+          FROM countries
+          WHERE UPPER(country_code) = ANY($2)
+          ON CONFLICT DO NOTHING
+          `,
+            [productId, EU_COUNTRY_CODES],
+          );
 
-          for (const countryName of countries) {
-            const cRes = await client.query<{ country_id: number }>(
-              `SELECT country_id FROM countries WHERE LOWER(TRIM(country_name)) = LOWER(TRIM($1))`,
-              [countryName],
-            );
+          /* ---------------- B2B PRICES ---------------- */
 
-            if (cRes.rows.length) {
-              await client.query(
-                `
-                INSERT INTO store_product_countries (
-                  product_id,
-                  country_id
-                )
-                VALUES ($1,$2)
-                ON CONFLICT DO NOTHING
-                `,
-                [productId, cRes.rows[0].country_id],
-              );
-            }
-          }
-        }
+          if (row["B2B Prices"]) {
+            try {
+              const tiers = JSON.parse(String(row["B2B Prices"])) as Array<{
+                min_quantity: number;
+                price: number;
+              }>;
 
-        /* ---------------- IMAGES (comma separated URLs) ----------------
-           Inserted straight from the row instead of fuzzy-matching the
-           media library by product name, which could attach the wrong
-           image or crash on a non-numeric url in an unrelated row. */
-
-        if (row.Images) {
-          const imageUrls = String(row.Images)
-            .split(",")
-            .map((u: string) => u.trim())
-            .filter(Boolean);
-
-          for (let idx = 0; idx < imageUrls.length; idx++) {
-            await client.query(
-              `
-              INSERT INTO store_product_images (
-                product_id,
-                url,
-                alt_text,
-                is_primary
-              )
-              VALUES ($1, $2, $3, $4)
-              `,
-              [productId, imageUrls[idx], row.Name, idx === 0],
-            );
-          }
-        }
-
-        /* ---------------- B2B PRICES ---------------- */
-
-        if (row["B2B Prices"]) {
-          try {
-            const tiers = JSON.parse(row["B2B Prices"]) as Array<{
-              min_quantity: number;
-              price: number;
-            }>;
-
-            for (const t of tiers) {
-              await client.query(
-                `
+              for (const t of tiers) {
+                await client.query(
+                  `
                 INSERT INTO store_product_prices (
                   product_id,
                   customer_type,
@@ -227,19 +229,28 @@ export async function POST(req: NextRequest) {
                 )
                 VALUES ($1,'B2B',$2,$3)
                 `,
-                [productId, t.min_quantity, t.price],
-              );
+                  [productId, t.min_quantity, t.price],
+                );
+              }
+            } catch {
+              // ignore invalid JSON (already validated earlier)
             }
-          } catch {
-            // ignore invalid JSON (already validated earlier)
           }
-        }
 
-        inserted++;
+          insertedProductIds.push(productId);
+          inserted++;
+          await client.query("RELEASE SAVEPOINT product_row");
+        } catch (rowErr: any) {
+          await client.query("ROLLBACK TO SAVEPOINT product_row");
+          throw rowErr;
+        }
       } catch (err: any) {
         errors.push({
           row: r.row,
-          error: err.message,
+          error:
+            err.code === "23505"
+              ? "SKU or item code already exists"
+              : err.message,
         });
         skipped++;
       }
@@ -300,4 +311,114 @@ export async function POST(req: NextRequest) {
   } finally {
     client.release();
   }
+}
+
+async function resolveOrCreateCategory(
+  client: PoolClient,
+  name: string,
+  cache: Map<string, number>,
+): Promise<number> {
+  const trimmed = normalizeName(name);
+  const key = nameKey(trimmed);
+
+  const cached = cache.get(key);
+  if (cached) return cached;
+
+  const existing = await client.query<{ id: number }>(
+    `SELECT id FROM store_categories WHERE TRIM(name) ILIKE $1 LIMIT 1`,
+    [trimmed],
+  );
+
+  if (existing.rows.length) {
+    cache.set(key, existing.rows[0].id);
+    return existing.rows[0].id;
+  }
+
+  const insert = await client.query<{ id: number }>(
+    `
+    INSERT INTO store_categories (name, slug, status)
+    VALUES ($1, $2, 1)
+    RETURNING id
+    `,
+    [trimmed, slugify(trimmed)],
+  );
+
+  const id = insert.rows[0].id;
+  cache.set(key, id);
+  return id;
+}
+
+async function resolveOrCreateSubcategory(
+  client: PoolClient,
+  name: string,
+  categoryId: number,
+  cache: Map<string, number>,
+): Promise<number> {
+  const trimmed = normalizeName(name);
+  const key = `${categoryId}:${nameKey(trimmed)}`;
+
+  const cached = cache.get(key);
+  if (cached) return cached;
+
+  const existing = await client.query<{ id: number }>(
+    `
+    SELECT id FROM store_subcategories
+    WHERE category_id = $1 AND TRIM(name) ILIKE $2
+    LIMIT 1
+    `,
+    [categoryId, trimmed],
+  );
+
+  if (existing.rows.length) {
+    cache.set(key, existing.rows[0].id);
+    return existing.rows[0].id;
+  }
+
+  const insert = await client.query<{ id: number }>(
+    `
+    INSERT INTO store_subcategories (category_id, name, slug, status, created_at, updated_at)
+    VALUES ($1, $2, $3, 1, NOW(), NOW())
+    RETURNING id
+    `,
+    [categoryId, trimmed, slugify(trimmed)],
+  );
+
+  const id = insert.rows[0].id;
+  cache.set(key, id);
+  return id;
+}
+
+async function resolveOrCreateBrand(
+  client: PoolClient,
+  name: string,
+  cache: Map<string, number>,
+): Promise<number> {
+  const trimmed = normalizeName(name);
+  const key = nameKey(trimmed);
+
+  const cached = cache.get(key);
+  if (cached) return cached;
+
+  const existing = await client.query<{ brand_id: number }>(
+    `SELECT brand_id FROM store_brands WHERE TRIM(name) ILIKE $1 LIMIT 1`,
+    [trimmed],
+  );
+
+  if (existing.rows.length) {
+    cache.set(key, existing.rows[0].brand_id);
+    return existing.rows[0].brand_id;
+  }
+
+  const insert = await client.query<{ brand_id: number }>(
+    `
+    INSERT INTO store_brands (name, slug, description, logo_url, status, created_at, updated_at)
+    VALUES ($1, $2, NULL, NULL, true, NOW(), NOW())
+    RETURNING brand_id
+    `,
+    [trimmed, slugify(trimmed)],
+  );
+
+  const id = insert.rows[0].brand_id;
+  cache.set(key, id);
+  return id;
 }

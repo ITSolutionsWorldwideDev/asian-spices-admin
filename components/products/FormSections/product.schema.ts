@@ -15,8 +15,8 @@ export const productSchema = z
   .object({
     name: z.string().min(1, "Product name is required"),
     slug: z.string().min(1),
-    sku: z.string(),
-    item_code: z.string(),
+    sku: z.string().optional(),
+    item_code: z.string().optional(),
 
     category_id: z.string().nullable().refine(Boolean, {
       message: "Category is required",
@@ -53,6 +53,7 @@ export const productSchema = z
       .optional(),
 
     promo_code: z.preprocess(emptyToNull, z.string().nullable()).optional(),
+    weight: z.string().optional(),
     status: z.coerce.number(),
   })
   .superRefine((data, ctx) => {

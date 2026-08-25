@@ -187,6 +187,8 @@ export default function ProductImportModal({
                   <tr>
                     <th className="p-2 text-left">Row</th>
                     <th className="text-left">SKU</th>
+                    <th className="text-left">Item Code</th>
+                    <th className="text-left">Weight</th>
                     <th className="text-left">Status</th>
                     <th className="text-left">Errors</th>
                   </tr>
@@ -197,6 +199,8 @@ export default function ProductImportModal({
                     <tr key={r.row} className="border-t text-black align-top">
                       <td className="p-2">{r.row}</td>
                       <td>{r.data?.SKU}</td>
+                      <td>{r.data?.["Item Code"]}</td>
+                      <td>{r.data?.Weight || ""}</td>
 
                       <td>
                         {r.isValid ? (

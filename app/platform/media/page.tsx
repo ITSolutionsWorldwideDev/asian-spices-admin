@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useToast } from "@/core/ui";
 
 import { UploadDropzone } from "@uploadthing/react";
@@ -26,6 +27,17 @@ interface PaginationMeta {
   hasPrevPage: boolean;
 }
 
+type ProductImageFilter = "with" | "without" | null;
+
+interface ProductSummary {
+  id: number;
+  name: string;
+  sku: string | null;
+  weight: string | null;
+  category: string | null;
+  status: number;
+}
+
 export default function MediaLibrary() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,6 +50,13 @@ export default function MediaLibrary() {
 
   // Pagination State Drivers
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [linking, setLinking] = useState(false);
+  const [productImageFilter, setProductImageFilter] =
+    useState<ProductImageFilter>(null);
+  const [filteredProducts, setFilteredProducts] = useState<ProductSummary[]>(
+    [],
+  );
+  const [productsLoading, setProductsLoading] = useState(false);
   const [pagination, setPagination] = useState<PaginationMeta>({
     page: 1,
     limit: 12,
@@ -145,6 +164,60 @@ export default function MediaLibrary() {
     return cleaned;
   };
 
+  const linkImagesToProducts = async () => {
+    setLinking(true);
+    try {
+      const res = await fetch("/api/products/link-images", { method: "POST" });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to link images");
+      }
+
+      showToast(
+        "success",
+        `Linked ${data.linked} image(s). Skipped ${data.skipped}. Unmatched: ${data.unmatchedCount}.`,
+      );
+
+      // Refresh the open products filter after linking
+      if (productImageFilter) {
+        fetchFilteredProducts(productImageFilter);
+      }
+    } catch (err: any) {
+      showToast("error", err.message || "Failed to link images");
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const fetchFilteredProducts = useCallback(
+    async (filter: "with" | "without") => {
+      try {
+        setProductsLoading(true);
+        const res = await fetch(`/api/products?hasImages=${filter}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        setFilteredProducts(data.items || []);
+      } catch {
+        showToast("error", "Failed to load products");
+        setFilteredProducts([]);
+      } finally {
+        setProductsLoading(false);
+      }
+    },
+    [showToast],
+  );
+
+  const toggleProductImageFilter = (filter: "with" | "without") => {
+    if (productImageFilter === filter) {
+      setProductImageFilter(null);
+      setFilteredProducts([]);
+      return;
+    }
+    setProductImageFilter(filter);
+    fetchFilteredProducts(filter);
+  };
+
   return (
     <div className="page-wrapper">
       <div className="content max-w-6xl mx-auto space-y-6 p-4">
@@ -155,13 +228,118 @@ export default function MediaLibrary() {
               Media Library
             </h4>
             <p className="text-sm text-gray-500">
-              Upload and manage product catalog assets
+              Upload and manage product catalog assets. Name files like{" "}
+              <span className="font-mono">Product Name-5 kg.jpg</span> to auto-link.
             </p>
           </div>
-          <span className="text-xs font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
-            Total Files: {pagination.totalRecords}
-          </span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={linkImagesToProducts}
+              disabled={linking}
+              className="text-sm font-medium px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {linking ? "Linking..." : "Link Images to Products"}
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleProductImageFilter("with")}
+              className={`text-sm font-medium px-3 py-1.5 rounded border transition ${
+                productImageFilter === "with"
+                  ? "bg-emerald-600 text-white border-emerald-600"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              Products With Images
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleProductImageFilter("without")}
+              className={`text-sm font-medium px-3 py-1.5 rounded border transition ${
+                productImageFilter === "without"
+                  ? "bg-amber-600 text-white border-amber-600"
+                  : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+              }`}
+            >
+              Products Without Images
+            </button>
+            <span className="text-xs font-medium text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+              Total Files: {pagination.totalRecords}
+            </span>
+          </div>
         </div>
+
+        {/* Products with / without images panel */}
+        {productImageFilter && (
+          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+            <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
+              <div>
+                <h5 className="text-sm font-semibold text-gray-900">
+                  {productImageFilter === "with"
+                    ? "Products with images"
+                    : "Products without images"}
+                </h5>
+                <p className="text-xs text-gray-500">
+                  {productsLoading
+                    ? "Loading..."
+                    : `${filteredProducts.length} product(s)`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setProductImageFilter(null);
+                  setFilteredProducts([]);
+                }}
+                className="text-xs font-medium text-gray-500 hover:text-gray-800 px-2 py-1"
+              >
+                Close
+              </button>
+            </div>
+
+            {productsLoading ? (
+              <p className="text-center text-sm text-gray-500 py-10">
+                Loading products...
+              </p>
+            ) : filteredProducts.length === 0 ? (
+              <p className="text-center text-sm text-gray-400 py-10">
+                No products found in this group.
+              </p>
+            ) : (
+              <div className="max-h-80 overflow-y-auto divide-y divide-gray-100">
+                {filteredProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-gray-50"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {product.name}
+                        {product.weight ? (
+                          <span className="text-gray-500 font-normal">
+                            {" "}
+                            · {product.weight}
+                          </span>
+                        ) : null}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        {[product.sku, product.category]
+                          .filter(Boolean)
+                          .join(" · ") || "—"}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/platform/products/${product.id}/edit`}
+                      className="shrink-0 text-xs font-medium text-blue-600 hover:underline"
+                    >
+                      Edit
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* DROPZONE */}
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
@@ -252,7 +430,11 @@ export default function MediaLibrary() {
               }
             }}
             onUploadError={(err) => {
-              showToast("error", err.message);
+              console.error("Upload error:", err);
+              showToast("error", err.message || "Upload failed");
+            }}
+            onUploadAborted={() => {
+              showToast("error", "Upload was cancelled");
             }}
           />
         </div>

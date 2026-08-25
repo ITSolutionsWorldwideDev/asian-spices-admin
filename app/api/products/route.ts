@@ -3,6 +3,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePlatformAdmin } from "@/lib/auth/guards";
 import { pool } from "@/core/db";
+import {
+  findProductCodeConflict,
+  normalizeProductCode,
+  uniqueViolationResponse,
+} from "@/lib/products/uniqueCodes";
+import { allocateNextSku } from "@/lib/products/sku";
+import { allocateNextItemCode } from "@/lib/products/itemCode";
 
 /* ------------------ GET (List Products) ------------------ */
 export async function GET(req: NextRequest) {
@@ -14,6 +21,7 @@ export async function GET(req: NextRequest) {
   const brand = searchParams.get("brand");
   const status = searchParams.get("status");
   const sort = searchParams.get("sort");
+  const hasImages = searchParams.get("hasImages"); // "with" | "without"
 
   const conditions: string[] = [];
   const values: any[] = [];
@@ -33,6 +41,15 @@ export async function GET(req: NextRequest) {
   if (status !== null && status !== "") {
     values.push(Number(status));
     conditions.push(`p.status = $${values.length}`);
+  }
+  if (hasImages === "with") {
+    conditions.push(
+      `EXISTS (SELECT 1 FROM store_product_images spi WHERE spi.product_id = p.id)`,
+    );
+  } else if (hasImages === "without") {
+    conditions.push(
+      `NOT EXISTS (SELECT 1 FROM store_product_images spi WHERE spi.product_id = p.id)`,
+    );
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -76,22 +93,46 @@ export async function POST(req: NextRequest) {
   try {
     await client.query("BEGIN");
     const body = await req.json();
+    let sku = normalizeProductCode(body.sku);
+    let itemCode = normalizeProductCode(body.item_code);
+
+    if (!sku) {
+      sku = await allocateNextSku(client);
+    }
+
+    if (!itemCode) {
+      itemCode = await allocateNextItemCode(client);
+    }
+
+    const conflict = await findProductCodeConflict(client, {
+      sku,
+      item_code: itemCode,
+    });
+    if (conflict) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(conflict, { status: 409 });
+    }
+
+    const weight =
+      body.weight === undefined || body.weight === null || String(body.weight).trim() === ""
+        ? null
+        : String(body.weight).trim();
 
     const productInsertQuery = `
       INSERT INTO store_products (
         name, slug, sku, item_code, country_id, category_id, subcategory_id, brand_id,
         description, health_benefits, base_price, sale_price, purchase_price, 
-        customer_type, promo_code, quantity, discount_type, discount_value, status
+        customer_type, promo_code, quantity, discount_type, discount_value, status, weight
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       RETURNING *
     `;
 
     const productResult = await client.query(productInsertQuery, [
       body.name,
       body.slug,
-      body.sku,
-      body.item_code,
+      sku,
+      itemCode,
       body.country_id,
       body.category_id,
       body.subcategory_id,
@@ -107,6 +148,7 @@ export async function POST(req: NextRequest) {
       body.discount_type || null,
       body.discount_value || null,
       body.status ?? 1,
+      weight,
     ]);
 
     const productId = productResult.rows[0].id;
@@ -157,6 +199,9 @@ export async function POST(req: NextRequest) {
   } catch (e: any) {
     await client.query("ROLLBACK");
     console.error(e);
+    if (e.code === "23505") {
+      return NextResponse.json(uniqueViolationResponse(e.constraint), { status: 409 });
+    }
     return NextResponse.json({ error: "Failed to create product", detail: e.message }, { status: 500 });
   } finally {
     client.release();

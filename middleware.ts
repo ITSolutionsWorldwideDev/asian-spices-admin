@@ -114,6 +114,11 @@ export default withAuth(
 
         if (req.nextUrl.pathname === "/api/log") return true;
 
+        // UploadThing server callbacks have no session cookie — blocking them
+        // leaves the Media dropzone stuck on the spinning upload button.
+        if (req.nextUrl.pathname.startsWith("/api/uploadthing")) {
+          return true;
+        }
 
         return !!token;
       },

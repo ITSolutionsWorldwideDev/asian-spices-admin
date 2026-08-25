@@ -21,6 +21,7 @@ import { productSchema } from "./FormSections/product.schema";
 import TextEditorNew from "@/core/common/texteditor/texteditor";
 
 import RHFSelect from "./FormSections/RHFSelect";
+import { productSlug, slugify } from "@/lib/utils/slugify";
 
 // const MemoTextEditor = memo(TextEditorNew);
 
@@ -99,43 +100,6 @@ const getCodeFromSlug = (slug?: string) => {
     .slice(0, 6);
 };
 
-const generateSlug = (text: string) =>
-  text
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
-
-const generateSKU = (
-  name: string,
-  categorySlug?: string,
-  brandSlug?: string,
-) => {
-  const categoryCode = getCodeFromSlug(categorySlug);
-  const brandCode = getCodeFromSlug(brandSlug);
-
-  const namePart = name
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .toUpperCase()
-    .slice(0, 4);
-
-  const random = Math.floor(1000 + Math.random() * 9000);
-
-  return `${categoryCode}-${brandCode}-${namePart}-${random}`;
-};
-
-const generateItemCode = (name: string, brandSlug?: string) => {
-  const brandCode = getCodeFromSlug(brandSlug);
-
-  const namePart = name
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .toUpperCase()
-    .slice(0, 3);
-
-  const random = Math.floor(1000 + Math.random() * 9000);
-
-  return `IT-${brandCode}-${namePart}-${random}`;
-};
-
 const Accordion = memo(function Accordion({
   title,
   icon: Icon,
@@ -200,6 +164,7 @@ export default function ProductFormComponent({
     control,
     handleSubmit,
     setValue,
+    setError,
     watch,
     formState: { errors },
   } = useForm<FormValues>({
@@ -223,6 +188,7 @@ export default function ProductFormComponent({
       discount_type: null,
       discount_value: 0,
       promo_code: "",
+      weight: "",
       status: 1,
     },
   });
@@ -242,6 +208,7 @@ export default function ProductFormComponent({
   /* ---------------- Watchers ---------------- */
 
   const name = watch("name");
+  const weight = watch("weight");
   const categoryId = watch("category_id");
   const brandId = watch("brand_id");
 
@@ -256,28 +223,8 @@ export default function ProductFormComponent({
 
   useEffect(() => {
     if (!name || slugTouched.current) return;
-    setValue("slug", generateSlug(name));
-  }, [name]);
-
-  useEffect(() => {
-    if (!name) return;
-
-    const category = categoryOptions.find((c) => c.value === categoryId);
-    const brand = brandOptions.find((b) => b.value === brandId);
-
-    const categorySlug = category?.slug;
-    const brandSlug = brand?.slug;
-
-    setValue("sku", generateSKU(name, categorySlug, brandSlug));
-  }, [name, categoryId, brandId]);
-
-  useEffect(() => {
-    if (!name) return;
-    const brand = brandOptions.find((b) => b.value === brandId);
-    const brandSlug = brand?.slug;
-
-    setValue("item_code", generateItemCode(name, brandSlug));
-  }, [brandId]);
+    setValue("slug", productSlug(name, weight));
+  }, [name, weight, setValue]);
 
   useEffect(() => {
     if (!categoryId) {
@@ -514,6 +461,9 @@ export default function ProductFormComponent({
 
       const payload = cleanNaN({
         ...data,
+        sku: mode === "create" && !data.sku ? undefined : data.sku,
+        item_code: mode === "create" && !data.item_code ? undefined : data.item_code,
+        weight: String(data.weight ?? "").trim() || undefined,
         b2b_prices: b2bPrices,
       });
 
@@ -531,7 +481,10 @@ export default function ProductFormComponent({
       const result = await res.json();
 
       if (!res.ok) {
-        throw new Error(result?.detail || result?.error);
+        if (result?.field === "sku" || result?.field === "item_code") {
+          setError(result.field, { type: "server", message: result.error });
+        }
+        throw new Error(result?.error || result?.detail || "Failed to save product");
       }
 
       // const product = await res.json();
@@ -552,8 +505,8 @@ export default function ProductFormComponent({
 
       showToast("success", "Saved successfully");
       router.push("/products");
-    } catch {
-      showToast("error", "Failed");
+    } catch (err: any) {
+      showToast("error", err?.message || "Failed");
     } finally {
       setSaving(false);
     }
@@ -736,6 +689,9 @@ export default function ProductFormComponent({
 
         setValue("name", data.name || "");
         setValue("slug", data.slug || "");
+        setValue("sku", data.sku || "");
+        setValue("item_code", data.item_code || "");
+        setValue("weight", data.weight ? String(data.weight) : "");
         setValue("base_price", safeNumber(data.base_price) ?? 0);
         setValue("quantity", safeNumber(data.quantity) ?? 0);
 
@@ -812,7 +768,7 @@ export default function ProductFormComponent({
                       {...register("slug")}
                       onChange={(e) => {
                         slugTouched.current = true;
-                        setValue("slug", generateSlug(e.target.value));
+                        setValue("slug", slugify(e.target.value));
                       }}
                       disabled={isView}
                       className="w-full border rounded p-2 focus:outline-none focus:ring focus:ring-blue-200"
@@ -826,14 +782,20 @@ export default function ProductFormComponent({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="relative">
                     <label className="block mb-1 font-medium">
-                      SKU <span className="text-red-500">*</span>
+                      SKU{" "}
+                      {mode === "create" && (
+                        <span className="text-xs font-normal text-gray-500">
+                          (optional — auto SKU00001, SKU00002…)
+                        </span>
+                      )}
                     </label>
                     <input
                       {...register("sku")}
-                      readOnly
+                      readOnly={mode !== "create"}
+                      placeholder={mode === "create" ? "Leave blank to auto-assign" : undefined}
                       className="w-full border rounded p-2 focus:outline-none focus:ring focus:ring-blue-200"
                     />
 
@@ -846,17 +808,42 @@ export default function ProductFormComponent({
 
                   <div className="relative">
                     <label className="block mb-1 font-medium">
-                      Item Code <span className="text-red-500">*</span>
+                      Item Code{" "}
+                      {mode === "create" && (
+                        <span className="text-xs font-normal text-gray-500">
+                          (optional — auto ITM00001, ITM00002…)
+                        </span>
+                      )}
                     </label>
                     <input
                       {...register("item_code")}
-                      readOnly
+                      readOnly={mode !== "create"}
+                      placeholder={mode === "create" ? "Leave blank to auto-assign" : undefined}
                       className="w-full border rounded p-2 focus:outline-none focus:ring focus:ring-blue-200"
                     />
 
                     {errors.item_code && (
                       <p className="text-red-600 text-sm">
                         {errors.item_code.message as string}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="relative">
+                    <label className="block mb-1 font-medium">
+                      Weight{" "}
+                      <span className="text-xs font-normal text-gray-500">(optional)</span>
+                    </label>
+                    <input
+                      {...register("weight")}
+                      disabled={isView}
+                      placeholder="e.g. 500 g, 1 kg"
+                      className="w-full border rounded p-2 focus:outline-none focus:ring focus:ring-blue-200"
+                    />
+
+                    {errors.weight && (
+                      <p className="text-red-600 text-sm">
+                        {errors.weight.message as string}
                       </p>
                     )}
                   </div>
