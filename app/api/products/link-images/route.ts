@@ -6,6 +6,7 @@ import { requirePlatformAdmin } from "@/lib/auth/guards";
 import {
   buildProductMatchKey,
   filenameToMatchKey,
+  filenameToMatchKeyWithoutWeight,
 } from "@/lib/products/imageMatchKey";
 
 export async function POST() {
@@ -67,7 +68,10 @@ export async function POST() {
         continue;
       }
 
-      const productId = productByKey.get(filenameToMatchKey(media.file_name));
+      const fileKey = filenameToMatchKey(media.file_name);
+      const productId =
+        productByKey.get(fileKey) ??
+        productByKey.get(filenameToMatchKeyWithoutWeight(media.file_name));
 
       if (!productId) {
         unmatched.push(media.file_name);

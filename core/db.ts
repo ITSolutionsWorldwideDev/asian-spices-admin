@@ -13,7 +13,7 @@ export const pool =
   new Pool({
     connectionString: process.env.DATABASE_URL,
     // Keep this low — hosted DB roles (e.g. prisma_migration) often allow only a few connections
-    max: Number(process.env.DB_POOL_MAX ?? 3),
+    max: 10,
     idleTimeoutMillis: 20000,
     connectionTimeoutMillis: 15000,
   });

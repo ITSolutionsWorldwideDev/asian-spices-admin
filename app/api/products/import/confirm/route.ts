@@ -149,6 +149,13 @@ export async function POST(req: NextRequest) {
         await client.query("SAVEPOINT product_row");
 
         try {
+          const countryOfOrigin = normalizeName(
+            String(row["Country of Origin"] ?? ""),
+          );
+          const originCountryId = countryOfOrigin
+            ? await resolveCountryId(client, countryOfOrigin)
+            : null;
+
           /* ---------------- INSERT PRODUCT ---------------- */
 
           const productRes = await client.query<{ id: number }>(
@@ -161,6 +168,8 @@ export async function POST(req: NextRequest) {
             category_id,
             subcategory_id,
             brand_id,
+            country_of_origin,
+            country_id,
             description,
             health_benefits,
             base_price,
@@ -170,7 +179,7 @@ export async function POST(req: NextRequest) {
             discount_value,
             status
           )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
           RETURNING id
           `,
             [
@@ -181,6 +190,8 @@ export async function POST(req: NextRequest) {
               categoryId,
               subcategoryId,
               brandId,
+              countryOfOrigin || null,
+              originCountryId,
               row.Description || null,
               row["Health Benefits"] || null,
               Number(row["Base Price"]),
@@ -386,6 +397,26 @@ async function resolveOrCreateSubcategory(
   const id = insert.rows[0].id;
   cache.set(key, id);
   return id;
+}
+
+async function resolveCountryId(
+  client: PoolClient,
+  name: string,
+): Promise<number | null> {
+  const trimmed = normalizeName(name);
+  if (!trimmed) return null;
+
+  const res = await client.query<{ country_id: number }>(
+    `
+    SELECT country_id
+    FROM countries
+    WHERE TRIM(country_name) ILIKE $1
+    LIMIT 1
+    `,
+    [trimmed],
+  );
+
+  return res.rows[0]?.country_id ?? null;
 }
 
 async function resolveOrCreateBrand(

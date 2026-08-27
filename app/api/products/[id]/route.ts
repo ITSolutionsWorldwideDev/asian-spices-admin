@@ -80,8 +80,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         name=$1, slug=$2, sku=$3, item_code=$4, category_id=$5, subcategory_id=$6, brand_id=$7,
         description=$8, base_price=$9, quantity=$10, discount_type=$11, discount_value=$12,
         status=$13, health_benefits=$14, sale_price=$15, purchase_price=$16, customer_type=$17, 
-        promo_code=$18, weight=$19, updated_at=NOW()
-      WHERE id=$20
+        promo_code=$18, weight=$19, country_id=$20, country_of_origin=$21, updated_at=NOW()
+      WHERE id=$22
       RETURNING *
       `,
       [
@@ -94,7 +94,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         body.brand_id,
         body.description,
         body.base_price,
-        999999999,
+        99999,
         body.discount_type || null,
         body.discount_value || null,
         body.status ?? 1,
@@ -104,6 +104,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         body.customer_type || "B2C",
         body.promo_code || null,
         weight,
+        body.country_id || null,
+        body.country_of_origin || null,
         id,
       ]
     );
@@ -272,7 +274,7 @@ export async function PUT(
         body.brand_id,
         body.description,
         body.base_price,
-        999999999, //body.quantity,
+        9999, //body.quantity,
         body.discount_type,
         body.discount_value,
         body.status ?? 1,

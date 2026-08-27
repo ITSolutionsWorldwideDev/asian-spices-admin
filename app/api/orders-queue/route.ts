@@ -45,8 +45,8 @@ export async function GET(req: NextRequest) {
 
     let orderBy = `ORDER BY o.created_at ASC`;
     if (sort === "date_desc") orderBy = `ORDER BY o.created_at DESC`;
-    if (sort === "total_desc") orderBy = `ORDER BY (COALESCE(o.subtotal, 0) + COALESCE(o.tax_amount, 0) + COALESCE(o.shipping_amount, 0)) DESC`;
-    if (sort === "total_asc") orderBy = `ORDER BY (COALESCE(o.subtotal, 0) + COALESCE(o.tax_amount, 0) + COALESCE(o.shipping_amount, 0)) ASC`;
+    if (sort === "total_desc") orderBy = `ORDER BY (COALESCE(o.subtotal, 0) + COALESCE(o.shipping_amount, 0)) DESC`;
+    if (sort === "total_asc") orderBy = `ORDER BY (COALESCE(o.subtotal, 0) + COALESCE(o.shipping_amount, 0)) ASC`;
 
     const dataQuery = `
       SELECT 
@@ -61,7 +61,6 @@ export async function GET(req: NextRequest) {
         COALESCE(o.shipping_amount, 0)::NUMERIC(10,2) as shipping_amount,
         (
           COALESCE(o.subtotal, 0) +
-          COALESCE(o.tax_amount, 0) +
           COALESCE(o.shipping_amount, 0)
         )::NUMERIC(10,2) as total_amount,        
 

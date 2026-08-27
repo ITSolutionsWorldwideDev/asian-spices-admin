@@ -98,7 +98,12 @@ export default function OrderDetailPage() {
   if (!order) 
     return <div className="p-10 text-center text-red-500 font-medium">Order not found</div>;
 
-  const total = Number(order.total_amount || 0);
+  const total = Number(
+    (
+      Number(order.subtotal || 0) +
+      Number(order.shipping_amount || 0)
+    ).toFixed(2),
+  );
   const isQueuePending = order.order_status === "pending";
 
   /*

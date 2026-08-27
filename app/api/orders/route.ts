@@ -59,10 +59,10 @@ export async function GET(req: NextRequest) {
     let orderBy = `ORDER BY o.updated_at DESC`;
     if (sort === "date_asc") orderBy = `ORDER BY o.created_at ASC`;
     if (sort === "total_desc") {
-      orderBy = `ORDER BY (COALESCE(o.subtotal, 0) + COALESCE(o.tax_amount, 0) + COALESCE(o.shipping_amount, 0)) DESC`;
+      orderBy = `ORDER BY (COALESCE(o.subtotal, 0) + COALESCE(o.shipping_amount, 0)) DESC`;
     }
     if (sort === "total_asc") {
-      orderBy = `ORDER BY (COALESCE(o.subtotal, 0) + COALESCE(o.tax_amount, 0) + COALESCE(o.shipping_amount, 0)) ASC`;
+      orderBy = `ORDER BY (COALESCE(o.subtotal, 0) + COALESCE(o.shipping_amount, 0)) ASC`;
     }
 
     const query = `
@@ -81,7 +81,6 @@ export async function GET(req: NextRequest) {
         o.order_status,
         (
           COALESCE(o.subtotal, 0) +
-          COALESCE(o.tax_amount, 0) +
           COALESCE(o.shipping_amount, 0)
         )::NUMERIC(10,2) AS total_amount,
         COALESCE(o.shipping_city, c.city) AS city,

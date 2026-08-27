@@ -120,11 +120,11 @@ export async function POST(req: NextRequest) {
 
     const productInsertQuery = `
       INSERT INTO store_products (
-        name, slug, sku, item_code, country_id, category_id, subcategory_id, brand_id,
+        name, slug, sku, item_code, country_id, country_of_origin, category_id, subcategory_id, brand_id,
         description, health_benefits, base_price, sale_price, purchase_price, 
         customer_type, promo_code, quantity, discount_type, discount_value, status, weight
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
       RETURNING *
     `;
 
@@ -133,7 +133,8 @@ export async function POST(req: NextRequest) {
       body.slug,
       sku,
       itemCode,
-      body.country_id,
+      body.country_id || null,
+      body.country_of_origin || null,
       body.category_id,
       body.subcategory_id,
       body.brand_id,
@@ -144,7 +145,7 @@ export async function POST(req: NextRequest) {
       body.purchase_price || null,
       body.customer_type || "B2C",
       body.promo_code || null,
-      999999999,
+      99999,
       body.discount_type || null,
       body.discount_value || null,
       body.status ?? 1,
@@ -364,7 +365,7 @@ export async function POST(req: NextRequest) {
         body.description,
         body.health_benefits,
         body.base_price,
-        999999999, //body.quantity,
+        9999, //body.quantity,
         body.discount_type,
         body.discount_value,
         body.status ?? 1,

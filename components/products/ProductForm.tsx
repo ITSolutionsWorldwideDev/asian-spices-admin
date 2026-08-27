@@ -143,6 +143,7 @@ export default function ProductFormComponent({
   const slugTouched = useRef(false);
 
   const [countries, setCountries] = useState<Countries[]>([]);
+  const [originCountries, setOriginCountries] = useState<Countries[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
   const [subcategoriesLoaded, setSubcategoriesLoaded] = useState(false);
@@ -178,13 +179,14 @@ export default function ProductFormComponent({
       subcategory_id: null,
       brand_id: null,
       country_ids: [],
+      country_id: null,
       description: "",
       health_benefits: "",
       base_price: 0,
       sale_price: 0,
       purchase_price: 0,
       customer_type: "B2C",
-      quantity: 999999999,
+      quantity: 99999,
       discount_type: null,
       discount_value: 0,
       promo_code: "",
@@ -285,6 +287,9 @@ export default function ProductFormComponent({
     fetch("/api/countries?shippable=true")
       .then((r) => r.json())
       .then(setCountries);
+    fetch("/api/countries")
+      .then((r) => r.json())
+      .then(setOriginCountries);
   }, []);
 
   // const [page, setPage] = useState(1);
@@ -398,6 +403,15 @@ export default function ProductFormComponent({
     [countries],
   );
 
+  const originCountryOptions = useMemo(
+    () =>
+      originCountries.map((c) => ({
+        value: Number(c.id),
+        label: c.name,
+      })),
+    [originCountries],
+  );
+
   const [accordionOpen, setAccordionOpen] = useState(true);
   const [pricingOpen, setPricingOpen] = useState(true);
   const [storesOpen, setStoresOpen] = useState(true);
@@ -450,11 +464,17 @@ export default function ProductFormComponent({
         return obj;
       };
 
+      const originCountry = originCountryOptions.find(
+        (c) => c.value === Number(data.country_id),
+      );
+
       const payload = cleanNaN({
         ...data,
         sku: mode === "create" && !data.sku ? undefined : data.sku,
         item_code: mode === "create" && !data.item_code ? undefined : data.item_code,
         weight: String(data.weight ?? "").trim() || undefined,
+        country_id: data.country_id ?? null,
+        country_of_origin: originCountry?.label ?? null,
         b2b_prices: b2bPrices,
       });
 
@@ -677,6 +697,8 @@ export default function ProductFormComponent({
                 .filter((v: any) => v !== null)
             : [],
         );
+        setValue("country_id", safeNumber(data.country_id));
+
 
         setValue("name", data.name || "");
         setValue("slug", data.slug || "");
@@ -904,6 +926,21 @@ export default function ProductFormComponent({
 
                   <div>
                     <label className="block mb-1 font-medium">
+                      Country of Origin
+                    </label>
+                    <RHFSelect
+                      name="country_id"
+                      control={control}
+                      options={originCountryOptions}
+                      placeholder="Select Country of Origin"
+                      isDisabled={isView}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 mt-4">
+                  <div>
+                    <label className="block mb-1 font-medium">
                       Available in Countries{" "}
                       <span className="text-red-500">*</span>
                     </label>
@@ -914,27 +951,6 @@ export default function ProductFormComponent({
                       isMulti
                       isDisabled={isView}
                     />
-                    {/* <Controller
-                      control={control}
-                      name="country_ids"
-                      render={({ field }) => (
-                        <Select
-                          isMulti
-                          options={countryOptions}
-                          value={countryOptions.filter((c) =>
-                            field.value?.includes(c.value),
-                          )}
-                          onChange={(selected) =>
-                            field.onChange(
-                              selected
-                                ? selected.map((s) => Number(s.value))
-                                : [],
-                            )
-                          }
-                          isDisabled={isView}
-                        />
-                      )}
-                    /> */}
                   </div>
                 </div>
 

@@ -30,6 +30,11 @@ export const productSchema = z
       message: "Brand is required",
     }),
 
+    country_id: z.preprocess(
+      emptyToNull,
+      z.coerce.number().nullable(),
+    ).optional(),
+
     country_ids: z.array(z.coerce.number()).optional(),
 
     base_price: z.preprocess(

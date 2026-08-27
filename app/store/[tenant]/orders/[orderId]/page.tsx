@@ -539,7 +539,6 @@ export default function OrderDetailPage() {
   const total = Number(
     (
       Number(order.subtotal || 0) +
-      Number(order.tax_amount || 0) +
       Number(order.shipping_amount || 0)
     ).toFixed(2),
   );
