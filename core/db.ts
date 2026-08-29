@@ -13,14 +13,14 @@ export const pool =
   new Pool({
     connectionString: process.env.DATABASE_URL,
     // Keep this low — hosted DB roles (e.g. prisma_migration) often allow only a few connections
-    max: 10,
+    max: 3,
     idleTimeoutMillis: 20000,
     connectionTimeoutMillis: 15000,
   });
 
-if (process.env.NODE_ENV !== "production") {
+// if (process.env.NODE_ENV !== "production") {
   globalThis.varGlobalPool = pool;
-}
+// }
 
 /**
  * Executes a type-safe raw PostgreSQL query using the connection pool

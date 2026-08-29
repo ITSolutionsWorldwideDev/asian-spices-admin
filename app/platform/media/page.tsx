@@ -57,6 +57,7 @@ export default function MediaLibrary() {
     [],
   );
   const [productsLoading, setProductsLoading] = useState(false);
+  const [exportingProducts, setExportingProducts] = useState(false);
   const [pagination, setPagination] = useState<PaginationMeta>({
     page: 1,
     limit: 12,
@@ -218,6 +219,30 @@ export default function MediaLibrary() {
     fetchFilteredProducts(filter);
   };
 
+  const downloadProductsWithoutImagesExcel = async () => {
+    setExportingProducts(true);
+    try {
+      const res = await fetch("/api/products/without-images/export");
+      if (!res.ok) throw new Error("Export failed");
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "products-without-images.xlsx";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      showToast("success", "Excel downloaded");
+    } catch {
+      showToast("error", "Failed to download Excel");
+    } finally {
+      setExportingProducts(false);
+    }
+  };
+
   return (
     <div className="page-wrapper">
       <div className="content max-w-6xl mx-auto space-y-6 p-4">
@@ -285,16 +310,28 @@ export default function MediaLibrary() {
                     : `${filteredProducts.length} product(s)`}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setProductImageFilter(null);
-                  setFilteredProducts([]);
-                }}
-                className="text-xs font-medium text-gray-500 hover:text-gray-800 px-2 py-1"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                {productImageFilter === "without" && (
+                  <button
+                    type="button"
+                    onClick={downloadProductsWithoutImagesExcel}
+                    disabled={exportingProducts}
+                    className="text-xs font-medium px-3 py-1.5 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    {exportingProducts ? "Downloading..." : "Download Excel"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProductImageFilter(null);
+                    setFilteredProducts([]);
+                  }}
+                  className="text-xs font-medium text-gray-500 hover:text-gray-800 px-2 py-1"
+                >
+                  Close
+                </button>
+              </div>
             </div>
 
             {productsLoading ? (
