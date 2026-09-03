@@ -72,7 +72,11 @@ export default function SigninComponent() {
                 <div className="login-content bg-black">
                   <form onSubmit={handleLogin}>
                     <div className="login-userset">
-                      <a href="index.html" className="login-logo logo-white">
+                      <a
+                        href="index.html"
+                        className="login-logo logo-white"
+                        style={{ marginInline: 0 }}
+                      >
                         <img src="assets/img/logo.svg" alt="Img" />
                       </a>
                       <div className="login-userheading">
