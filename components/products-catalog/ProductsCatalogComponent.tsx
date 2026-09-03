@@ -5,7 +5,28 @@ import { useEffect, useMemo, useState } from "react";
 import Table from "@/core/common/pagination/datatable";
 import FilterBar from "./FilterBar";
 import { CatalogProduct } from "@/core/types";
+import { useToast } from "@/core/ui";
 import debounce from "lodash.debounce";
+
+/* ------------------------------------
+   Completeness gate (ticket 111)
+   A product that isn't active or has no image shouldn't be assignable to a
+   store — it would show up on the storefront looking broken. Products that are
+   already assigned are never flagged, so existing edits keep working.
+------------------------------------ */
+const incompleteReasons = (p: CatalogProduct): string[] => {
+  const reasons: string[] = [];
+  if (p.product_status !== undefined && p.product_status !== 1) {
+    reasons.push("Inactive");
+  }
+  if (p.has_image === false) {
+    reasons.push("No image");
+  }
+  return reasons;
+};
+
+const isBlocked = (p: CatalogProduct) =>
+  !p.assigned && incompleteReasons(p).length > 0;
 
 type BulkState = {
   type: "INCLUDE" | "EXCLUDE";
@@ -13,6 +34,8 @@ type BulkState = {
 };
 
 export default function ProductsCatalogComponent() {
+  const { showToast } = useToast();
+
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -156,9 +179,33 @@ export default function ProductsCatalogComponent() {
     .filter((p) => !p.assigned)
     .map((p) => p.product_id);
 
+  const selectedAssignableIds = selectedProducts
+    .filter((p) => !p.assigned && !isBlocked(p))
+    .map((p) => p.product_id);
+
+  const selectedBlockedCount =
+    selectedUnassignedIds.length - selectedAssignableIds.length;
+
   const selectedAssignedIds = selectedProducts
     .filter((p) => p.assigned)
     .map((p) => p.product_id);
+
+  const reportBlocked = (
+    blocked?: { name: string; reasons: string[] }[],
+  ) => {
+    if (!blocked || blocked.length === 0) return;
+    const preview = blocked
+      .slice(0, 3)
+      .map((b) => `${b.name} (${b.reasons.join(", ").toLowerCase()})`)
+      .join("; ");
+    const more = blocked.length > 3 ? ` +${blocked.length - 3} more` : "";
+    showToast(
+      "danger",
+      `Skipped ${blocked.length} incomplete product${
+        blocked.length > 1 ? "s" : ""
+      }: ${preview}${more}`,
+    );
+  };
 
   // const selectedAssignedIds = selectedProducts
   //   .filter((p) => p.assigned)
@@ -218,6 +265,16 @@ export default function ProductsCatalogComponent() {
   };
 
   const toggleAssign = async (record: CatalogProduct) => {
+    if (!record.assigned && isBlocked(record)) {
+      showToast(
+        "danger",
+        `Can't assign "${record.name}" — ${incompleteReasons(record)
+          .join(" & ")
+          .toLowerCase()}. Fix the product first.`,
+      );
+      return;
+    }
+
     setLoading(true);
 
     if (record.assigned) {
@@ -235,7 +292,7 @@ export default function ProductsCatalogComponent() {
         }),
       });
     } else {
-      await fetch("/api/store/catalog/bulk", {
+      const res = await fetch("/api/store/catalog/bulk", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -251,6 +308,8 @@ export default function ProductsCatalogComponent() {
           },
         }),
       });
+      const result = await res.json().catch(() => null);
+      reportBlocked(result?.blocked);
     }
 
     fetchProducts();
@@ -259,10 +318,22 @@ export default function ProductsCatalogComponent() {
   const handleBulkAssignSelected = async () => {
     if (selectedUnassignedIds.length === 0) return;
 
+    if (selectedAssignableIds.length === 0) {
+      showToast(
+        "danger",
+        `Nothing to assign — all ${selectedBlockedCount} selected product${
+          selectedBlockedCount > 1 ? "s are" : " is"
+        } incomplete (inactive or missing an image).`,
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await fetch("/api/store/catalog/bulk", {
+      // Send every selected product; the server drops the incomplete ones and
+      // reports them back so we can tell the user what was skipped.
+      const res = await fetch("/api/store/catalog/bulk", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -276,6 +347,15 @@ export default function ProductsCatalogComponent() {
           data: {},
         }),
       });
+
+      const result = await res.json().catch(() => null);
+      const assignedCount =
+        result?.assignedCount ?? selectedAssignableIds.length;
+      showToast(
+        "success",
+        `Assigned ${assignedCount} product${assignedCount === 1 ? "" : "s"}.`,
+      );
+      reportBlocked(result?.blocked);
 
       // Clear selection after successful action
       setBulk({ type: "INCLUDE", ids: new Set() });
@@ -436,29 +516,53 @@ export default function ProductsCatalogComponent() {
     {
       title: "Assigned",
       render: (_: any, record: CatalogProduct) => (
-        <span
-          className={`px-2 py-1 rounded text-xs ${
-            record.assigned
-              ? "bg-green-100 text-green-700"
-              : "bg-gray-100 text-gray-500"
-          }`}
-        >
-          {record.assigned ? "Assigned" : "Not Assigned"}
-        </span>
+        <div className="flex flex-col items-start gap-1">
+          <span
+            className={`px-2 py-1 rounded text-xs ${
+              record.assigned
+                ? "bg-green-100 text-green-700"
+                : "bg-gray-100 text-gray-500"
+            }`}
+          >
+            {record.assigned ? "Assigned" : "Not Assigned"}
+          </span>
+          {isBlocked(record) &&
+            incompleteReasons(record).map((reason) => (
+              <span
+                key={reason}
+                className="px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-700"
+              >
+                {reason}
+              </span>
+            ))}
+        </div>
       ),
     },
     {
       title: "Action",
-      render: (_: any, record: CatalogProduct) => (
-        <button
-          onClick={() => toggleAssign(record)}
-          className={`px-3 py-1 rounded text-xs ${
-            record.assigned ? "bg-red-500 text-white" : "bg-blue-500 text-white"
-          }`}
-        >
-          {record.assigned ? "Unassign" : "Assign"}
-        </button>
-      ),
+      render: (_: any, record: CatalogProduct) => {
+        const blocked = isBlocked(record);
+        return (
+          <button
+            onClick={() => toggleAssign(record)}
+            disabled={blocked}
+            title={
+              blocked
+                ? `Complete the product first (${incompleteReasons(record)
+                    .join(", ")
+                    .toLowerCase()})`
+                : undefined
+            }
+            className={`px-3 py-1 rounded text-xs ${
+              record.assigned
+                ? "bg-red-500 text-white"
+                : "bg-blue-500 text-white"
+            } disabled:cursor-not-allowed disabled:opacity-40`}
+          >
+            {record.assigned ? "Unassign" : "Assign"}
+          </button>
+        );
+      },
     },
   ];
 
@@ -492,7 +596,11 @@ export default function ProductsCatalogComponent() {
                 onClick={handleBulkAssignSelected}
                 className="bg-blue-600 text-white px-4 py-2 rounded text-sm mt-4 disabled:opacity-50"
               >
-                Assign Selected ({selectedUnassignedIds.length})
+                Assign Selected ({selectedAssignableIds.length}
+                {selectedBlockedCount > 0
+                  ? `, ${selectedBlockedCount} blocked`
+                  : ""}
+                )
               </button>
 
               <button
