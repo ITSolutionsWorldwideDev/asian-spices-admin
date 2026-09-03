@@ -55,7 +55,7 @@ export function GenieChatWidget({
         <div className="flex items-center gap-3">
           {!isWidgetOpen ? (
             <div className="rounded-full border border-[rgba(255,255,255,0.48)] bg-[rgba(238,242,255,0.75)] px-4 py-2 text-sm font-medium text-[#3730A3] shadow-[0_12px_28px_rgba(11,31,77,0.2)]">
-              ✨ Need Login Help?
+              ✨ Need help?
             </div>
           ) : null}
           <button
