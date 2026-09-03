@@ -103,6 +103,11 @@ export async function GET(req: NextRequest) {
       spc.quantity,
       spc.status,
 
+      p.status AS product_status,
+      EXISTS (
+        SELECT 1 FROM store_product_images spi WHERE spi.product_id = p.id
+      ) AS has_image,
+
       CASE WHEN spc.id IS NOT NULL THEN true ELSE false END AS assigned
 
     FROM store_products p

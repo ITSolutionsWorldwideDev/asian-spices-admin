@@ -176,33 +176,80 @@ export async function POST(req: NextRequest) {
       const price = data?.price ?? null;
       const quantity = data?.quantity ?? 999999999;
 
-      await client.query(
+      /* ---- Completeness gate (ticket 111) ----
+         A product that isn't active or has no image must not be *newly*
+         assigned to a store — it would surface on the storefront looking
+         broken. Products already in this store's catalog are left alone so
+         price/quantity edits still work. */
+      const gate = await client.query(
         `
-        INSERT INTO store_product_catalog 
-          (store_id, product_id, price, quantity, status)
-        SELECT 
-          $1,
+        SELECT
           p.id,
-          COALESCE($3::numeric, p.base_price),
-          COALESCE($4, 0),
-          1
+          p.name,
+          (p.status IS DISTINCT FROM 1) AS inactive,
+          NOT EXISTS (
+            SELECT 1 FROM store_product_images spi WHERE spi.product_id = p.id
+          ) AS no_image
         FROM store_products p
-        WHERE p.id = ANY($2::uuid[])
-
-        ON CONFLICT (store_id, product_id)
-        DO UPDATE SET
-          price = COALESCE(EXCLUDED.price, store_product_catalog.price),
-          quantity = COALESCE(EXCLUDED.quantity, store_product_catalog.quantity),
-          updated_at = now()
+        WHERE p.id = ANY($1::uuid[])
+          AND NOT EXISTS (
+            SELECT 1 FROM store_product_catalog spc
+            WHERE spc.product_id = p.id AND spc.store_id = $2
+          )
+          AND (
+            p.status IS DISTINCT FROM 1
+            OR NOT EXISTS (
+              SELECT 1 FROM store_product_images spi WHERE spi.product_id = p.id
+            )
+          )
         `,
-        [store_id, selection.ids, price, quantity],
+        [selection.ids, store_id],
       );
+
+      const blocked = gate.rows.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        reasons: [
+          r.inactive ? "inactive" : null,
+          r.no_image ? "missing image" : null,
+        ].filter(Boolean) as string[],
+      }));
+      const blockedIds = new Set(blocked.map((b) => b.id));
+      const allowedIds: string[] = selection.ids.filter(
+        (id: string) => !blockedIds.has(id),
+      );
+
+      if (allowedIds.length > 0) {
+        await client.query(
+          `
+          INSERT INTO store_product_catalog
+            (store_id, product_id, price, quantity, status)
+          SELECT
+            $1,
+            p.id,
+            COALESCE($3::numeric, p.base_price),
+            COALESCE($4, 0),
+            1
+          FROM store_products p
+          WHERE p.id = ANY($2::uuid[])
+
+          ON CONFLICT (store_id, product_id)
+          DO UPDATE SET
+            price = COALESCE(EXCLUDED.price, store_product_catalog.price),
+            quantity = COALESCE(EXCLUDED.quantity, store_product_catalog.quantity),
+            updated_at = now()
+          `,
+          [store_id, allowedIds, price, quantity],
+        );
+      }
 
       await client.query("COMMIT");
 
       return NextResponse.json({
         success: true,
         message: "Product assigned/updated successfully",
+        assignedCount: allowedIds.length,
+        blocked,
       });
     }
 
