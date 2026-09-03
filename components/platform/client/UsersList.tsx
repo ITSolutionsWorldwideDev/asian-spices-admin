@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { TbCirclePlus, TbTrash, TbEdit, TbSearch, TbChevronLeft, TbChevronRight } from "react-icons/tb";
+import { useToast } from "@/core/ui";
 
 type User = {
   id: string;
@@ -17,8 +18,10 @@ type User = {
 const PAGE_SIZE = 10;
 
 export default function UsersListComponent() {
+  const { showToast } = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState("");
@@ -46,17 +49,26 @@ export default function UsersListComponent() {
   }, [page, search]);
 
   async function handleDelete() {
-    if (!selectedUser) return;
+    if (!selectedUser || deleting) return;
+    setDeleting(true);
     try {
-      await fetch(`/api/users/${selectedUser}`, { 
+      const res = await fetch(`/api/users/${selectedUser}`, {
         method: "DELETE",
-        body: JSON.stringify({ actorId: 'system' }) // Pass actor if required by your API
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ actorId: "system" }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || "Delete failed");
+      }
       setShowDeleteModal(false);
       setSelectedUser(null);
+      showToast("success", data.message || "User deleted successfully");
       fetchUsers();
-    } catch (err) {
-      alert("Delete failed");
+    } catch (err: any) {
+      showToast("error", err.message || "Delete failed");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -199,15 +211,17 @@ export default function UsersListComponent() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition"
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
-                className="flex-1 px-4 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition shadow-lg shadow-red-200"
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition shadow-lg shadow-red-200 disabled:opacity-50"
               >
-                Delete User
+                {deleting ? "Deleting..." : "Delete User"}
               </button>
             </div>
           </div>
