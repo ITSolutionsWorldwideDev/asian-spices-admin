@@ -942,8 +942,13 @@ export default function ProductFormComponent({
                   <div>
                     <label className="block mb-1 font-medium">
                       Available in Countries{" "}
-                      <span className="text-red-500">*</span>
+                      <span className="text-gray-400 font-normal">
+                        (optional)
+                      </span>
                     </label>
+                    {/* Country availability is driven by which stores stock the
+                        product, not the product itself, so this field is not
+                        required (ticket 158). Kept for a possible future use. */}
                     <RHFSelect
                       name="country_ids"
                       control={control}
