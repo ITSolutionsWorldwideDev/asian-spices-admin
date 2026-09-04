@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { logAudit } from "@/lib/audit";
 import { redirect } from "next/navigation";
 import { hash } from "bcryptjs";
+import { generateUniqueApplicationId } from "@/lib/services/applicationId";
 
 export async function updateStore(
   storeId: string | undefined,
@@ -209,7 +210,12 @@ export async function saveStore(
 
       // 2️⃣ UPSERT partner_registration
       if (partnerRegId) {
-        // ✅ UPDATE existing
+        // ✅ UPDATE existing.
+        // stores.partner_registration_id can hold either partner_id (UUID, from
+        // the admin add-store path) or application_id (varchar, from the
+        // self-service approval path), so match on both. Also give the row an
+        // application_id if it somehow still lacks one (ticket 68).
+        const editApplicationId = await generateUniqueApplicationId(client);
         await client.query(
           `
           UPDATE partner_registration SET
@@ -227,8 +233,9 @@ export async function saveStore(
             last_name = $12,
             business_phone_number = $13,
             business_email_address = $14,
-            vat_number = $15
-          WHERE partner_id = $16
+            vat_number = $15,
+            application_id = COALESCE(application_id, $17)
+          WHERE partner_id::text = $16 OR application_id = $16
           `,
           [
             kvkNumber,
@@ -247,13 +254,16 @@ export async function saveStore(
             businessEmail,
             vatNumber,
             partnerRegId,
+            editApplicationId,
           ],
         );
       } else {
         // ✅ INSERT new (edge case)
+        const applicationId = await generateUniqueApplicationId(client);
         const partnerRes = await client.query(
           `
           INSERT INTO partner_registration (
+            application_id,
             kvk_number,
             company_name,
             chamber_of_commerce_number,
@@ -272,11 +282,12 @@ export async function saveStore(
           )
           VALUES (
             $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
-            $11,$12,$13,$14,$15
+            $11,$12,$13,$14,$15,$16
           )
           RETURNING partner_id
           `,
           [
+            applicationId,
             kvkNumber,
             companyName,
             chamberOfCommerceNumber,
@@ -305,8 +316,10 @@ export async function saveStore(
         );
       }
     } else {
+      const applicationId = await generateUniqueApplicationId(client);
       const partnerRegData = await client.query(
         `INSERT INTO partner_registration (
+        application_id,
         kvk_number,
         company_name,
         chamber_of_commerce_number,
@@ -325,10 +338,11 @@ export async function saveStore(
       )
       VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
-        $11,$12,$13,$14,$15
+        $11,$12,$13,$14,$15,$16
       )
       RETURNING partner_id`,
         [
+          applicationId,
           kvkNumber,
           companyName,
           chamberOfCommerceNumber,
