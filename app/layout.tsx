@@ -1,7 +1,7 @@
 // app/layout.tsx
 import type { Metadata } from "next";
 import SessionProviderWrapper from "@/components/SessionProviderWrapper";
-import { DeferredGenieChatWidget } from "@/components/chatbot/DeferredGenieChatWidget";
+import { AuthedGenieChatWidget } from "@/components/chatbot/AuthedGenieChatWidget";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import "./globals.css";
@@ -44,7 +44,7 @@ export default function RootLayout({
       >
         <SessionProviderWrapper>
           {children}
-          <DeferredGenieChatWidget />
+          <AuthedGenieChatWidget />
         </SessionProviderWrapper>
       </body>
     </html>

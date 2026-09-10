@@ -4,11 +4,28 @@ import { hash } from "bcryptjs";
 import slugify from "slugify";
 import { randomUUID } from "crypto";
 
+import { generateUniqueApplicationId } from "@/lib/services/applicationId";
+
 // FIX: Receives the parent transaction client context directly to protect processing scopes
 export async function createStoreFromPartner(client: any, partner: any) {
   // 1️⃣ Generate structural UUIDs
   const storeId = randomUUID();
   const userId = randomUUID();
+
+  // A partner registration should always carry an application_id (Partner ID).
+  // Older / seeded rows may not — generate and persist one so the store, the
+  // Stores overview and search all have something to show (ticket 68).
+  let applicationId = partner.application_id;
+  if (!applicationId) {
+    applicationId = await generateUniqueApplicationId(
+      client,
+      partner.created_at ? new Date(partner.created_at) : new Date(),
+    );
+    await client.query(
+      `UPDATE partner_registration SET application_id = $1 WHERE partner_id = $2`,
+      [applicationId, partner.partner_id],
+    );
+  }
 
   // 2️⃣ Generate and validate tenant URL routing patterns
   let slug = slugify(partner.company_name, { lower: true, strict: true });
@@ -25,7 +42,7 @@ export async function createStoreFromPartner(client: any, partner: any) {
   await client.query(
     `INSERT INTO stores (id, name, slug, owner_email, status, partner_registration_id)
      VALUES ($1, $2, $3, $4, 'active',$5)`,
-    [storeId, partner.company_name, slug, partner.business_email_address, partner.application_id],
+    [storeId, partner.company_name, slug, partner.business_email_address, applicationId],
   );
 
   // 4️⃣ Create Core Platform Store Administrator

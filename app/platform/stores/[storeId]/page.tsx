@@ -34,12 +34,19 @@ export default async function EditStorePage({
   const [{ rows: storeRows }, { rows: subscriptionRows }] = await Promise.all([
     pool.query(
       `
-      SELECT 
-        s.*, 
-        pr.*
+      SELECT
+        s.id, s.name, s.slug, s.status, s.created_at, s.owner_email,
+        s.is_default, s.partner_registration_id,
+        pr.application_id,
+        pr.company_name, pr.kvk_number, pr.chamber_of_commerce_number,
+        pr.country, pr.street, pr.house_number, pr.additional_address,
+        pr.postal_code, pr.city,
+        pr.first_name, pr.middle_name, pr.last_name,
+        pr.business_phone_number, pr.business_email_address, pr.vat_number
       FROM stores s
-      LEFT JOIN partner_registration pr 
+      LEFT JOIN partner_registration pr
         ON pr.partner_id::text = s.partner_registration_id
+        OR pr.application_id = s.partner_registration_id
       WHERE s.id = $1
       `,
       [storeId],
