@@ -36,12 +36,41 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const client = await pool.connect();
+
   try {
     const { id } = await params;
-    await pool.query(`DELETE FROM currencies WHERE id = $1`, [id]);
+    await client.query("BEGIN");
+
+    // Best-effort unlink so hard delete can succeed
+    const cleanupSql = [
+      `UPDATE countries SET currency_id = NULL WHERE currency_id = $1`,
+      `UPDATE store_settings SET currency_id = NULL WHERE currency_id = $1`,
+      `DELETE FROM currency_rates WHERE base_currency_id = $1 OR target_currency_id = $1`,
+    ];
+
+    for (const sql of cleanupSql) {
+      try {
+        await client.query(sql, [id]);
+      } catch (err: any) {
+        // Ignore missing table/column
+        if (err?.code === "42P01" || err?.code === "42703") continue;
+        throw err;
+      }
+    }
+
+    await client.query(`DELETE FROM currencies WHERE id = $1`, [id]);
+    await client.query("COMMIT");
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    console.error("DELETE currency error:", err);
+    return NextResponse.json(
+      { error: err.message || "Delete failed" },
+      { status: 500 },
+    );
+  } finally {
+    client.release();
   }
 }
