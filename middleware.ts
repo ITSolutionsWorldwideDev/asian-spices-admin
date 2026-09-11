@@ -3,6 +3,16 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { withAuth } from "next-auth/middleware";
 import { getToken } from "next-auth/jwt";
+import { AUTH_ROLES } from "@/core/auth/core/constants";
+
+// Roles that count as partner/store staff — used to gate direct access to
+// /store/:slug so a Super Admin (bypasses below) or any other authenticated
+// account can't reach a store they have no role on just by knowing the URL.
+const PARTNER_ROLES: string[] = [
+  AUTH_ROLES.ADMIN,
+  AUTH_ROLES.MANAGER,
+  AUTH_ROLES.EDITOR,
+];
 
 // middleware.ts
 export default withAuth(
@@ -65,7 +75,8 @@ export default withAuth(
       !isStorePath &&
       !isPlatformPath &&
       !isAuthPath &&
-      pathname !== "/login"
+      pathname !== "/login" &&
+      pathname !== "/unauthorized"
     ) {
       // CASE: Super Admin
       if (token?.isPlatformAdmin) {
@@ -90,6 +101,22 @@ export default withAuth(
 
     if (isStorePath) {
       const slug = pathname.split("/")[2];
+
+      // Strict role validation: Super Admin bypasses (matches every other
+      // guard in this app), otherwise the token must carry a partner-level
+      // role (admin/manager/editor) for THIS specific store slug — a
+      // customer account, or a partner for a different store, must not
+      // pass through.
+      const hasStoreAccess =
+        token?.isPlatformAdmin === true ||
+        (token?.storeRoles as any[])?.some(
+          (r) => r.slug === slug && PARTNER_ROLES.includes(r.role),
+        );
+
+      if (!hasStoreAccess) {
+        return NextResponse.redirect(new URL("/unauthorized", req.url));
+      }
+
       const requestHeaders = new Headers(req.headers);
       requestHeaders.set("x-tenant-subdomain", slug);
       return NextResponse.next({
