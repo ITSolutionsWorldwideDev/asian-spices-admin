@@ -13,6 +13,7 @@ type User = {
   is_platform_admin: boolean;
   status: "active" | "suspended";
   created_at: string;
+  partner_stores: string[];
 };
 
 const PAGE_SIZE = 10;
@@ -134,8 +135,17 @@ export default function UsersListComponent() {
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
                           Platform Admin
                         </span>
+                      ) : u.partner_stores?.length > 0 ? (
+                        <span
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200"
+                          title={u.partner_stores.join(", ")}
+                        >
+                          Partner ({u.partner_stores.join(", ")})
+                        </span>
                       ) : (
-                        <span className="text-sm text-gray-600 font-medium">Standard User</span>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                          Customer
+                        </span>
                       )}
                     </td>
                     <td className="px-6 py-4">
