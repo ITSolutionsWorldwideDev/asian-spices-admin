@@ -862,7 +862,7 @@ export default function AddProductComponent({
 
                   <div>
                     <label className="block mb-1 text-sm font-medium">
-                      Base Price (Incl. Tax)<span className="text-red-500">*</span>
+                      Base Price (Excl. Tax)<span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"

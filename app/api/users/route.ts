@@ -18,22 +18,34 @@ export async function GET(req: NextRequest) {
 
   if (search) {
     values.push(`%${search}%`);
-    where.push(`email ILIKE $${values.length}`);
+    where.push(`u.email ILIKE $${values.length}`);
   }
 
   const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
 
+  // Distinguish partner/store staff from plain storefront customers: a user
+  // with a store_users row is partner staff for that store; everyone else
+  // (who isn't a platform admin) is a customer. Aggregated since a user can
+  // in principle hold roles at more than one store.
   const { rows } = await pool.query(
-    `SELECT id, email, name, is_platform_admin, status, created_at
-     FROM users
+    `SELECT
+       u.id, u.email, u.name, u.is_platform_admin, u.status, u.created_at,
+       COALESCE(
+         json_agg(s.name) FILTER (WHERE s.name IS NOT NULL),
+         '[]'
+       ) AS partner_stores
+     FROM users u
+     LEFT JOIN store_users su ON su.user_id = u.id
+     LEFT JOIN stores s ON s.id = su.store_id
      ${whereClause}
-     ORDER BY created_at DESC
+     GROUP BY u.id, u.email, u.name, u.is_platform_admin, u.status, u.created_at
+     ORDER BY u.created_at DESC
      LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
     [...values, PAGE_SIZE, offset]
   );
 
   const { rows: totalRows } = await pool.query(
-    `SELECT COUNT(*) FROM users ${whereClause}`,
+    `SELECT COUNT(*) FROM users u ${whereClause}`,
     values
   );
 
