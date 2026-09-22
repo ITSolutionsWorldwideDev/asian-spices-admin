@@ -68,10 +68,12 @@ export async function POST(req: NextRequest) {
         min_price,
         max_price,
         price,
+        min_delivery_days,
+        max_delivery_days,
       } = rate;
 
       // Basic validation
-      if (price === undefined || price === null) {
+      if (price === undefined || price === null || price === "") {
         throw new Error("Rate price is required");
       }
 
@@ -89,18 +91,26 @@ export async function POST(req: NextRequest) {
             min_price = $6,
             max_price = $7,
             price = $8,
+            min_delivery_days = $9,
+            max_delivery_days = $10,
             updated_at = NOW()
-          WHERE id = $9
+          WHERE id = $11
           `,
           [
             country || null,
             state || null,
             city || null,
-            min_weight || null,
-            max_weight || null,
-            min_price || null,
-            max_price || null,
+            min_weight === "" || min_weight == null ? null : min_weight,
+            max_weight === "" || max_weight == null ? null : max_weight,
+            min_price === "" || min_price == null ? null : min_price,
+            max_price === "" || max_price == null ? null : max_price,
             price,
+            min_delivery_days === "" || min_delivery_days == null
+              ? null
+              : min_delivery_days,
+            max_delivery_days === "" || max_delivery_days == null
+              ? null
+              : max_delivery_days,
             id,
           ],
         );
@@ -117,20 +127,28 @@ export async function POST(req: NextRequest) {
             max_weight,
             min_price,
             max_price,
-            price
+            price,
+            min_delivery_days,
+            max_delivery_days
           )
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
           `,
           [
             methodId,
             country || null,
             state || null,
             city || null,
-            min_weight || null,
-            max_weight || null,
-            min_price || null,
-            max_price || null,
+            min_weight === "" || min_weight == null ? null : min_weight,
+            max_weight === "" || max_weight == null ? null : max_weight,
+            min_price === "" || min_price == null ? null : min_price,
+            max_price === "" || max_price == null ? null : max_price,
             price,
+            min_delivery_days === "" || min_delivery_days == null
+              ? null
+              : min_delivery_days,
+            max_delivery_days === "" || max_delivery_days == null
+              ? null
+              : max_delivery_days,
           ],
         );
       }

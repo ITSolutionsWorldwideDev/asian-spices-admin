@@ -145,7 +145,8 @@ export default function RatesManager({
 
       if (!data.success) throw new Error(data.error);
 
-      // alert("Rates saved successfully");
+      // Reload from DB so saved values (including days) show immediately
+      await fetchRates();
     } catch (err: any) {
       setError(err.message);
     } finally {
