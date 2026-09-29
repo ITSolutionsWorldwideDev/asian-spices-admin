@@ -195,6 +195,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Assign product to selected partner stores
+    const storeIds: string[] = Array.isArray(body.store_ids)
+      ? body.store_ids.filter(Boolean)
+      : [];
+    if (storeIds.length > 0) {
+      await client.query(
+        `
+        INSERT INTO store_product_catalog (store_id, product_id, price, quantity, status)
+        SELECT s.id, $1, COALESCE($2, 0), COALESCE($3, 0), 1
+        FROM unnest($4::uuid[]) AS s(id)
+        ON CONFLICT (store_id, product_id) DO NOTHING
+        `,
+        [productId, body.base_price ?? 0, body.quantity ?? 0, storeIds],
+      );
+    }
+
     await client.query("COMMIT");
     return NextResponse.json(productResult.rows[0], { status: 201 });
   } catch (e: any) {

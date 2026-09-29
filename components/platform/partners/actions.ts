@@ -7,8 +7,8 @@ import { requirePlatformAdmin } from "@/lib/auth/guards";
 import { revalidatePath } from "next/cache";
 import { logAudit } from "@/lib/audit";
 import { createStoreFromPartner } from "@/lib/services/partner.service";
-import { sendEmail } from "@/lib/email";
-// import { sendEmail } from "@/lib/email"; // Make sure your mail path matches your configuration
+import { sendPartnerRegistrationEmail } from "@/core/email-templates";
+import { redirect } from "next/navigation";
 
 export async function approvePartner(partnerId: string) {
   const user = await requirePlatformAdmin();
@@ -16,6 +16,8 @@ export async function approvePartner(partnerId: string) {
 
   let partnerEmail = "";
   let partnerFirstName = "";
+  let partnerCompanyName = "";
+  let partnerApplicationId = "";
   let emailPayload: {
     storeId: string;
     userId: string;
@@ -41,6 +43,8 @@ export async function approvePartner(partnerId: string) {
 
     partnerEmail = partner.business_email_address;
     partnerFirstName = partner.first_name;
+    partnerCompanyName = partner.company_name;
+    partnerApplicationId = partner.application_id || "";
 
     // FIX: Pass the active, transactional 'client' down directly to prevent deadlocks
     const result = await createStoreFromPartner(client, partner);
@@ -73,27 +77,15 @@ export async function approvePartner(partnerId: string) {
     client.release();
   }
 
-  // Handle email dispatch after database transaction commits
-  /* if (emailPayload) {
-    try {
-      await sendEmail({
-        to: partnerEmail,
-        subject: "Your store has been approved! 🎉",
-        html: `
-          <p>Hello ${partnerFirstName},</p>
-          <p>Great news! Your application has been approved and your store is ready.</p>
-          <p><b>Login Email:</b> ${partnerEmail}</p>
-          <p><b>Temporary Password:</b> ${emailPayload.tempPassword}</p>
-          <p>Please log in to your admin panel and change your password immediately.</p>
-        `,
-      });
-    } catch (mailErr) {
-      console.error(
-        "Critical: Database updated but approval email failed to dispatch:",
-        mailErr,
-      );
-    }
-  } */
+  // Same Partner Application Received template as shown in production
+  if (emailPayload && partnerEmail && partnerApplicationId) {
+    await sendPartnerRegistrationEmail({
+      email: partnerEmail,
+      companyName: partnerCompanyName || "Your company",
+      firstName: partnerFirstName || "Partner",
+      applicationId: partnerApplicationId,
+    });
+  }
 
   revalidatePath("/platform/partners");
   return { success: true };
@@ -182,6 +174,55 @@ export async function rejectPartner(
 
   revalidatePath("/platform/partners");
   return { success: true };
+}
+
+export async function deletePartner(partnerId: string) {
+  const user = await requirePlatformAdmin();
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { rows } = await client.query(
+      `SELECT partner_id, application_id FROM partner_registration WHERE partner_id = $1`,
+      [partnerId],
+    );
+    if (!rows[0]) throw new Error("Partner application record not found.");
+
+    const { partner_id, application_id } = rows[0];
+
+    // Unlink any store that still points at this registration
+    await client.query(
+      `UPDATE stores
+       SET partner_registration_id = NULL
+       WHERE partner_registration_id = $1
+          OR ($2::text IS NOT NULL AND partner_registration_id = $2)`,
+      [String(partner_id), application_id ?? null],
+    );
+
+    await client.query(
+      `DELETE FROM partner_registration WHERE partner_id = $1`,
+      [partnerId],
+    );
+
+    await logAudit({
+      actorId: user.id,
+      action: "partner.deleted",
+      entity: "partner",
+      entityId: partnerId,
+    });
+
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  revalidatePath("/platform/partners");
+  revalidatePath("/platform/stores");
+  redirect("/platform/partners");
 }
 
 /* "use server";

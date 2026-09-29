@@ -44,7 +44,7 @@ export default function SubcategoryListComponent() {
   // Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
-  const [sortFilter, setSortFilter] = useState("Recently Added");
+  const [sortFilter, setSortFilter] = useState("Ascending");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
 
   const [isModalOpen, setIsModalOpen] = useState(false);

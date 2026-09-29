@@ -157,6 +157,9 @@ export default function ProductFormComponent({
 
   const [assignedStores, setassignedStores] = useState<AssignedStores[]>([]);
   const [mounted, setMounted] = useState(false);
+  // Stores available for assignment (create / edit)
+  const [allStores, setAllStores] = useState<{ id: string; name: string }[]>([]);
+  const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
 
   // ---------------- RHF ----------------
 
@@ -290,6 +293,10 @@ export default function ProductFormComponent({
     fetch("/api/countries")
       .then((r) => r.json())
       .then(setOriginCountries);
+    fetch("/api/stores")
+      .then((r) => r.json())
+      .then((rows) => setAllStores(Array.isArray(rows) ? rows : []))
+      .catch(() => setAllStores([]));
   }, []);
 
   // const [page, setPage] = useState(1);
@@ -476,6 +483,7 @@ export default function ProductFormComponent({
         country_id: data.country_id ?? null,
         country_of_origin: originCountry?.label ?? null,
         b2b_prices: b2bPrices,
+        store_ids: selectedStoreIds,
       });
 
       const url =
@@ -1546,60 +1554,83 @@ export default function ProductFormComponent({
             </Accordion>
 
             <Accordion
-              title={`Assigned Stores (${assignedStores.length})`}
+              title={`Assigned Stores (${
+                mode === "create"
+                  ? selectedStoreIds.length
+                  : assignedStores.length
+              })`}
               icon={LifeBuoy}
               open={storesOpen}
               onToggle={() => setStoresOpen(!storesOpen)}
             >
-              <div className="p-4">
-                {assignedStores.length === 0 ? (
-                  <p className="text-gray-500">No stores assigned.</p>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {assignedStores.map((store) => (
-                      <div
-                        key={store.id}
-                        className="flex items-center gap-3 p-3 rounded-lg border bg-white shadow-sm hover:shadow-md transition"
-                      >
-                        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                          <LifeBuoy size={18} className="text-blue-600" />
-                        </div>
-
-                        <div>
-                          <p className="font-semibold">{store.name}</p>
-                          <p className="font-semibold p-0 mb-0">
-                            Product Price: €{Number(store.price).toFixed(2)}
-                          </p>
-                          {/* <p className="text-xs text-gray-500">
-                            Assigned Store
-                          </p> */}
-                        </div>
-                      </div>
-                    ))}
+              <div className="p-4 space-y-4">
+                {(mode === "create" || mode === "edit") && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {mode === "create"
+                        ? "Assign to store (optional)"
+                        : "Assign to additional stores"}
+                    </label>
+                    <select
+                      multiple
+                      className="w-full border rounded-lg px-3 py-2 text-sm min-h-[120px]"
+                      value={selectedStoreIds}
+                      onChange={(e) => {
+                        const ids = Array.from(
+                          e.target.selectedOptions,
+                          (o) => o.value,
+                        );
+                        setSelectedStoreIds(ids);
+                      }}
+                    >
+                      {allStores
+                        .filter(
+                          (s) =>
+                            mode === "create" ||
+                            !assignedStores.some((a) => a.id === s.id),
+                        )
+                        .map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Hold Ctrl (Windows) or Cmd (Mac) to select multiple stores.
+                      To change an existing assignment, use Store Assignments → Edit.
+                    </p>
                   </div>
                 )}
-              </div>
 
-              {/* <div className="p-4 border-t space-y-4">
-                <ul className="space-y-3">
-                  {assignedStores?.map((store) => (
-                    <li
-                      key={store.id}
-                      className="flex items-center gap-3 rounded-lg border border-gray-200 p-3"
-                    >
-                      <div className="h-3 w-3 rounded-full bg-green-500"></div>
+                {mode !== "create" && (
+                  <>
+                    {assignedStores.length === 0 ? (
+                      <p className="text-gray-500">No stores assigned yet.</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {assignedStores.map((store) => (
+                          <div
+                            key={store.id}
+                            className="flex items-center gap-3 p-3 rounded-lg border bg-white shadow-sm hover:shadow-md transition"
+                          >
+                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                              <LifeBuoy size={18} className="text-blue-600" />
+                            </div>
 
-                      <div className="flex-1">
-                        <p className="font-medium">{store.name}</p>
+                            <div>
+                              <p className="font-semibold">{store.name}</p>
+                              <p className="font-semibold p-0 mb-0">
+                                Product Price: €
+                                {Number(store.price).toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-
-                      <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
-                        Assigned
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div> */}
+                    )}
+                  </>
+                )}
+              </div>
             </Accordion>
           </div>
 

@@ -3,13 +3,55 @@
 "use client";
 
 import { useState } from "react";
-import { approvePartner, rejectPartner } from "./actions";
+import { approvePartner, rejectPartner, deletePartner } from "./actions";
+
+function isEmpty(value: unknown) {
+  if (value == null) return true;
+  const s = String(value).trim();
+  return !s || s === "-" || s === "undefined" || s === "null";
+}
+
+/** Fields that should be present before approving a partner application. */
+function getMissingPartnerFields(partner: any): string[] {
+  const missing: string[] = [];
+
+  if (isEmpty(partner.company_name)) missing.push("Company Name");
+  if (isEmpty(partner.kvk_number)) missing.push("KVK Number");
+  if (isEmpty(partner.vat_number)) missing.push("VAT Number");
+  if (isEmpty(partner.chamber_of_commerce_number))
+    missing.push("Chamber of Commerce");
+  if (isEmpty(partner.first_name) && isEmpty(partner.last_name))
+    missing.push("Name");
+  if (isEmpty(partner.business_email_address)) missing.push("Email");
+  if (isEmpty(partner.business_phone_number)) missing.push("Phone");
+  if (isEmpty(partner.street)) missing.push("Street");
+  if (isEmpty(partner.house_number)) missing.push("House Number");
+  if (isEmpty(partner.city)) missing.push("City");
+  if (isEmpty(partner.postal_code)) missing.push("Postal Code");
+  if (isEmpty(partner.country)) missing.push("Country");
+
+  const chamberDocs = partner.chamber_of_commerce_extract_document;
+  const hasChamberDoc = Array.isArray(chamberDocs)
+    ? chamberDocs.some(Boolean)
+    : !!chamberDocs;
+  if (!hasChamberDoc) missing.push("Chamber of Commerce Extract");
+
+  return missing;
+}
 
 export default function PartnerDetail({ partner }: any) {
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleApprove = async () => {
+    const missing = getMissingPartnerFields(partner);
+    if (missing.length > 0) {
+      const ok = confirm(
+        `These things are missing:\n\n• ${missing.join("\n• ")}\n\nAre you sure you want to approve?`,
+      );
+      if (!ok) return;
+    }
+
     setLoading(true);
     try {
       await approvePartner(partner.partner_id);
@@ -28,6 +70,24 @@ export default function PartnerDetail({ partner }: any) {
     try {
       await rejectPartner(partner.partner_id, reason);
     } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this partner? This cannot be undone.",
+      )
+    ) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await deletePartner(partner.partner_id);
+    } catch (err) {
+      console.error("Failed to delete partner:", err);
       setLoading(false);
     }
   };
@@ -94,36 +154,46 @@ export default function PartnerDetail({ partner }: any) {
       </Section>
 
       {/* ✅ ACTIONS */}
-      {partner.status === "pending" && (
-        <div className="card p-4 space-y-3">
-          <h3 className="font-semibold">Actions</h3>
+      <div className="card p-4 space-y-3">
+        <h3 className="font-semibold">Actions</h3>
 
-          <div className="flex gap-3">
-            <button
-              className="btn btn-success"
-              disabled={loading}
-              onClick={handleApprove}
-            >
-              Approve
-            </button>
+        {partner.status === "pending" && (
+          <>
+            <div className="flex gap-3">
+              <button
+                className="btn btn-success"
+                disabled={loading}
+                onClick={handleApprove}
+              >
+                Approve
+              </button>
 
-            <button
-              className="btn btn-danger"
-              disabled={loading}
-              onClick={handleReject}
-            >
-              Reject
-            </button>
-          </div>
+              <button
+                className="btn btn-danger"
+                disabled={loading}
+                onClick={handleReject}
+              >
+                Reject
+              </button>
+            </div>
 
-          <textarea
-            placeholder="Rejection reason..."
-            className="w-full border p-2 text-sm"
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
-        </div>
-      )}
+            <textarea
+              placeholder="Rejection reason..."
+              className="w-full border p-2 text-sm"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+          </>
+        )}
+
+        <button
+          className="btn btn-danger"
+          disabled={loading}
+          onClick={handleDelete}
+        >
+          Delete Partner
+        </button>
+      </div>
     </div>
   );
 }

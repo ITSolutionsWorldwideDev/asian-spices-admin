@@ -5,6 +5,7 @@ import slugify from "slugify";
 import { randomUUID } from "crypto";
 
 import { generateUniqueApplicationId } from "@/lib/services/applicationId";
+import { allocateUniqueStoreSlug } from "@/lib/services/store-slug";
 
 // FIX: Receives the parent transaction client context directly to protect processing scopes
 export async function createStoreFromPartner(client: any, partner: any) {
@@ -27,16 +28,12 @@ export async function createStoreFromPartner(client: any, partner: any) {
     );
   }
 
-  // 2️⃣ Generate and validate tenant URL routing patterns
-  let slug = slugify(partner.company_name, { lower: true, strict: true });
-
-  const slugCheck = await client.query(`SELECT 1 FROM stores WHERE slug = $1`, [
-    slug,
-  ]);
-
-  if (slugCheck.rows.length > 0) {
-    slug = `${slug}-${Math.floor(1000 + Math.random() * 9000)}`;
-  }
+  // 2️⃣ Slug must be unique (stores_slug_key). A one-shot random suffix can
+  // still collide, so keep walking until the candidate is free.
+  const slug = await allocateUniqueStoreSlug(
+    client,
+    slugify(partner.company_name || "store", { lower: true, strict: true }),
+  );
 
   // 3️⃣ Create Store Record
   await client.query(

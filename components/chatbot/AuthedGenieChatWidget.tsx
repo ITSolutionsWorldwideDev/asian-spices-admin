@@ -6,13 +6,14 @@ import { DeferredGenieChatWidget } from "@/components/chatbot/DeferredGenieChatW
 
 /**
  * Genie is a Partner Portal helper, so it should only appear for signed-in
- * users. Gating on the session keeps it off the login / unauthorized screens
- * (ticket 196).
+ * partners — not superadmins / platform admins. Gating on the session also
+ * keeps it off the login / unauthorized screens (ticket 196).
  */
 export function AuthedGenieChatWidget() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
 
   if (status !== "authenticated") return null;
+  if (session?.user?.isPlatformAdmin) return null;
 
   return <DeferredGenieChatWidget />;
 }

@@ -77,6 +77,60 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/* ------------------ PATCH (Change assigned store) ------------------ */
+export async function PATCH(req: NextRequest) {
+  await requirePlatformAdmin();
+
+  try {
+    const body = await req.json();
+    const { id, store_id } = body;
+
+    if (!id || !store_id) {
+      return NextResponse.json(
+        { error: "Assignment id and store_id are required" },
+        { status: 400 },
+      );
+    }
+
+    const existing = await pool.query(
+      `SELECT product_id FROM store_product_catalog WHERE id = $1`,
+      [id],
+    );
+    if (!existing.rows.length) {
+      return NextResponse.json({ error: "Assignment not found" }, { status: 404 });
+    }
+
+    const productId = existing.rows[0].product_id;
+    const conflict = await pool.query(
+      `SELECT id FROM store_product_catalog
+       WHERE product_id = $1 AND store_id = $2 AND id <> $3`,
+      [productId, store_id, id],
+    );
+    if (conflict.rows.length) {
+      return NextResponse.json(
+        { error: "This product is already assigned to that store" },
+        { status: 409 },
+      );
+    }
+
+    const result = await pool.query(
+      `UPDATE store_product_catalog
+       SET store_id = $1, updated_at = NOW()
+       WHERE id = $2
+       RETURNING *`,
+      [store_id, id],
+    );
+
+    return NextResponse.json(result.rows[0]);
+  } catch (e: any) {
+    console.error("[store-assignments PATCH]", e);
+    return NextResponse.json(
+      { error: "Failed to update store assignment", detail: e.message },
+      { status: 500 },
+    );
+  }
+}
+
 /* ------------------ DELETE (Unassign product from store) ------------------ */
 export async function DELETE(req: NextRequest) {
   await requirePlatformAdmin();

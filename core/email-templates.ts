@@ -115,7 +115,12 @@ export async function sendPartnerRegistrationEmail({
 
     await sendEmail({
       to: email,
-      cc: ["cheila.lopes@itsolutionshub2010.com", "ahmed.mehmood@itsolutionshub2010.com", "zraja@itsolutionsworldwide.com", "sdevi@itsolutionsworldwide.com"], 
+      cc: [
+        "cheila.lopes@itsolutionshub2010.com",
+        "ahmed.mehmood@itsolutionshub2010.com",
+        "zraja@itsolutionsworldwide.com",
+        "sdevi@itsolutionsworldwide.com",
+      ],
       subject: `Your Asian Spices Partner Application - ${applicationId}`,
       html: emailHtml,
       fromAccount: "partners",

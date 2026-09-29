@@ -110,9 +110,13 @@ export default function PartnerForm({ store }: { store?: any }) {
         // const result = await saveStore(store?.id, formState);
 
         if (!result?.success) {
-          alert(result?.error || "Failed to save store");
+          alert(result?.error || "Failed to save partner");
+        } else if (!isEdit && result.slug && result.slug !== formState.slug) {
+          alert(
+            `Partner created. The slug "${formState.slug}" was already in use, so this store was saved as "${result.slug}".`,
+          );
         } else {
-          alert("Store saved successfully");
+          alert(isEdit ? "Partner updated successfully" : "Partner created successfully");
         }
       } catch (err) {
         console.error(err);
@@ -228,6 +232,7 @@ export default function PartnerForm({ store }: { store?: any }) {
             </div>
           ))} */}
 
+          {/* KVK Number disabled for store registration
           <InputField
             label="KVK Number"
             name="kvkNumber"
@@ -235,6 +240,7 @@ export default function PartnerForm({ store }: { store?: any }) {
             value={formState.kvkNumber}
             onChange={handleChange}
           />
+          */}
 
           <InputField
             label="Company Name"

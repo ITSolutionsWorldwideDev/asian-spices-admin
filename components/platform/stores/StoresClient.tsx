@@ -3,7 +3,7 @@
 "use client";
 
 import Link from "next/link";
-import { useOptimistic, useState } from "react";
+import { startTransition, useOptimistic, useState } from "react";
 import FiltersBar from "./FiltersBar";
 import StoreCard from "./StoreCard";
 import { deleteStore, setStoreStatus } from "./actions";
@@ -72,14 +72,22 @@ export default function StoresClient({ stores, total, page, pageSize }: any) {
               key={store.id}
               store={store}
               onDelete={async () => {
+                const ok = window.confirm(
+                  `Are you sure you want to delete the store "${store.name}"? This cannot be undone.`,
+                );
+                if (!ok) return;
+                startTransition(() => {
+                  updateOptimistic({ type: "delete", id: store.id });
+                });
                 await deleteStore(store.id);
-                updateOptimistic({ type: "delete", id: store.id });
               }}
               onToggleStatus={async () => {
                 const status =
                   store.status === "active" ? "suspended" : "active";
-                  await setStoreStatus(store.id, status);
-                updateOptimistic({ type: "status", id: store.id, status });
+                startTransition(() => {
+                  updateOptimistic({ type: "status", id: store.id, status });
+                });
+                await setStoreStatus(store.id, status);
               }}
             />
           ))}

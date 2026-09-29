@@ -7,7 +7,16 @@ import { saveStore } from "@/components/platform/stores/actions";
 import Link from "next/link";
 import { ArrowLeft } from "react-feather";
 // import { Building2, MapPin } from "lucide-react";
-// import UploadDocument from "./UploadDocument";
+import UploadDocument from "./UploadDocument";
+
+async function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 type Countries = {
   id: number;
   name: string;
@@ -45,6 +54,8 @@ export default function StoreForm({ store }: { store?: any }) {
 
   const [isSlugLocked, setIsSlugLocked] = useState(isEdit);
   const [countries, setCountries] = useState<Countries[]>([]);
+  const [chamberFiles, setChamberFiles] = useState<File[]>([]);
+  const [poaFiles, setPoaFiles] = useState<File[]>([]);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -101,18 +112,41 @@ export default function StoreForm({ store }: { store?: any }) {
   const handleSubmit = async (formData: FormData) => {
     startTransition(async () => {
       try {
+        if (!isEdit && chamberFiles.length === 0) {
+          alert("Chamber of Commerce extract is required.");
+          return;
+        }
+
         // append controlled state into formData
         Object.entries(formState).forEach(([key, value]) => {
           formData.set(key, String(value ?? ""));
         });
 
-        // console.log("formState === ", formState);
+        if (!isEdit) {
+          const chamberUrls = await Promise.all(
+            chamberFiles.map((f) => fileToDataUrl(f)),
+          );
+          formData.set(
+            "chamberExtractDocuments",
+            JSON.stringify(chamberUrls),
+          );
+          if (poaFiles.length > 0) {
+            formData.set(
+              "powerOfAttorneyDocument",
+              await fileToDataUrl(poaFiles[0]),
+            );
+          }
+        }
 
         const result = await saveStore(store?.id, formData);
         // const result = await saveStore(store?.id, formState);
 
         if (!result?.success) {
           alert(result?.error || "Failed to save store");
+        } else if (!isEdit && result.slug && result.slug !== formState.slug) {
+          alert(
+            `Store created. The slug "${formState.slug}" was already in use, so this store was saved as "${result.slug}".`,
+          );
         } else {
           alert("Store saved successfully");
         }
@@ -130,6 +164,7 @@ export default function StoreForm({ store }: { store?: any }) {
         //   startTransition(() => saveStore(store?.id, formData))
         // }
         action={handleSubmit}
+        autoComplete="off"
         className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm space-y-6"
       >
         {/* Header */}
@@ -230,6 +265,7 @@ export default function StoreForm({ store }: { store?: any }) {
             </div>
           ))} */}
 
+          {/* KVK Number disabled for store registration
           <InputField
             label="KVK Number"
             name="kvkNumber"
@@ -237,6 +273,7 @@ export default function StoreForm({ store }: { store?: any }) {
             value={formState.kvkNumber}
             onChange={handleChange}
           />
+          */}
 
           <InputField
             label="Company Name"
@@ -392,7 +429,18 @@ export default function StoreForm({ store }: { store?: any }) {
               />
             </div>
 
-            {/* <UploadDocument/> */}
+            {!isEdit && (
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <h3 className="font-semibold text-gray-700 mb-4">Documents</h3>
+                <UploadDocument
+                  embedded
+                  chamberFiles={chamberFiles}
+                  setChamberFiles={setChamberFiles}
+                  poaFiles={poaFiles}
+                  setPoaFiles={setPoaFiles}
+                />
+              </div>
+            )}
           </div>
 
           {/* Status */}
@@ -424,6 +472,7 @@ export default function StoreForm({ store }: { store?: any }) {
                 <input
                   name="adminName"
                   placeholder="John Doe"
+                  autoComplete="off"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
@@ -437,6 +486,7 @@ export default function StoreForm({ store }: { store?: any }) {
                     name="adminEmail"
                     type="email"
                     placeholder="admin@store.com"
+                    autoComplete="off"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -448,6 +498,7 @@ export default function StoreForm({ store }: { store?: any }) {
                   <input
                     name="adminPassword"
                     type="password"
+                    autoComplete="new-password"
                     placeholder="••••••••"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                     required
@@ -520,6 +571,7 @@ function InputField({
         name={name}
         value={value}
         placeholder={placeHolder}
+        autoComplete="off"
         onChange={(e) => onChange(name, e.target.value)}
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
         required

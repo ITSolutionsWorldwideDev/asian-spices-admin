@@ -10,6 +10,7 @@ type Store = {
   name: string;
   partner_registration_id?: string;
   application_id?: string;
+  partner_company_name?: string;
   slug: string;
   status: "active" | "suspended";
   created_at: string;
@@ -44,6 +45,13 @@ export default function StoreCard({
             {store.status}
           </span>
         </div>
+
+        {store.partner_company_name &&
+          store.partner_company_name !== store.name && (
+            <p className="text-xs text-gray-500">
+              Partner: {store.partner_company_name}
+            </p>
+          )}
 
         <p className="text-xs text-gray-500">
           Partner ID: {store.application_id || "—"}

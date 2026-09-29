@@ -59,6 +59,43 @@ export default function StoreAssignmentsListComponent() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
 
+  // Inline edit: which assignment row is being remapped to another store
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editStoreId, setEditStoreId] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [stores, setStores] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/stores")
+      .then((r) => r.json())
+      .then((rows) => setStores(Array.isArray(rows) ? rows : []))
+      .catch(() => setStores([]));
+  }, []);
+
+  const saveStoreChange = async (assignmentId: string) => {
+    if (!editStoreId) {
+      showToast("error", "Select a store");
+      return;
+    }
+    try {
+      setSavingEdit(true);
+      const res = await fetch("/api/store-assignments", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: assignmentId, store_id: editStoreId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Failed to update store");
+      showToast("success", "Store updated");
+      setEditingId(null);
+      fetchAssignments(filters);
+    } catch (err: any) {
+      showToast("error", err?.message || "Failed to update store");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   /* ------------------------------------
        Fetch Products
     ------------------------------------ */
@@ -172,9 +209,63 @@ export default function StoreAssignmentsListComponent() {
     {
       title: "Assigned Store",
       dataIndex: "store_name",
-      width: 180,
+      width: 260,
       sorter: (a: Assignment, b: Assignment) =>
         a.store_name.localeCompare(b.store_name),
+      render: (_: string, record: Assignment) => {
+        if (editingId === record.id) {
+          return (
+            <div className="flex items-center gap-1">
+              <select
+                className="border rounded px-2 py-1 text-sm max-w-[140px]"
+                value={editStoreId}
+                onChange={(e) => setEditStoreId(e.target.value)}
+              >
+                <option value="">Select store</option>
+                {stores.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                disabled={savingEdit}
+                onClick={() => saveStoreChange(record.id)}
+                className="text-xs text-white bg-blue-600 px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                disabled={savingEdit}
+                onClick={() => setEditingId(null)}
+                className="text-xs text-gray-600 px-2 py-1 rounded hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+            </div>
+          );
+        }
+
+        return (
+          <div className="flex items-center gap-2">
+            <span className="truncate max-w-[140px]" title={record.store_name}>
+              {record.store_name}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingId(record.id);
+                setEditStoreId(record.store_id);
+              }}
+              className="text-xs text-blue-600 hover:underline shrink-0"
+            >
+              Edit
+            </button>
+          </div>
+        );
+      },
     },
     {
       title: "Store Price",
