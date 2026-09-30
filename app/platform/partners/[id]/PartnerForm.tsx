@@ -5,6 +5,16 @@ import { useTransition, useState, useEffect } from "react";
 import { saveStore } from "@/components/platform/stores/actions";
 import Link from "next/link";
 import { ArrowLeft } from "react-feather";
+import UploadDocument from "@/app/platform/stores/[storeId]/UploadDocument";
+
+async function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 type Countries = {
   id: number;
@@ -43,6 +53,8 @@ export default function PartnerForm({ store }: { store?: any }) {
 
   const [isSlugLocked, setIsSlugLocked] = useState(isEdit);
   const [countries, setCountries] = useState<Countries[]>([]);
+  const [chamberFiles, setChamberFiles] = useState<File[]>([]);
+  const [poaFiles, setPoaFiles] = useState<File[]>([]);
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -99,15 +111,33 @@ export default function PartnerForm({ store }: { store?: any }) {
   const handleSubmit = async (formData: FormData) => {
     startTransition(async () => {
       try {
+        if (!isEdit && chamberFiles.length === 0) {
+          alert("Chamber of Commerce extract is required.");
+          return;
+        }
+
         // append controlled state into formData
         Object.entries(formState).forEach(([key, value]) => {
           formData.set(key, String(value ?? ""));
         });
 
-        // console.log("formState === ", formState);
+        if (!isEdit) {
+          const chamberUrls = await Promise.all(
+            chamberFiles.map((f) => fileToDataUrl(f)),
+          );
+          formData.set(
+            "chamberExtractDocuments",
+            JSON.stringify(chamberUrls),
+          );
+          if (poaFiles.length > 0) {
+            formData.set(
+              "powerOfAttorneyDocument",
+              await fileToDataUrl(poaFiles[0]),
+            );
+          }
+        }
 
         const result = await saveStore(store?.id, formData);
-        // const result = await saveStore(store?.id, formState);
 
         if (!result?.success) {
           alert(result?.error || "Failed to save partner");
@@ -396,7 +426,18 @@ export default function PartnerForm({ store }: { store?: any }) {
               />
             </div>
 
-            {/* <UploadDocument/> */}
+            {!isEdit && (
+              <div className="mt-6 pt-6 border-t border-gray-100">
+                <h3 className="font-semibold text-gray-700 mb-4">Documents</h3>
+                <UploadDocument
+                  embedded
+                  chamberFiles={chamberFiles}
+                  setChamberFiles={setChamberFiles}
+                  poaFiles={poaFiles}
+                  setPoaFiles={setPoaFiles}
+                />
+              </div>
+            )}
           </div>
 
           {/* Status */}
