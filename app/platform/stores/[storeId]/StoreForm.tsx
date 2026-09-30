@@ -49,7 +49,7 @@ export default function StoreForm({ store }: { store?: any }) {
     businessPhone: store?.business_phone_number || "",
     businessEmail: store?.business_email_address || "",
     vatNumber: store?.vat_number || "",
-    status: store?.status || "active",
+    status: store?.status || "pending",
   });
 
   const [isSlugLocked, setIsSlugLocked] = useState(isEdit);
@@ -450,9 +450,10 @@ export default function StoreForm({ store }: { store?: any }) {
             </label>
             <select
               name="status"
-              defaultValue={store?.status ?? "active"}
+              defaultValue={store?.status ?? "pending"}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white transition"
             >
+              <option value="pending">Pending</option>
               <option value="active">Active</option>
               <option value="suspended">Suspended</option>
             </select>

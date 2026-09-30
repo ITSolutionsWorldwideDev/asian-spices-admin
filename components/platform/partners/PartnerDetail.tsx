@@ -16,7 +16,7 @@ function getMissingPartnerFields(partner: any): string[] {
   const missing: string[] = [];
 
   if (isEmpty(partner.company_name)) missing.push("Company Name");
-  if (isEmpty(partner.kvk_number)) missing.push("KVK Number");
+  // KVK no longer required for approval (capture disabled on registration)
   if (isEmpty(partner.vat_number)) missing.push("VAT Number");
   if (isEmpty(partner.chamber_of_commerce_number))
     missing.push("Chamber of Commerce");

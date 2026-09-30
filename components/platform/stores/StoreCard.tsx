@@ -12,7 +12,7 @@ type Store = {
   application_id?: string;
   partner_company_name?: string;
   slug: string;
-  status: "active" | "suspended";
+  status: "pending" | "active" | "suspended";
   created_at: string;
 };
 
@@ -39,7 +39,9 @@ export default function StoreCard({
             className={`text-xs px-2 py-1 rounded-full ${
               store.status === "active"
                 ? "bg-green-100 text-green-700"
-                : "bg-yellow-100 text-yellow-700"
+                : store.status === "pending"
+                  ? "bg-blue-100 text-blue-700"
+                  : "bg-yellow-100 text-yellow-700"
             }`}
           >
             {store.status}

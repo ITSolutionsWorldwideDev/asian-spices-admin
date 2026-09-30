@@ -2,10 +2,11 @@
 "use client";
 
 import { useTransition, useState, useEffect } from "react";
-import { saveStore } from "@/components/platform/stores/actions";
+import { createPartner } from "@/components/platform/partners/actions";
 import Link from "next/link";
 import { ArrowLeft } from "react-feather";
 import UploadDocument from "@/app/platform/stores/[storeId]/UploadDocument";
+import { useRouter } from "next/navigation";
 
 async function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -24,6 +25,7 @@ type Countries = {
 
 export default function PartnerForm({ store }: { store?: any }) {
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   const isEdit = !!store;
 
@@ -48,7 +50,7 @@ export default function PartnerForm({ store }: { store?: any }) {
     businessPhone: store?.business_phone_number || "",
     businessEmail: store?.business_email_address || "",
     vatNumber: store?.vat_number || "",
-    status: store?.status || "active",
+    status: store?.status || "pending",
   });
 
   const [isSlugLocked, setIsSlugLocked] = useState(isEdit);
@@ -137,16 +139,14 @@ export default function PartnerForm({ store }: { store?: any }) {
           }
         }
 
-        const result = await saveStore(store?.id, formData);
+        // Partner create only — store is provisioned when admin approves
+        const result = await createPartner(formData);
 
         if (!result?.success) {
           alert(result?.error || "Failed to save partner");
-        } else if (!isEdit && result.slug && result.slug !== formState.slug) {
-          alert(
-            `Partner created. The slug "${formState.slug}" was already in use, so this store was saved as "${result.slug}".`,
-          );
         } else {
-          alert(isEdit ? "Partner updated successfully" : "Partner created successfully");
+          alert("Partner created successfully (pending approval). Store will be created on approve.");
+          router.push("/platform/partners");
         }
       } catch (err) {
         console.error(err);
@@ -162,6 +162,7 @@ export default function PartnerForm({ store }: { store?: any }) {
         //   startTransition(() => saveStore(store?.id, formData))
         // }
         action={handleSubmit}
+        autoComplete="off"
         className="bg-white p-8 rounded-xl border border-gray-200 shadow-sm space-y-6"
       >
         {/* Header */}
@@ -447,9 +448,10 @@ export default function PartnerForm({ store }: { store?: any }) {
             </label>
             <select
               name="status"
-              defaultValue={store?.status ?? "active"}
+              defaultValue={store?.status ?? "pending"}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white transition"
             >
+              <option value="pending">Pending</option>
               <option value="active">Active</option>
               <option value="suspended">Suspended</option>
             </select>
@@ -469,6 +471,7 @@ export default function PartnerForm({ store }: { store?: any }) {
                 <input
                   name="adminName"
                   placeholder="John Doe"
+                  autoComplete="off"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
@@ -482,6 +485,7 @@ export default function PartnerForm({ store }: { store?: any }) {
                     name="adminEmail"
                     type="email"
                     placeholder="admin@store.com"
+                    autoComplete="off"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                     required
                   />
@@ -493,6 +497,7 @@ export default function PartnerForm({ store }: { store?: any }) {
                   <input
                     name="adminPassword"
                     type="password"
+                    autoComplete="new-password"
                     placeholder="••••••••"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
                     required
@@ -565,6 +570,7 @@ function InputField({
         name={name}
         value={value}
         placeholder={placeHolder}
+        autoComplete="off"
         onChange={(e) => onChange(name, e.target.value)}
         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
         required

@@ -532,7 +532,7 @@ export async function saveStore(
         `INSERT INTO stores (name, slug, status,partner_registration_id)
          VALUES ($1, $2, $3,$4)
          RETURNING id`,
-        [name, slug, status ?? "active", partnerRegId],
+        [name, slug, "pending", partnerRegId],
       );
 
       finalStoreId = storeRes.rows[0].id;

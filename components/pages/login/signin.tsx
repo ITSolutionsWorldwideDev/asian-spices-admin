@@ -127,6 +127,14 @@ export default function SigninComponent() {
                             }
                           ></span>
                         </div>
+                        <div className="mt-2 text-right">
+                          <a
+                            href="/forgot-password"
+                            className="text-sm text-white underline hover:text-orange-400"
+                          >
+                            Forgot Password?
+                          </a>
+                        </div>
                       </div>
                       <div className="form-login">
                         <button className="btn btn-login" disabled={loading}>
