@@ -39,6 +39,7 @@ export function credentialsProvider(app: AppType) {
           (user.storeRoles as StoreRole[])?.some((r) =>
             (
               [
+                AUTH_ROLES.STORE_OWNER,
                 AUTH_ROLES.ADMIN,
                 AUTH_ROLES.MANAGER,
                 AUTH_ROLES.EDITOR,

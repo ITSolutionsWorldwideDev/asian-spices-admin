@@ -18,22 +18,30 @@ export async function GET(req: NextRequest) {
 
   if (search) {
     values.push(`%${search}%`);
-    where.push(`email ILIKE $${values.length}`);
+    where.push(`u.email ILIKE $${values.length}`);
   }
 
   const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
 
   const { rows } = await pool.query(
-    `SELECT id, email, name, is_platform_admin, status, created_at
-     FROM users
+    `SELECT u.id, u.email, u.name, u.is_platform_admin, u.status, u.created_at,
+            (
+              SELECT r.key
+              FROM store_users su
+              JOIN roles r ON r.id = su.role_id
+              WHERE su.user_id = u.id
+              ORDER BY CASE WHEN r.key = 'store_owner' THEN 0 ELSE 1 END, r.key
+              LIMIT 1
+            ) AS store_role
+     FROM users u
      ${whereClause}
-     ORDER BY created_at DESC
+     ORDER BY u.created_at DESC
      LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
     [...values, PAGE_SIZE, offset]
   );
 
   const { rows: totalRows } = await pool.query(
-    `SELECT COUNT(*) FROM users ${whereClause}`,
+    `SELECT COUNT(*) FROM users u ${whereClause}`,
     values
   );
 

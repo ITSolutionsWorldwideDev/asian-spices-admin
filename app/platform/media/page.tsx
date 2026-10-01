@@ -243,6 +243,30 @@ export default function MediaLibrary() {
     }
   };
 
+  const handleDeleteProduct = async (product: ProductSummary) => {
+    if (
+      !confirm(
+        `Permanently delete "${product.name}" from the database? This cannot be undone.`,
+      )
+    )
+      return;
+
+    try {
+      const res = await fetch(`/api/products?id=${product.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to delete product");
+      }
+
+      setFilteredProducts((prev) => prev.filter((p) => p.id !== product.id));
+      showToast("success", "Product deleted");
+    } catch (err: any) {
+      showToast("error", err.message || "Failed to delete product");
+    }
+  };
+
   return (
     <div className="page-wrapper">
       <div className="content max-w-6xl mx-auto space-y-6 p-4">
@@ -365,12 +389,23 @@ export default function MediaLibrary() {
                           .join(" · ") || "—"}
                       </p>
                     </div>
-                    <Link
-                      href={`/platform/products/${product.id}/edit`}
-                      className="shrink-0 text-xs font-medium text-blue-600 hover:underline"
-                    >
-                      Edit
-                    </Link>
+                    <div className="shrink-0 flex items-center gap-3">
+                      <Link
+                        href={`/platform/products/${product.id}/edit`}
+                        className="text-xs font-medium text-blue-600 hover:underline"
+                      >
+                        Edit
+                      </Link>
+                      {productImageFilter === "without" && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProduct(product)}
+                          className="text-xs font-medium text-red-600 hover:underline"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

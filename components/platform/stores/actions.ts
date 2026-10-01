@@ -11,6 +11,7 @@ import { hash } from "bcryptjs";
 import { generateUniqueApplicationId } from "@/lib/services/applicationId";
 import { allocateUniqueStoreSlug } from "@/lib/services/store-slug";
 import { sendPartnerRegistrationEmail } from "@/core/email-templates";
+import { syncUserRoleColumn } from "@/lib/users/syncUserRole";
 
 export async function updateStore(
   storeId: string | undefined,
@@ -156,6 +157,8 @@ export async function createStore(formData: FormData) {
        VALUES ($1, $2, $3)`,
       [storeId, userId, roleId],
     );
+
+    await syncUserRoleColumn(client, userId);
 
     await client.query("COMMIT");
 
@@ -576,6 +579,8 @@ export async function saveStore(
          ON CONFLICT (store_id, user_id) DO NOTHING`,
         [finalStoreId, userId, roleRes.rows[0].id],
       );
+
+      await syncUserRoleColumn(client, userId);
     }
 
     if (finalStoreId) {
@@ -681,6 +686,8 @@ export async function saveStore(
       `,
       [storeId, ownerUserId, roleRes.rows[0].id],
     );
+
+    await syncUserRoleColumn(client, ownerUserId);
 
     await logAudit({
       actorId: user.id,

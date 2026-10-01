@@ -7,9 +7,11 @@ import { requirePlatformAdmin } from "@/lib/auth/guards";
 import { revalidatePath } from "next/cache";
 import { logAudit } from "@/lib/audit";
 import { createStoreFromPartner } from "@/lib/services/partner.service";
-import { sendPartnerRegistrationEmail } from "@/core/email-templates";
+import { sendPartnerRegistrationEmail, sendPartnerApprovalEmail } from "@/core/email-templates";
 import { generateUniqueApplicationId } from "@/lib/services/applicationId";
 import { redirect } from "next/navigation";
+import { hash } from "bcryptjs";
+import { randomUUID } from "crypto";
 
 /** Create partner registration only — store is created on approve. */
 export async function createPartner(formData: FormData) {
@@ -255,6 +257,59 @@ export async function approvePartner(partnerId: string) {
       result = await createStoreFromPartner(client, partner);
     }
 
+    // Always ensure a login user + fresh temp password so credentials can be emailed
+    if (!partnerEmail) {
+      throw new Error("Partner business email is missing; cannot send login credentials.");
+    }
+
+    if (!result.tempPassword) {
+      const tempPassword = Math.random().toString(36).slice(-10);
+      const passwordHash = await hash(tempPassword, 10);
+      const ownerName =
+        `${partner.first_name || ""} ${partner.last_name || ""}`.trim() ||
+        partnerCompanyName ||
+        "Partner";
+
+      const userRes = await client.query(
+        `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+        [partnerEmail],
+      );
+
+      let userId: string;
+      if (userRes.rows.length > 0) {
+        userId = userRes.rows[0].id;
+        await client.query(
+          `UPDATE users
+           SET password_hash = $1,
+               store_id = COALESCE(store_id, $2),
+               role = COALESCE(NULLIF(role, ''), 'store_owner')
+           WHERE id = $3`,
+          [passwordHash, result.storeId, userId],
+        );
+      } else {
+        userId = randomUUID();
+        await client.query(
+          `INSERT INTO users (id, email, password_hash, name, store_id, role)
+           VALUES ($1, $2, $3, $4, $5, 'store_owner')`,
+          [userId, partnerEmail, passwordHash, ownerName, result.storeId],
+        );
+      }
+
+      const roleRes = await client.query(
+        `SELECT id FROM roles WHERE key = 'store_owner' LIMIT 1`,
+      );
+      if (roleRes.rows.length > 0) {
+        await client.query(
+          `INSERT INTO store_users (store_id, user_id, role_id)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (store_id, user_id) DO UPDATE SET role_id = EXCLUDED.role_id`,
+          [result.storeId, userId, roleRes.rows[0].id],
+        );
+      }
+
+      result = { ...result, userId, tempPassword };
+    }
+
     await client.query(
       `UPDATE partner_registration
        SET status = 'approved',
@@ -283,18 +338,39 @@ export async function approvePartner(partnerId: string) {
     client.release();
   }
 
-  // Same Partner Application Received template as shown in production
-  if (emailPayload && partnerEmail && partnerApplicationId) {
-    await sendPartnerRegistrationEmail({
+  // Send login credentials after approval (never the application-received template)
+  let emailSent = false;
+  if (emailPayload?.tempPassword && partnerEmail) {
+    const mailResult = await sendPartnerApprovalEmail({
       email: partnerEmail,
       companyName: partnerCompanyName || "Your company",
       firstName: partnerFirstName || "Partner",
-      applicationId: partnerApplicationId,
+      applicationId: partnerApplicationId || undefined,
+      tempPassword: emailPayload.tempPassword,
     });
+    emailSent = Boolean(mailResult.success);
+    if (!mailResult.success) {
+      console.error(
+        "[approvePartner] Credentials email failed after successful approval",
+        mailResult.error,
+      );
+    }
+  } else {
+    console.error(
+      "[approvePartner] Skipped credentials email — missing tempPassword or partnerEmail",
+      { partnerEmail, hasTempPassword: Boolean(emailPayload?.tempPassword) },
+    );
   }
 
   revalidatePath("/platform/partners");
-  return { success: true };
+  revalidatePath(`/platform/partners/${partnerId}`);
+  return {
+    success: true,
+    emailSent,
+    email: partnerEmail,
+    // Only exposed when the email could not be delivered, so the admin can share it manually
+    tempPassword: emailSent ? undefined : emailPayload?.tempPassword,
+  };
 }
 
 export async function rejectPartner(

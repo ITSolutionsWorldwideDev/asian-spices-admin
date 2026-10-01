@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/core/db";
 import { getCurrentStoreAPI } from "@/lib/auth/guards";
 import { userSchema } from "@/lib/validations/user";
+import { syncUserRoleColumn } from "@/lib/users/syncUserRole";
 
 
 export async function GET(
@@ -76,6 +77,8 @@ export async function PUT(
        WHERE user_id = $2 AND store_id = $3`,
       [validated.role_id, userId, store.id]
     );
+
+    await syncUserRoleColumn(client, userId);
 
     await client.query("COMMIT");
     return NextResponse.json({ success: true });

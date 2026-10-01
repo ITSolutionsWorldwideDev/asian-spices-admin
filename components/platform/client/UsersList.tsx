@@ -11,6 +11,7 @@ type User = {
   email: string;
   name?: string;
   is_platform_admin: boolean;
+  store_role?: string | null;
   status: "active" | "suspended";
   created_at: string;
 };
@@ -133,6 +134,10 @@ export default function UsersListComponent() {
                       {u.is_platform_admin ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
                           Platform Admin
+                        </span>
+                      ) : u.store_role ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                          {u.store_role.replace(/_/g, "-")}
                         </span>
                       ) : (
                         <span className="text-sm text-gray-600 font-medium">Standard User</span>

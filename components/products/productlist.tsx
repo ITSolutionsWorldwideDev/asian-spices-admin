@@ -12,7 +12,6 @@ import FilterBar from "./FilterBar";
 import { useToast } from "@/core/ui";
 import ProductImportModal from "./ProductImportModal";
 import DiscountImportModal from "./DiscountImportModal";
-import { exportToCsv } from "@/core/utils/exportCsv";
 
 /* ------------------------------------
    Types
@@ -58,6 +57,7 @@ export default function ProductListComponent() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   /* ------------------------------------
        Fetch Products
@@ -105,27 +105,28 @@ export default function ProductListComponent() {
     fetchProducts(filters);
   }, [filters, fetchProducts]);
 
-  const handleExportCsv = () => {
-    exportToCsv<Product>(
-      "products",
-      [
-        { title: "Product", dataIndex: "name" },
-        { title: "SKU", dataIndex: "sku" },
-        { title: "Category", dataIndex: "category" },
-        { title: "Brand", dataIndex: "brand" },
-        {
-          title: "Price",
-          dataIndex: "base_price",
-          format: (v) => `€${Number(v).toLocaleString()}`,
-        },
-        {
-          title: "Status",
-          dataIndex: "status",
-          format: (v) => (v ? "Active" : "Inactive"),
-        },
-      ],
-      products,
-    );
+  const handleExportExcel = async () => {
+    try {
+      setExporting(true);
+      const res = await fetch("/api/products/export");
+      if (!res.ok) throw new Error("Export failed");
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const disposition = res.headers.get("Content-Disposition");
+      const match = disposition?.match(/filename="?([^"]+)"?/);
+      link.href = url;
+      link.download = match?.[1] || "products-export.xlsx";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      showToast("error", "Failed to export products");
+    } finally {
+      setExporting(false);
+    }
   };
 
   /* const fetchProducts = async (filters: Filters = {}) => {
@@ -292,11 +293,12 @@ export default function ProductListComponent() {
               </button>
 
               <button
-                onClick={handleExportCsv}
-                className="flex items-center px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 text-sm font-medium transition-colors"
+                onClick={handleExportExcel}
+                disabled={exporting}
+                className="flex items-center px-4 py-2 bg-gray-800 text-white rounded hover:bg-gray-900 text-sm font-medium transition-colors disabled:opacity-60"
               >
                 <Download className="mr-2" size={16} />
-                Export
+                {exporting ? "Exporting..." : "Export Excel"}
               </button>
             </div>
           </div>

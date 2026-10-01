@@ -2,6 +2,7 @@
 
 export const AUTH_ROLES = {
   SUPER_ADMIN: "super_admin",
+  STORE_OWNER: "store_owner",
   ADMIN: "admin",
   MANAGER: "manager",
   EDITOR: "editor",
