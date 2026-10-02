@@ -30,6 +30,7 @@ export default function FiltersBar() {
         className="input w-40"
       >
         <option value="">All</option>
+        <option value="pending">Pending</option>
         <option value="active">Active</option>
         <option value="suspended">Suspended</option>
       </select>

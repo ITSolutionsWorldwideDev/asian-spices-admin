@@ -12,6 +12,15 @@ import {
   getMaxNumericItemCodeSequence,
 } from "@/lib/products/itemCode";
 import { excelWeight, normalizeExcelRow } from "@/lib/products/excelRow";
+import {
+  decideImportAction,
+  findExistingProduct,
+  getProductChanges,
+  productIdentityKey,
+  resolveImportValues,
+  type ExistingProduct,
+  type ImportAction,
+} from "@/lib/products/importUpsert";
 
 const REQUIRED_HEADERS = [
   "Name",
@@ -37,8 +46,6 @@ export async function POST(req: NextRequest) {
   );
 
   /* ---------------- WRONG-TEMPLATE GUARDRAIL ---------------- */
-  // Catches a legacy/foreign export uploaded by mistake before it turns
-  // into a wall of confusing per-row "X is required" errors.
   const foundHeaders = rows.length
     ? new Set(Object.keys(rows[0]))
     : new Set<string>();
@@ -51,6 +58,9 @@ export async function POST(req: NextRequest) {
       total: 0,
       valid: 0,
       invalid: 0,
+      create: 0,
+      update: 0,
+      skip: 0,
       rows: [],
     });
   }
@@ -58,25 +68,65 @@ export async function POST(req: NextRequest) {
   const client = await pool.connect();
 
   try {
-    /* ---------------- STRUCTURAL LOOKUPS ----------------
-       Category, subcategory, and brand are auto-created on confirm. */
+    const existingRes = await client.query<ExistingProduct>(`
+      SELECT
+        p.id,
+        p.sku,
+        p.item_code,
+        p.name,
+        p.slug,
+        p.description,
+        p.health_benefits,
+        p.base_price,
+        p.weight,
+        p.quantity,
+        p.discount_type,
+        p.discount_value,
+        p.status,
+        p.country_of_origin,
+        c.name AS category,
+        sc.name AS subcategory,
+        b.name AS brand,
+        (
+          SELECT COALESCE(
+            json_agg(
+              json_build_object(
+                'min_quantity', spp.min_quantity,
+                'price', spp.price
+              )
+              ORDER BY spp.min_quantity ASC
+            ),
+            '[]'::json
+          )
+          FROM store_product_prices spp
+          WHERE spp.product_id = p.id
+            AND spp.customer_type = 'B2B'
+        ) AS b2b_prices
+      FROM store_products p
+      LEFT JOIN store_categories c ON c.id = p.category_id
+      LEFT JOIN store_subcategories sc ON sc.id = p.subcategory_id
+      LEFT JOIN store_brands b ON b.brand_id = p.brand_id
+    `);
 
-    const existingCodes = await client.query(
-      `SELECT sku, item_code FROM store_products`,
-    );
+    const bySku = new Map<string, ExistingProduct>();
+    const byItemCode = new Map<string, ExistingProduct>();
+    const byIdentity = new Map<string, ExistingProduct>();
 
-    const skuSet = new Set(
-      existingCodes.rows
-        .map((r: { sku: string }) => normalizeProductCode(r.sku).toLowerCase())
-        .filter(Boolean),
-    );
-    const itemCodeSet = new Set(
-      existingCodes.rows
-        .map((r: { item_code: string }) =>
-          normalizeProductCode(r.item_code).toLowerCase(),
-        )
-        .filter(Boolean),
-    );
+    for (const product of existingRes.rows) {
+      const skuKey = normalizeProductCode(product.sku).toLowerCase();
+      const itemKey = normalizeProductCode(product.item_code).toLowerCase();
+      if (skuKey) bySku.set(skuKey, product);
+      if (itemKey) byItemCode.set(itemKey, product);
+      const identityKey = productIdentityKey(
+        product.name,
+        product.brand,
+        product.weight,
+      );
+      if (identityKey !== "||") byIdentity.set(identityKey, product);
+      if (!Array.isArray(product.b2b_prices)) {
+        product.b2b_prices = [];
+      }
+    }
 
     const maxSkuSeq = await getMaxNumericSkuSequence(client);
     const skuAllocator = createSequentialSkuAllocator(maxSkuSeq);
@@ -87,6 +137,8 @@ export async function POST(req: NextRequest) {
       row: number;
       data: any;
       isValid: boolean;
+      action: ImportAction | "error";
+      changes: string[];
       fieldErrors: Record<string, string>;
       errors: string[];
     }> = [];
@@ -102,10 +154,6 @@ export async function POST(req: NextRequest) {
 
       const fieldErrors: Record<string, string> = {};
 
-      /* ---------------- REQUIRED FIELDS ----------------
-         Mirrors what the manual Add Product form requires, so a row that
-         would be rejected there is rejected here too, and vice versa. */
-
       if (!row.Name) fieldErrors.Name = "required";
       if (!row.Category) fieldErrors.Category = "required";
       if (!row.Subcategory) fieldErrors.Subcategory = "required";
@@ -113,7 +161,10 @@ export async function POST(req: NextRequest) {
 
       if (!row["Base Price"]) {
         fieldErrors["Base Price"] = "required";
-      } else if (Number.isNaN(Number(row["Base Price"])) || Number(row["Base Price"]) <= 0) {
+      } else if (
+        Number.isNaN(Number(row["Base Price"])) ||
+        Number(row["Base Price"]) <= 0
+      ) {
         fieldErrors["Base Price"] = "must be a number > 0";
       }
 
@@ -125,16 +176,17 @@ export async function POST(req: NextRequest) {
         fieldErrors.Quantity = "must be a whole number ≥ 0";
       }
 
-      /* ---------------- SKU / ITEM CODE DUPLICATES ---------------- */
-
       const providedSku = normalizeProductCode(row.SKU);
       const providedItemCode = normalizeProductCode(row["Item Code"]);
+      const { existing, conflict } = findExistingProduct(row, byIdentity);
+
+      if (conflict) {
+        fieldErrors.Name = conflict;
+      }
 
       if (providedSku) {
         const skuKey = providedSku.toLowerCase();
-        if (skuSet.has(skuKey)) {
-          fieldErrors.SKU = "already exists";
-        } else if (skusSeenInFile.has(skuKey)) {
+        if (skusSeenInFile.has(skuKey)) {
           fieldErrors.SKU = "duplicated in this file";
         } else {
           skusSeenInFile.add(skuKey);
@@ -143,26 +195,19 @@ export async function POST(req: NextRequest) {
 
       if (providedItemCode) {
         const itemCodeKey = providedItemCode.toLowerCase();
-        if (itemCodeSet.has(itemCodeKey)) {
-          fieldErrors["Item Code"] = "already exists";
-        } else if (itemCodesSeenInFile.has(itemCodeKey)) {
+        if (itemCodesSeenInFile.has(itemCodeKey)) {
           fieldErrors["Item Code"] = "duplicated in this file";
         } else {
           itemCodesSeenInFile.add(itemCodeKey);
         }
       }
 
-      /* ---------------- CATEGORY / SUBCATEGORY / BRAND ----------------
-         Names from the sheet are accepted even if not in DB yet —
-         they are created automatically during confirm import. */
-
-      /* ---------------- STATUS ---------------- */
-
-      if (row.Status && !["Active", "Inactive"].includes(String(row.Status).trim())) {
+      if (
+        row.Status &&
+        !["Active", "Inactive"].includes(String(row.Status).trim())
+      ) {
         fieldErrors.Status = "must be Active or Inactive";
       }
-
-      /* ---------------- B2B PRICES (JSON) ---------------- */
 
       if (row["B2B Prices"]) {
         try {
@@ -172,27 +217,71 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      /* ---------------- AUTO SKU (optional column) ---------------- */
+      let action: ImportAction | "error" = "error";
+      let changes: string[] = [];
 
-      if (providedSku) {
-        row.SKU = providedSku;
-      } else if (Object.keys(fieldErrors).length === 0) {
-        const assignedSku = skuAllocator.next();
-        row.SKU = assignedSku;
-        skuSet.add(assignedSku.toLowerCase());
+      if (Object.keys(fieldErrors).length === 0) {
+        let sku = providedSku;
+        let itemCode = providedItemCode;
+
+        if (existing) {
+          sku = providedSku || normalizeProductCode(existing.sku);
+          itemCode =
+            providedItemCode || normalizeProductCode(existing.item_code);
+
+          // Changing SKU/item code must not collide with a different product.
+          const skuOwner = sku ? bySku.get(sku.toLowerCase()) : undefined;
+          const itemOwner = itemCode
+            ? byItemCode.get(itemCode.toLowerCase())
+            : undefined;
+
+          if (skuOwner && skuOwner.id !== existing.id) {
+            fieldErrors.SKU = "already used by another product";
+          }
+          if (itemOwner && itemOwner.id !== existing.id) {
+            fieldErrors["Item Code"] = "already used by another product";
+          }
+        } else {
+          if (sku && bySku.has(sku.toLowerCase())) {
+            fieldErrors.SKU = "already used by another product";
+          }
+          if (itemCode && byItemCode.has(itemCode.toLowerCase())) {
+            fieldErrors["Item Code"] = "already used by another product";
+          }
+
+          if (!sku) {
+            sku = skuAllocator.next();
+            while (
+              bySku.has(sku.toLowerCase()) ||
+              skusSeenInFile.has(sku.toLowerCase())
+            ) {
+              sku = skuAllocator.next();
+            }
+            skusSeenInFile.add(sku.toLowerCase());
+          }
+          if (!itemCode) {
+            itemCode = itemCodeAllocator.next();
+            while (
+              byItemCode.has(itemCode.toLowerCase()) ||
+              itemCodesSeenInFile.has(itemCode.toLowerCase())
+            ) {
+              itemCode = itemCodeAllocator.next();
+            }
+            itemCodesSeenInFile.add(itemCode.toLowerCase());
+          }
+        }
+
+        if (Object.keys(fieldErrors).length === 0) {
+          row.SKU = sku;
+          row["Item Code"] = itemCode;
+
+          const values = resolveImportValues(row, { sku, itemCode });
+          action = decideImportAction(existing, values);
+          if (existing && action === "update") {
+            changes = getProductChanges(existing, values);
+          }
+        }
       }
-
-      /* ---------------- AUTO ITEM CODE (optional column) ---------------- */
-
-      if (providedItemCode) {
-        row["Item Code"] = providedItemCode;
-      } else if (Object.keys(fieldErrors).length === 0) {
-        const assignedItemCode = itemCodeAllocator.next();
-        row["Item Code"] = assignedItemCode;
-        itemCodeSet.add(assignedItemCode.toLowerCase());
-      }
-
-      /* ---------------- ROW RESULT ---------------- */
 
       const errors = Object.entries(fieldErrors).map(
         ([field, message]) => `${field}: ${message}`,
@@ -202,6 +291,8 @@ export async function POST(req: NextRequest) {
         row: i + 2,
         data: row,
         isValid: errors.length === 0,
+        action: errors.length === 0 ? action : "error",
+        changes,
         fieldErrors,
         errors,
       });
@@ -211,6 +302,9 @@ export async function POST(req: NextRequest) {
       total: rows.length,
       valid: result.filter((r) => r.isValid).length,
       invalid: result.filter((r) => !r.isValid).length,
+      create: result.filter((r) => r.action === "create").length,
+      update: result.filter((r) => r.action === "update").length,
+      skip: result.filter((r) => r.action === "skip").length,
       rows: result,
     });
   } finally {

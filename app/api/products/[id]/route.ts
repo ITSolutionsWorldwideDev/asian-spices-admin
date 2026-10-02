@@ -146,6 +146,28 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
 
+    // Assign to any newly selected stores (does not remove existing assignments)
+    const storeIds: string[] = Array.isArray(body.store_ids)
+      ? body.store_ids.filter(Boolean)
+      : [];
+    if (storeIds.length > 0) {
+      const priceRow = await client.query(
+        `SELECT base_price, quantity FROM store_products WHERE id = $1`,
+        [id],
+      );
+      const basePrice = priceRow.rows[0]?.base_price ?? body.base_price ?? 0;
+      const qty = priceRow.rows[0]?.quantity ?? body.quantity ?? 0;
+      await client.query(
+        `
+        INSERT INTO store_product_catalog (store_id, product_id, price, quantity, status)
+        SELECT s.id, $1, COALESCE($2, 0), COALESCE($3, 0), 1
+        FROM unnest($4::uuid[]) AS s(id)
+        ON CONFLICT (store_id, product_id) DO NOTHING
+        `,
+        [id, basePrice, qty, storeIds],
+      );
+    }
+
     await client.query("COMMIT");
     return NextResponse.json(product.rows[0], { status: 200 });
   } catch (e: any) {

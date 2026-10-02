@@ -28,17 +28,17 @@ export async function GET(req: NextRequest) {
   // (who isn't a platform admin) is a customer. Aggregated since a user can
   // in principle hold roles at more than one store.
   const { rows } = await pool.query(
-    `SELECT
-       u.id, u.email, u.name, u.is_platform_admin, u.status, u.created_at,
-       COALESCE(
-         json_agg(s.name) FILTER (WHERE s.name IS NOT NULL),
-         '[]'
-       ) AS partner_stores
+    `SELECT u.id, u.email, u.name, u.is_platform_admin, u.status, u.created_at,
+            (
+              SELECT r.key
+              FROM store_users su
+              JOIN roles r ON r.id = su.role_id
+              WHERE su.user_id = u.id
+              ORDER BY CASE WHEN r.key = 'store_owner' THEN 0 ELSE 1 END, r.key
+              LIMIT 1
+            ) AS store_role
      FROM users u
-     LEFT JOIN store_users su ON su.user_id = u.id
-     LEFT JOIN stores s ON s.id = su.store_id
      ${whereClause}
-     GROUP BY u.id, u.email, u.name, u.is_platform_admin, u.status, u.created_at
      ORDER BY u.created_at DESC
      LIMIT $${values.length + 1} OFFSET $${values.length + 2}`,
     [...values, PAGE_SIZE, offset]

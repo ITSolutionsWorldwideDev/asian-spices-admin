@@ -6,6 +6,7 @@ import { pool } from "@/core/db";
 import { revalidatePath } from "next/cache";
 import { requirePlatformAdminServer } from "@/lib/auth/server-guards";
 import bcrypt from "bcryptjs";
+import { syncUserRoleColumn } from "@/lib/users/syncUserRole";
 
 interface RoleReferenceRow {
   id: string | number;
@@ -72,6 +73,14 @@ export async function saveUserAction(userId: string | null, formData: SaveUserFo
         throw new Error("Password is required for user creation");
       }
 
+      const existing = await client.query(
+        `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+        [formData.email],
+      );
+      if (existing.rows.length > 0) {
+        throw new Error("A user with this email already exists.");
+      }
+
       const hashedPassword = await bcrypt.hash(formData.password, 10);
       const userRes = await client.query(
         `INSERT INTO users (email, name, password_hash, is_platform_admin, status)
@@ -99,6 +108,9 @@ export async function saveUserAction(userId: string | null, formData: SaveUserFo
         );
       }
     }
+
+    const { syncUserRoleColumn } = await import("@/lib/users/syncUserRole");
+    await syncUserRoleColumn(client, String(finalUserId));
 
     await client.query("COMMIT");
     revalidatePath("/platform/users");

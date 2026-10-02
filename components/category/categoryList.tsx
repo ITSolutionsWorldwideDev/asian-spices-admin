@@ -30,7 +30,7 @@ export default function CategoryListComponent() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
-  const [sortFilter, setSortFilter] = useState("Recently Added");
+  const [sortFilter, setSortFilter] = useState("Ascending");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);

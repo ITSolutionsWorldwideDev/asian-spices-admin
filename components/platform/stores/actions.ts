@@ -9,6 +9,9 @@ import { logAudit } from "@/lib/audit";
 import { redirect } from "next/navigation";
 import { hash } from "bcryptjs";
 import { generateUniqueApplicationId } from "@/lib/services/applicationId";
+import { allocateUniqueStoreSlug } from "@/lib/services/store-slug";
+import { sendPartnerRegistrationEmail } from "@/core/email-templates";
+import { syncUserRoleColumn } from "@/lib/users/syncUserRole";
 
 export async function updateStore(
   storeId: string | undefined,
@@ -40,9 +43,38 @@ export async function updateStore(
 export async function deleteStore(storeId: string) {
   const user = await requirePlatformAdmin();
 
-  console.log('deleteStore ');
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
 
-  await pool.query(`DELETE FROM stores WHERE id = $1`, [storeId]);
+    // Clear child rows first (FK: store_users_store_id_fkey and related)
+    await client.query(`DELETE FROM store_users WHERE store_id = $1`, [storeId]);
+    await client.query(`DELETE FROM store_settings WHERE store_id = $1`, [storeId]);
+    await client.query(`DELETE FROM store_addresses WHERE store_id = $1`, [storeId]);
+    await client.query(
+      `DELETE FROM store_payment_settings WHERE store_id = $1`,
+      [storeId],
+    );
+    await client.query(
+      `DELETE FROM store_shipping_settings WHERE store_id = $1`,
+      [storeId],
+    );
+    await client.query(`DELETE FROM store_tax_settings WHERE store_id = $1`, [
+      storeId,
+    ]);
+    await client.query(`DELETE FROM subscriptions WHERE store_id = $1`, [
+      storeId,
+    ]);
+
+    await client.query(`DELETE FROM stores WHERE id = $1`, [storeId]);
+
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
 
   await logAudit({
     actorId: user.id,
@@ -92,17 +124,25 @@ export async function createStore(formData: FormData) {
       [storeId, adminEmail, 'NL'], // Defaulting country code to NL or extract dynamically
     );
 
-    // 2️⃣ Create User
-    const passwordHash = await hash(adminPassword, 10);
-
-    const userRes = await client.query(
-      `INSERT INTO users (email, password_hash, name)
-       VALUES ($1, $2, $3)
-       RETURNING id`,
-      [adminEmail, passwordHash, adminName],
+    // 2️⃣ Reuse existing user by email, or create a new one
+    const existingUser = await client.query(
+      `SELECT id FROM users WHERE lower(email) = lower($1)`,
+      [adminEmail],
     );
 
-    const userId = userRes.rows[0].id;
+    let userId: string;
+    if (existingUser.rows.length > 0) {
+      userId = existingUser.rows[0].id;
+    } else {
+      const passwordHash = await hash(adminPassword, 10);
+      const userRes = await client.query(
+        `INSERT INTO users (email, password_hash, name)
+         VALUES ($1, $2, $3)
+         RETURNING id`,
+        [adminEmail, passwordHash, adminName],
+      );
+      userId = userRes.rows[0].id;
+    }
 
     // 3️⃣ Get Store Admin Role
     const roleRes = await client.query(
@@ -117,6 +157,8 @@ export async function createStore(formData: FormData) {
        VALUES ($1, $2, $3)`,
       [storeId, userId, roleId],
     );
+
+    await syncUserRoleColumn(client, userId);
 
     await client.query("COMMIT");
 
@@ -161,12 +203,11 @@ export async function saveStore(
   const data = Object.fromEntries(formData.entries());
   const {
     name,
-    slug,
     status,
     adminName,
     adminEmail,
     adminPassword,
-    kvkNumber,
+    // kvkNumber, // KVK capture disabled for store registration
     companyName,
     chamberOfCommerceNumber,
     country,
@@ -181,19 +222,133 @@ export async function saveStore(
     businessPhone,
     businessEmail,
     vatNumber,
+    chamberExtractDocuments: chamberExtractRaw,
+    powerOfAttorneyDocument,
   } = data;
+
+  let slug = String(data.slug || "");
 
   if (!name || !slug) {
     throw new Error("Missing required fields");
   }
+
+  // KVK capture disabled — always store null
+  const kvkNumber = null;
+
+  let chamberExtractDocuments: string[] | null = null;
+  if (chamberExtractRaw) {
+    try {
+      const parsed = JSON.parse(String(chamberExtractRaw));
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        chamberExtractDocuments = parsed.map(String);
+      }
+    } catch {
+      chamberExtractDocuments = null;
+    }
+  }
+  const poaDocument = powerOfAttorneyDocument
+    ? String(powerOfAttorneyDocument)
+    : null;
 
   const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
 
+    // Block if this business email already exists on any partner registration
+    // (when editing, allow the partner already linked to this store).
+    if (businessEmail) {
+      const existingBizEmail = await client.query(
+        `SELECT pr.partner_id
+         FROM partner_registration pr
+         WHERE lower(pr.business_email_address) = lower($1)
+           AND NOT EXISTS (
+             SELECT 1 FROM stores s
+             WHERE $2::uuid IS NOT NULL
+               AND s.id = $2::uuid
+               AND (
+                 s.partner_registration_id = pr.partner_id::text
+                 OR s.partner_registration_id = pr.application_id
+               )
+           )
+         LIMIT 1`,
+        [businessEmail, storeId ?? null],
+      );
+
+      if (existingBizEmail.rows.length > 0) {
+        throw new Error(
+          "This business email already exists. Please use a different email.",
+        );
+      }
+    }
+
+    // Block duplicate Chamber of Commerce / VAT numbers (same exclusion as email)
+    const excludeOwnPartnerSql = `
+      AND NOT EXISTS (
+        SELECT 1 FROM stores s
+        WHERE $2::uuid IS NOT NULL
+          AND s.id = $2::uuid
+          AND (
+            s.partner_registration_id = pr.partner_id::text
+            OR s.partner_registration_id = pr.application_id
+          )
+      )
+    `;
+
+    const coc = String(chamberOfCommerceNumber || "").trim();
+    if (coc) {
+      const existingCoc = await client.query(
+        `SELECT pr.partner_id
+         FROM partner_registration pr
+         WHERE lower(trim(pr.chamber_of_commerce_number)) = lower($1)
+           ${excludeOwnPartnerSql}
+         LIMIT 1`,
+        [coc, storeId ?? null],
+      );
+      if (existingCoc.rows.length > 0) {
+        throw new Error(
+          "This Chamber of Commerce number already exists. Please use a different number.",
+        );
+      }
+    }
+
+    const vat = String(vatNumber || "").trim();
+    if (vat) {
+      const existingVat = await client.query(
+        `SELECT pr.partner_id
+         FROM partner_registration pr
+         WHERE lower(trim(pr.vat_number)) = lower($1)
+           ${excludeOwnPartnerSql}
+         LIMIT 1`,
+        [vat, storeId ?? null],
+      );
+      if (existingVat.rows.length > 0) {
+        throw new Error(
+          "This VAT number already exists. Please use a different number.",
+        );
+      }
+    }
+
     let finalStoreId = storeId;
     let partnerRegId: string | null = null;
+    let createdApplicationId: string | null = null;
+
+    // stores.slug is unique. On create, pick the next free slug so a repeated
+    // store name does not fail with stores_slug_key. On edit, keep the chosen
+    // slug and reject it when another store already owns it.
+    if (storeId) {
+      const taken = await client.query(
+        `SELECT 1 FROM stores WHERE slug = $1 AND id <> $2::uuid LIMIT 1`,
+        [slug, storeId],
+      );
+      if (taken.rows.length > 0) {
+        throw new Error(
+          `The store slug "${slug}" is already used by another store. Choose a different slug.`,
+        );
+      }
+    } else {
+      slug = await allocateUniqueStoreSlug(client, slug);
+    }
 
     // 1️⃣ CREATE OR UPDATE STORE
     if (storeId) {
@@ -234,7 +389,9 @@ export async function saveStore(
             business_phone_number = $13,
             business_email_address = $14,
             vat_number = $15,
-            application_id = COALESCE(application_id, $17)
+            application_id = COALESCE(application_id, $17),
+            chamber_of_commerce_extract_document = COALESCE($18, chamber_of_commerce_extract_document),
+            power_of_attorney_document = COALESCE($19, power_of_attorney_document)
           WHERE partner_id::text = $16 OR application_id = $16
           `,
           [
@@ -255,6 +412,8 @@ export async function saveStore(
             vatNumber,
             partnerRegId,
             editApplicationId,
+            chamberExtractDocuments,
+            poaDocument,
           ],
         );
       } else {
@@ -278,11 +437,13 @@ export async function saveStore(
             last_name,
             business_phone_number,
             business_email_address,
-            vat_number
+            vat_number,
+            chamber_of_commerce_extract_document,
+            power_of_attorney_document
           )
           VALUES (
             $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
-            $11,$12,$13,$14,$15,$16
+            $11,$12,$13,$14,$15,$16,$17,$18
           )
           RETURNING partner_id
           `,
@@ -303,6 +464,8 @@ export async function saveStore(
             businessPhone,
             businessEmail,
             vatNumber,
+            chamberExtractDocuments,
+            poaDocument,
           ],
         );
 
@@ -317,6 +480,7 @@ export async function saveStore(
       }
     } else {
       const applicationId = await generateUniqueApplicationId(client);
+      createdApplicationId = applicationId;
       const partnerRegData = await client.query(
         `INSERT INTO partner_registration (
         application_id,
@@ -334,11 +498,13 @@ export async function saveStore(
         last_name,
         business_phone_number,
         business_email_address,
-        vat_number
+        vat_number,
+        chamber_of_commerce_extract_document,
+        power_of_attorney_document
       )
       VALUES (
         $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
-        $11,$12,$13,$14,$15,$16
+        $11,$12,$13,$14,$15,$16,$17,$18
       )
       RETURNING partner_id`,
         [
@@ -358,6 +524,8 @@ export async function saveStore(
           businessPhone,
           businessEmail,
           vatNumber,
+          chamberExtractDocuments,
+          poaDocument,
         ],
       );
 
@@ -367,23 +535,22 @@ export async function saveStore(
         `INSERT INTO stores (name, slug, status,partner_registration_id)
          VALUES ($1, $2, $3,$4)
          RETURNING id`,
-        [name, slug, status ?? "active", partnerRegId],
+        [name, slug, "pending", partnerRegId],
       );
 
       finalStoreId = storeRes.rows[0].id;
 
-      // 2️⃣ ONLY CREATE ADMIN USER WHEN CREATING STORE
+      // 2️⃣ Reuse existing admin user by email, or create a new one
       if (!adminEmail) {
         throw new Error("Admin email required");
       }
 
-      let userId: string;
-
       const existingUser = await client.query(
-        `SELECT id FROM users WHERE email = $1`,
+        `SELECT id FROM users WHERE lower(email) = lower($1)`,
         [adminEmail],
       );
 
+      let userId: string;
       if (existingUser.rows.length > 0) {
         userId = existingUser.rows[0].id;
       } else {
@@ -392,14 +559,12 @@ export async function saveStore(
         }
 
         const passwordHash = await hash(adminPassword as string, 10);
-
         const newUser = await client.query(
           `INSERT INTO users (email, password_hash, name)
            VALUES ($1, $2, $3)
            RETURNING id`,
           [adminEmail, passwordHash, adminName],
         );
-
         userId = newUser.rows[0].id;
       }
 
@@ -414,6 +579,8 @@ export async function saveStore(
          ON CONFLICT (store_id, user_id) DO NOTHING`,
         [finalStoreId, userId, roleRes.rows[0].id],
       );
+
+      await syncUserRoleColumn(client, userId);
     }
 
     if (finalStoreId) {
@@ -444,21 +611,36 @@ export async function saveStore(
 
     await client.query("COMMIT");
 
+    // Same Partner Application Received template as the web registration flow
+    if (!storeId && adminEmail && createdApplicationId) {
+      await sendPartnerRegistrationEmail({
+        email: String(adminEmail),
+        companyName: String(companyName || name),
+        firstName: String(firstName || adminName || "Partner"),
+        applicationId: createdApplicationId,
+      });
+    }
+
     revalidatePath("/platform/stores");
     revalidatePath(`/platform/stores/${finalStoreId}`);
 
     return {
       success: true,
       storeId: finalStoreId,
+      slug,
       message: storeId ? "Store updated" : "Store created",
     };
   } catch (err: any) {
     await client.query("ROLLBACK");
+    const constraint = err?.constraint as string | undefined;
+    const error =
+      err?.code === "23505" && constraint === "stores_slug_key"
+        ? "A store with this slug already exists. Change the store name or slug and try again."
+        : err.message || "Failed to save store";
     return {
       success: false,
-      error: err.message || "Failed to save store",
+      error,
     };
-    throw err;
   } finally {
     client.release();
   }
@@ -504,6 +686,8 @@ export async function saveStore(
       `,
       [storeId, ownerUserId, roleRes.rows[0].id],
     );
+
+    await syncUserRoleColumn(client, ownerUserId);
 
     await logAudit({
       actorId: user.id,

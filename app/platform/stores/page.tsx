@@ -37,6 +37,7 @@ export default async function StoresPage({
         s.name ILIKE $${values.length}
         OR s.slug ILIKE $${values.length}
         OR pr.application_id ILIKE $${values.length}
+        OR pr.company_name ILIKE $${values.length}
       )
     `);
   }
@@ -52,14 +53,21 @@ export default async function StoresPage({
   const limitParamIndex = values.length - 1;
   const offsetParamIndex = values.length;
 
+  // LATERAL + LIMIT 1 avoids duplicate store rows when the OR join
+  // matches more than one partner_registration (causes React key warnings).
   const query = `
       SELECT s.id, s.name, s.slug, s.status, s.partner_registration_id, s.created_at,
             pr.application_id,
+            pr.company_name AS partner_company_name,
             COUNT(*) OVER() AS total
       FROM stores s
-      LEFT JOIN partner_registration pr
-        ON pr.partner_id::text = s.partner_registration_id
-        OR pr.application_id = s.partner_registration_id
+      LEFT JOIN LATERAL (
+        SELECT application_id, company_name
+        FROM partner_registration p
+        WHERE p.partner_id::text = s.partner_registration_id
+           OR p.application_id = s.partner_registration_id
+        LIMIT 1
+      ) pr ON true
       ${whereClause}
       ORDER BY s.created_at DESC
       LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}

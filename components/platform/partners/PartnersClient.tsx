@@ -39,9 +39,20 @@ export default function PartnersClient({
         status: "approved",
       });
       try {
-        await approvePartner(partnerId);
-      } catch (error) {
+        const result = await approvePartner(partnerId);
+        if (result?.emailSent) {
+          alert(`Approved. Login credentials emailed to ${result.email}.`);
+        } else {
+          alert(
+            `Approved, but the credentials email could NOT be sent to ${result?.email || "partner"}.\n\n` +
+              `Share these login details manually:\n` +
+              `Email: ${result?.email || "-"}\n` +
+              `Temporary Password: ${result?.tempPassword || "-"}`,
+          );
+        }
+      } catch (error: any) {
         console.error("Failed to approve partner:", error);
+        alert(error?.message || "Failed to approve partner");
       }
     });
   };

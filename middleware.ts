@@ -21,7 +21,8 @@ export default withAuth(
     // 2. Define the "protected" prefixes
     const isStorePath = pathname.startsWith("/store");
     const isPlatformPath = pathname.startsWith("/platform");
-    const isAuthPath = pathname.startsWith("/login");
+    const isAuthPath =
+      pathname.startsWith("/login") || pathname.startsWith("/forgot-password");
     const isApi = pathname.startsWith("/api");
 
     if (isApi) {
@@ -65,7 +66,8 @@ export default withAuth(
       !isStorePath &&
       !isPlatformPath &&
       !isAuthPath &&
-      pathname !== "/login"
+      pathname !== "/login" &&
+      pathname !== "/forgot-password"
     ) {
       // CASE: Super Admin
       if (token?.isPlatformAdmin) {
@@ -120,6 +122,11 @@ export default withAuth(
           return true;
         }
 
+        // Forgot-password OTP endpoints must work while logged out
+        if (req.nextUrl.pathname.startsWith("/api/auth/forgot-password")) {
+          return true;
+        }
+
         return !!token;
       },
     },
@@ -131,7 +138,7 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    "/((?!_next|static|_next/image|assets|favicon.ico|favicon.png|robots.txt|.*\\.svg$|login).*)",
+    "/((?!_next|static|_next/image|assets|favicon.ico|favicon.png|robots.txt|.*\\.svg$|login|forgot-password).*)",
     "/platform/:path*",
     "/store/:path*",
     "/api/:path*",

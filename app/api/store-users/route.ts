@@ -4,6 +4,7 @@ import { pool } from "@/core/db";
 import { getCurrentStoreAPI } from "@/lib/auth/guards";
 import { userSchema } from "@/lib/validations/user";
 import bcrypt from "bcryptjs";
+import { syncUserRoleColumn } from "@/lib/users/syncUserRole";
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
     const offset = (page - 1) * limit;
 
     const query = `
-      SELECT 
+      SELECT DISTINCT
         u.id, u.name, u.email, u.is_platform_admin, u.status, u.created_at 
       FROM users u
       JOIN store_users su ON u.id = su.user_id
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
     `;
     
     const countQuery = `
-      SELECT COUNT(*) 
+      SELECT COUNT(DISTINCT u.id) 
       FROM users u
       JOIN store_users su ON u.id = su.user_id
       WHERE su.store_id = $1 
@@ -65,6 +66,18 @@ export async function POST(req: NextRequest) {
 
     await client.query("BEGIN");
 
+    const existing = await client.query(
+      `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+      [validated.email],
+    );
+    if (existing.rows.length > 0) {
+      await client.query("ROLLBACK");
+      return NextResponse.json(
+        { error: "A user with this email already exists." },
+        { status: 400 },
+      );
+    }
+
     // 1. Insert into Users table
     const userResult = await client.query(
       `INSERT INTO users (name, email, password_hash, is_platform_admin, status)
@@ -81,6 +94,8 @@ export async function POST(req: NextRequest) {
        VALUES ($1, $2, $3)`,
       [store.id, userId, validated.role_id]
     );
+
+    await syncUserRoleColumn(client, userId);
 
     await client.query("COMMIT");
 

@@ -7,8 +7,191 @@ import { requirePlatformAdmin } from "@/lib/auth/guards";
 import { revalidatePath } from "next/cache";
 import { logAudit } from "@/lib/audit";
 import { createStoreFromPartner } from "@/lib/services/partner.service";
-import { sendEmail } from "@/lib/email";
-// import { sendEmail } from "@/lib/email"; // Make sure your mail path matches your configuration
+import { sendPartnerRegistrationEmail, sendPartnerApprovalEmail } from "@/core/email-templates";
+import { generateUniqueApplicationId } from "@/lib/services/applicationId";
+import { redirect } from "next/navigation";
+import { hash } from "bcryptjs";
+import { randomUUID } from "crypto";
+
+/** Create partner registration only — store is created on approve. */
+export async function createPartner(formData: FormData) {
+  const user = await requirePlatformAdmin();
+  const data = Object.fromEntries(formData.entries());
+
+  const {
+    name,
+    companyName,
+    chamberOfCommerceNumber,
+    country,
+    street,
+    houseNumber,
+    addition,
+    postalCode,
+    city,
+    firstName,
+    middleName,
+    lastName,
+    businessPhone,
+    businessEmail,
+    vatNumber,
+    chamberExtractDocuments: chamberExtractRaw,
+    powerOfAttorneyDocument,
+  } = data;
+
+  const resolvedCompanyName = String(companyName || name || "").trim();
+  if (!resolvedCompanyName) {
+    return { success: false, error: "Company / store name is required" };
+  }
+  if (!businessEmail) {
+    return { success: false, error: "Business email is required" };
+  }
+
+  let chamberExtractDocuments: string[] | null = null;
+  if (chamberExtractRaw) {
+    try {
+      const parsed = JSON.parse(String(chamberExtractRaw));
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        chamberExtractDocuments = parsed.map(String);
+      }
+    } catch {
+      chamberExtractDocuments = null;
+    }
+  }
+  const poaDocument = powerOfAttorneyDocument
+    ? String(powerOfAttorneyDocument)
+    : null;
+
+  const client = await pool.connect();
+  let applicationId = "";
+
+  try {
+    await client.query("BEGIN");
+
+    const existingBizEmail = await client.query(
+      `SELECT partner_id FROM partner_registration
+       WHERE lower(business_email_address) = lower($1)
+       LIMIT 1`,
+      [businessEmail],
+    );
+    if (existingBizEmail.rows.length > 0) {
+      throw new Error(
+        "This business email already exists. Please use a different email.",
+      );
+    }
+
+    const coc = String(chamberOfCommerceNumber || "").trim();
+    if (coc) {
+      const existingCoc = await client.query(
+        `SELECT partner_id FROM partner_registration
+         WHERE lower(trim(chamber_of_commerce_number)) = lower($1)
+         LIMIT 1`,
+        [coc],
+      );
+      if (existingCoc.rows.length > 0) {
+        throw new Error(
+          "This Chamber of Commerce number already exists. Please use a different number.",
+        );
+      }
+    }
+
+    const vat = String(vatNumber || "").trim();
+    if (vat) {
+      const existingVat = await client.query(
+        `SELECT partner_id FROM partner_registration
+         WHERE lower(trim(vat_number)) = lower($1)
+         LIMIT 1`,
+        [vat],
+      );
+      if (existingVat.rows.length > 0) {
+        throw new Error(
+          "This VAT number already exists. Please use a different number.",
+        );
+      }
+    }
+
+    applicationId = await generateUniqueApplicationId(client);
+
+    const { rows } = await client.query(
+      `INSERT INTO partner_registration (
+        application_id,
+        kvk_number,
+        company_name,
+        chamber_of_commerce_number,
+        country,
+        street,
+        house_number,
+        additional_address,
+        postal_code,
+        city,
+        first_name,
+        middle_name,
+        last_name,
+        business_phone_number,
+        business_email_address,
+        vat_number,
+        chamber_of_commerce_extract_document,
+        power_of_attorney_document,
+        status
+      )
+      VALUES (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
+        $11,$12,$13,$14,$15,$16,$17,$18,'pending'
+      )
+      RETURNING partner_id`,
+      [
+        applicationId,
+        null,
+        resolvedCompanyName,
+        chamberOfCommerceNumber || null,
+        country || null,
+        street || null,
+        houseNumber || null,
+        addition || null,
+        postalCode || null,
+        city || null,
+        firstName || null,
+        middleName || null,
+        lastName || null,
+        businessPhone || null,
+        businessEmail,
+        vatNumber || null,
+        chamberExtractDocuments,
+        poaDocument,
+      ],
+    );
+
+    const partnerId = rows[0].partner_id;
+
+    await logAudit({
+      actorId: user.id,
+      action: "partner.created",
+      entity: "partner",
+      entityId: partnerId,
+      metadata: { applicationId },
+    });
+
+    await client.query("COMMIT");
+
+    await sendPartnerRegistrationEmail({
+      email: String(businessEmail),
+      companyName: resolvedCompanyName,
+      firstName: String(firstName || "Partner"),
+      applicationId,
+    });
+
+    revalidatePath("/platform/partners");
+
+    return { success: true, partnerId, applicationId };
+  } catch (err: any) {
+    await client.query("ROLLBACK");
+    return {
+      success: false,
+      error: err.message || "Failed to create partner",
+    };
+  } finally {
+    client.release();
+  }
+}
 
 export async function approvePartner(partnerId: string) {
   const user = await requirePlatformAdmin();
@@ -16,6 +199,8 @@ export async function approvePartner(partnerId: string) {
 
   let partnerEmail = "";
   let partnerFirstName = "";
+  let partnerCompanyName = "";
+  let partnerApplicationId = "";
   let emailPayload: {
     storeId: string;
     userId: string;
@@ -41,9 +226,89 @@ export async function approvePartner(partnerId: string) {
 
     partnerEmail = partner.business_email_address;
     partnerFirstName = partner.first_name;
+    partnerCompanyName = partner.company_name;
+    partnerApplicationId = partner.application_id || "";
 
-    // FIX: Pass the active, transactional 'client' down directly to prevent deadlocks
-    const result = await createStoreFromPartner(client, partner);
+    // If a store was already created with this partner (pending), activate it.
+    // Otherwise provision a new store (web registration flow).
+    const existingStore = await client.query(
+      `SELECT id FROM stores
+       WHERE partner_registration_id = $1::text
+          OR ($2::text IS NOT NULL AND partner_registration_id = $2)
+       LIMIT 1`,
+      [String(partner.partner_id), partner.application_id ?? null],
+    );
+
+    let result: {
+      storeId: string;
+      userId: string;
+      tempPassword?: string;
+    };
+
+    if (existingStore.rows.length > 0) {
+      const storeId = existingStore.rows[0].id as string;
+      await client.query(
+        `UPDATE stores SET status = 'active' WHERE id = $1`,
+        [storeId],
+      );
+      result = { storeId, userId: "" };
+    } else {
+      // FIX: Pass the active, transactional 'client' down directly to prevent deadlocks
+      result = await createStoreFromPartner(client, partner);
+    }
+
+    // Always ensure a login user + fresh temp password so credentials can be emailed
+    if (!partnerEmail) {
+      throw new Error("Partner business email is missing; cannot send login credentials.");
+    }
+
+    if (!result.tempPassword) {
+      const tempPassword = Math.random().toString(36).slice(-10);
+      const passwordHash = await hash(tempPassword, 10);
+      const ownerName =
+        `${partner.first_name || ""} ${partner.last_name || ""}`.trim() ||
+        partnerCompanyName ||
+        "Partner";
+
+      const userRes = await client.query(
+        `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+        [partnerEmail],
+      );
+
+      let userId: string;
+      if (userRes.rows.length > 0) {
+        userId = userRes.rows[0].id;
+        await client.query(
+          `UPDATE users
+           SET password_hash = $1,
+               store_id = COALESCE(store_id, $2),
+               role = COALESCE(NULLIF(role, ''), 'store_owner')
+           WHERE id = $3`,
+          [passwordHash, result.storeId, userId],
+        );
+      } else {
+        userId = randomUUID();
+        await client.query(
+          `INSERT INTO users (id, email, password_hash, name, store_id, role)
+           VALUES ($1, $2, $3, $4, $5, 'store_owner')`,
+          [userId, partnerEmail, passwordHash, ownerName, result.storeId],
+        );
+      }
+
+      const roleRes = await client.query(
+        `SELECT id FROM roles WHERE key = 'store_owner' LIMIT 1`,
+      );
+      if (roleRes.rows.length > 0) {
+        await client.query(
+          `INSERT INTO store_users (store_id, user_id, role_id)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (store_id, user_id) DO UPDATE SET role_id = EXCLUDED.role_id`,
+          [result.storeId, userId, roleRes.rows[0].id],
+        );
+      }
+
+      result = { ...result, userId, tempPassword };
+    }
 
     await client.query(
       `UPDATE partner_registration
@@ -73,30 +338,39 @@ export async function approvePartner(partnerId: string) {
     client.release();
   }
 
-  // Handle email dispatch after database transaction commits
-  /* if (emailPayload) {
-    try {
-      await sendEmail({
-        to: partnerEmail,
-        subject: "Your store has been approved! 🎉",
-        html: `
-          <p>Hello ${partnerFirstName},</p>
-          <p>Great news! Your application has been approved and your store is ready.</p>
-          <p><b>Login Email:</b> ${partnerEmail}</p>
-          <p><b>Temporary Password:</b> ${emailPayload.tempPassword}</p>
-          <p>Please log in to your admin panel and change your password immediately.</p>
-        `,
-      });
-    } catch (mailErr) {
+  // Send login credentials after approval (never the application-received template)
+  let emailSent = false;
+  if (emailPayload?.tempPassword && partnerEmail) {
+    const mailResult = await sendPartnerApprovalEmail({
+      email: partnerEmail,
+      companyName: partnerCompanyName || "Your company",
+      firstName: partnerFirstName || "Partner",
+      applicationId: partnerApplicationId || undefined,
+      tempPassword: emailPayload.tempPassword,
+    });
+    emailSent = Boolean(mailResult.success);
+    if (!mailResult.success) {
       console.error(
-        "Critical: Database updated but approval email failed to dispatch:",
-        mailErr,
+        "[approvePartner] Credentials email failed after successful approval",
+        mailResult.error,
       );
     }
-  } */
+  } else {
+    console.error(
+      "[approvePartner] Skipped credentials email — missing tempPassword or partnerEmail",
+      { partnerEmail, hasTempPassword: Boolean(emailPayload?.tempPassword) },
+    );
+  }
 
   revalidatePath("/platform/partners");
-  return { success: true };
+  revalidatePath(`/platform/partners/${partnerId}`);
+  return {
+    success: true,
+    emailSent,
+    email: partnerEmail,
+    // Only exposed when the email could not be delivered, so the admin can share it manually
+    tempPassword: emailSent ? undefined : emailPayload?.tempPassword,
+  };
 }
 
 export async function rejectPartner(
@@ -182,6 +456,55 @@ export async function rejectPartner(
 
   revalidatePath("/platform/partners");
   return { success: true };
+}
+
+export async function deletePartner(partnerId: string) {
+  const user = await requirePlatformAdmin();
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const { rows } = await client.query(
+      `SELECT partner_id, application_id FROM partner_registration WHERE partner_id = $1`,
+      [partnerId],
+    );
+    if (!rows[0]) throw new Error("Partner application record not found.");
+
+    const { partner_id, application_id } = rows[0];
+
+    // Unlink any store that still points at this registration
+    await client.query(
+      `UPDATE stores
+       SET partner_registration_id = NULL
+       WHERE partner_registration_id = $1
+          OR ($2::text IS NOT NULL AND partner_registration_id = $2)`,
+      [String(partner_id), application_id ?? null],
+    );
+
+    await client.query(
+      `DELETE FROM partner_registration WHERE partner_id = $1`,
+      [partnerId],
+    );
+
+    await logAudit({
+      actorId: user.id,
+      action: "partner.deleted",
+      entity: "partner",
+      entityId: partnerId,
+    });
+
+    await client.query("COMMIT");
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  revalidatePath("/platform/partners");
+  revalidatePath("/platform/stores");
+  redirect("/platform/partners");
 }
 
 /* "use server";

@@ -13,8 +13,15 @@ import {
   createSequentialItemCodeAllocator,
   getMaxNumericItemCodeSequence,
 } from "@/lib/products/itemCode";
-import { productSlug, slugify } from "@/lib/utils/slugify";
-import { excelWeight, normalizeExcelRow } from "@/lib/products/excelRow";
+import { slugify } from "@/lib/utils/slugify";
+import { normalizeExcelRow } from "@/lib/products/excelRow";
+import {
+  decideImportAction,
+  findExistingProduct,
+  productIdentityKey,
+  resolveImportValues,
+  type ExistingProduct,
+} from "@/lib/products/importUpsert";
 
 type ImportRow = {
   row: number;
@@ -23,10 +30,7 @@ type ImportRow = {
   errors: string[];
 };
 
-type ProductCodeRow = { sku: string; item_code: string };
-
 const DEFAULT_STORE_ID = "afef3fd5-c31a-440a-ae56-99eca0b24359";
-const DEFAULT_QUANTITY = 9999;
 
 const EU_COUNTRY_CODES = [
   "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR",
@@ -57,23 +61,69 @@ export async function POST(req: NextRequest) {
     await client.query("BEGIN");
 
     let inserted = 0;
+    let updated = 0;
     let skipped = 0;
     const errors: any[] = [];
-    const insertedProductIds: number[] = [];
+    const touchedProductIds: number[] = [];
 
-    /* ---------------- EXISTING SKU / ITEM CODE CACHE ---------------- */
+    const existingRes = await client.query<ExistingProduct>(`
+      SELECT
+        p.id,
+        p.sku,
+        p.item_code,
+        p.name,
+        p.slug,
+        p.description,
+        p.health_benefits,
+        p.base_price,
+        p.weight,
+        p.quantity,
+        p.discount_type,
+        p.discount_value,
+        p.status,
+        p.country_of_origin,
+        c.name AS category,
+        sc.name AS subcategory,
+        b.name AS brand,
+        (
+          SELECT COALESCE(
+            json_agg(
+              json_build_object(
+                'min_quantity', spp.min_quantity,
+                'price', spp.price
+              )
+              ORDER BY spp.min_quantity ASC
+            ),
+            '[]'::json
+          )
+          FROM store_product_prices spp
+          WHERE spp.product_id = p.id
+            AND spp.customer_type = 'B2B'
+        ) AS b2b_prices
+      FROM store_products p
+      LEFT JOIN store_categories c ON c.id = p.category_id
+      LEFT JOIN store_subcategories sc ON sc.id = p.subcategory_id
+      LEFT JOIN store_brands b ON b.brand_id = p.brand_id
+    `);
 
-    const existing = await client.query<ProductCodeRow>(
-      `SELECT sku, item_code FROM store_products`,
-    );
+    const bySku = new Map<string, ExistingProduct>();
+    const byItemCode = new Map<string, ExistingProduct>();
+    const byIdentity = new Map<string, ExistingProduct>();
 
-    const itemCodeSet = new Set(
-      existing.rows
-        .map((r: ProductCodeRow) =>
-          normalizeProductCode(r.item_code).toLowerCase(),
-        )
-        .filter(Boolean),
-    );
+    for (const product of existingRes.rows) {
+      if (!Array.isArray(product.b2b_prices)) product.b2b_prices = [];
+      const skuKey = normalizeProductCode(product.sku).toLowerCase();
+      const itemKey = normalizeProductCode(product.item_code).toLowerCase();
+      if (skuKey) bySku.set(skuKey, product);
+      if (itemKey) byItemCode.set(itemKey, product);
+      const identityKey = productIdentityKey(
+        product.name,
+        product.brand,
+        product.weight,
+      );
+      if (identityKey !== "||") byIdentity.set(identityKey, product);
+    }
+
     const maxSkuSeq = await getMaxNumericSkuSequence(client);
     const skuAllocator = createSequentialSkuAllocator(maxSkuSeq);
     const maxItemCodeSeq = await getMaxNumericItemCodeSequence(client);
@@ -81,8 +131,6 @@ export async function POST(req: NextRequest) {
     const categoryCache = new Map<string, number>();
     const subcategoryCache = new Map<string, number>();
     const brandCache = new Map<string, number>();
-
-    /* ---------------- INSERT LOOP ---------------- */
 
     for (const r of body.rows) {
       try {
@@ -92,164 +140,271 @@ export async function POST(req: NextRequest) {
         }
 
         const row = normalizeExcelRow(r.data ?? {});
+        const { existing, conflict } = findExistingProduct(row, byIdentity);
 
-        const providedSku = normalizeProductCode(row.SKU);
-        const sku = providedSku || skuAllocator.next();
-        const providedItemCode = normalizeProductCode(row["Item Code"]);
-        const itemCode = providedItemCode || itemCodeAllocator.next();
-        const itemCodeKey = itemCode.toLowerCase();
-
-        /* ---------------- DUPLICATE CHECK (SERVER SAFETY) ---------------- */
-
-        if (itemCodeSet.has(itemCodeKey)) {
+        if (conflict) {
+          errors.push({ row: r.row, error: conflict });
           skipped++;
           continue;
         }
 
-        itemCodeSet.add(itemCodeKey);
+        const providedSku = normalizeProductCode(row.SKU);
+        const providedItemCode = normalizeProductCode(row["Item Code"]);
 
-        /* ---------------- RESOLVE RELATIONSHIP ID ENTITIES ----------------
-           Category, subcategory, and brand are created automatically if missing. */
+        let sku = providedSku;
+        let itemCode = providedItemCode;
+
+        if (existing) {
+          sku = providedSku || normalizeProductCode(existing.sku);
+          itemCode =
+            providedItemCode || normalizeProductCode(existing.item_code);
+        } else {
+          sku = providedSku || skuAllocator.next();
+          itemCode = providedItemCode || itemCodeAllocator.next();
+        }
+
+        const values = resolveImportValues(row, { sku, itemCode });
+        const action = decideImportAction(existing, values);
+
+        if (action === "skip") {
+          skipped++;
+          continue;
+        }
 
         let categoryId: number | null = null;
         let subcategoryId: number | null = null;
         let brandId: number | null = null;
 
-        if (row.Category) {
+        if (values.category) {
           categoryId = await resolveOrCreateCategory(
             client,
-            String(row.Category),
+            values.category,
             categoryCache,
           );
         }
 
-        if (row.Subcategory && categoryId) {
+        if (values.subcategory && categoryId) {
           subcategoryId = await resolveOrCreateSubcategory(
             client,
-            String(row.Subcategory),
+            values.subcategory,
             categoryId,
             subcategoryCache,
           );
         }
 
-        if (row.Brand) {
+        if (values.brand) {
           brandId = await resolveOrCreateBrand(
             client,
-            String(row.Brand),
+            values.brand,
             brandCache,
           );
         }
 
-        const weight = excelWeight(row);
-        const slug = productSlug(
-          String(row.Slug ?? "").trim() || String(row.Name ?? ""),
-          weight,
-        );
-
         await client.query("SAVEPOINT product_row");
 
         try {
-          const countryOfOrigin = normalizeName(
-            String(row["Country of Origin"] ?? ""),
-          );
-          const originCountryId = countryOfOrigin
-            ? await resolveCountryId(client, countryOfOrigin)
+          const originCountryId = values.countryOfOrigin
+            ? await resolveCountryId(client, values.countryOfOrigin)
             : null;
 
-          /* ---------------- INSERT PRODUCT ---------------- */
+          if (action === "update" && existing) {
+            await client.query(
+              `
+              UPDATE store_products SET
+                name = $1,
+                slug = $2,
+                sku = $3,
+                item_code = $4,
+                category_id = $5,
+                subcategory_id = $6,
+                brand_id = $7,
+                country_of_origin = $8,
+                country_id = $9,
+                description = $10,
+                health_benefits = $11,
+                base_price = $12,
+                weight = $13,
+                quantity = $14,
+                discount_type = $15,
+                discount_value = $16,
+                status = $17,
+                updated_at = NOW()
+              WHERE id = $18
+              `,
+              [
+                values.name,
+                values.slug,
+                values.sku,
+                values.itemCode,
+                categoryId,
+                subcategoryId,
+                brandId,
+                values.countryOfOrigin,
+                originCountryId,
+                values.description,
+                values.healthBenefits,
+                values.basePrice,
+                values.weight,
+                values.quantity,
+                values.discountType,
+                values.discountValue,
+                values.status,
+                existing.id,
+              ],
+            );
 
-          const productRes = await client.query<{ id: number }>(
-            `
-          INSERT INTO store_products (
-            name,
-            slug,
-            sku,
-            item_code,
-            category_id,
-            subcategory_id,
-            brand_id,
-            country_of_origin,
-            country_id,
-            description,
-            health_benefits,
-            base_price,
-            weight,
-            quantity,
-            discount_type,
-            discount_value,
-            status
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-          RETURNING id
-          `,
-            [
-              row.Name,
-              slug,
-              sku,
-              itemCode,
-              categoryId,
-              subcategoryId,
-              brandId,
-              countryOfOrigin || null,
-              originCountryId,
-              row.Description || null,
-              row["Health Benefits"] || null,
-              Number(row["Base Price"]),
-              weight,
-              row.Quantity === undefined || row.Quantity === ""
-                ? DEFAULT_QUANTITY
-                : Number(row.Quantity),
-              row["Discount Type"] || null,
-              row["Discount Value"] ? Number(row["Discount Value"]) : null,
-              row.Status === "Inactive" ? 0 : 1,
-            ],
-          );
+            if (values.b2bPricesProvided) {
+              await client.query(
+                `DELETE FROM store_product_prices
+                 WHERE product_id = $1 AND customer_type = 'B2B'`,
+                [existing.id],
+              );
 
-          const productId = productRes.rows[0].id;
-
-          /* ---------------- EU AVAILABILITY (all EU countries) ---------------- */
-
-          await client.query(
-            `
-          INSERT INTO store_product_countries (product_id, country_id)
-          SELECT $1, country_id
-          FROM countries
-          WHERE UPPER(country_code) = ANY($2)
-          ON CONFLICT DO NOTHING
-          `,
-            [productId, EU_COUNTRY_CODES],
-          );
-
-          /* ---------------- B2B PRICES ---------------- */
-
-          if (row["B2B Prices"]) {
-            try {
-              const tiers = JSON.parse(String(row["B2B Prices"])) as Array<{
-                min_quantity: number;
-                price: number;
-              }>;
-
-              for (const t of tiers) {
+              for (const t of values.b2bPrices ?? []) {
                 await client.query(
                   `
-                INSERT INTO store_product_prices (
-                  product_id,
-                  customer_type,
-                  min_quantity,
-                  price
-                )
-                VALUES ($1,'B2B',$2,$3)
-                `,
+                  INSERT INTO store_product_prices (
+                    product_id, customer_type, min_quantity, price
+                  )
+                  VALUES ($1, 'B2B', $2, $3)
+                  `,
+                  [existing.id, t.min_quantity, t.price],
+                );
+              }
+            }
+
+            // Refresh maps after SKU / item code changes
+            const oldSku = normalizeProductCode(existing.sku).toLowerCase();
+            const oldItem = normalizeProductCode(existing.item_code).toLowerCase();
+            if (oldSku) bySku.delete(oldSku);
+            if (oldItem) byItemCode.delete(oldItem);
+
+            const updatedProduct: ExistingProduct = {
+              ...existing,
+              ...{
+                name: values.name,
+                slug: values.slug,
+                sku: values.sku,
+                item_code: values.itemCode,
+                category: values.category,
+                subcategory: values.subcategory,
+                brand: values.brand,
+                country_of_origin: values.countryOfOrigin,
+                description: values.description,
+                health_benefits: values.healthBenefits,
+                base_price: values.basePrice,
+                weight: values.weight,
+                quantity: values.quantity,
+                discount_type: values.discountType,
+                discount_value: values.discountValue,
+                status: values.status,
+                b2b_prices: values.b2bPricesProvided
+                  ? values.b2bPrices
+                  : existing.b2b_prices,
+              },
+            };
+            bySku.set(values.sku.toLowerCase(), updatedProduct);
+            byItemCode.set(values.itemCode.toLowerCase(), updatedProduct);
+            byIdentity.set(
+              productIdentityKey(values.name, values.brand, values.weight),
+              updatedProduct,
+            );
+
+            touchedProductIds.push(existing.id);
+            updated++;
+          } else {
+            const productRes = await client.query<{ id: number }>(
+              `
+              INSERT INTO store_products (
+                name, slug, sku, item_code,
+                category_id, subcategory_id, brand_id,
+                country_of_origin, country_id,
+                description, health_benefits,
+                base_price, weight, quantity,
+                discount_type, discount_value, status
+              )
+              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+              RETURNING id
+              `,
+              [
+                values.name,
+                values.slug,
+                values.sku,
+                values.itemCode,
+                categoryId,
+                subcategoryId,
+                brandId,
+                values.countryOfOrigin,
+                originCountryId,
+                values.description,
+                values.healthBenefits,
+                values.basePrice,
+                values.weight,
+                values.quantity,
+                values.discountType,
+                values.discountValue,
+                values.status,
+              ],
+            );
+
+            const productId = productRes.rows[0].id;
+
+            await client.query(
+              `
+              INSERT INTO store_product_countries (product_id, country_id)
+              SELECT $1, country_id
+              FROM countries
+              WHERE UPPER(country_code) = ANY($2)
+              ON CONFLICT DO NOTHING
+              `,
+              [productId, EU_COUNTRY_CODES],
+            );
+
+            if (values.b2bPricesProvided && values.b2bPrices?.length) {
+              for (const t of values.b2bPrices) {
+                await client.query(
+                  `
+                  INSERT INTO store_product_prices (
+                    product_id, customer_type, min_quantity, price
+                  )
+                  VALUES ($1, 'B2B', $2, $3)
+                  `,
                   [productId, t.min_quantity, t.price],
                 );
               }
-            } catch {
-              // ignore invalid JSON (already validated earlier)
             }
+
+            const created: ExistingProduct = {
+              id: productId,
+              sku: values.sku,
+              item_code: values.itemCode,
+              name: values.name,
+              slug: values.slug,
+              description: values.description,
+              health_benefits: values.healthBenefits,
+              base_price: values.basePrice,
+              weight: values.weight,
+              quantity: values.quantity,
+              discount_type: values.discountType,
+              discount_value: values.discountValue,
+              status: values.status,
+              country_of_origin: values.countryOfOrigin,
+              category: values.category,
+              subcategory: values.subcategory,
+              brand: values.brand,
+              b2b_prices: values.b2bPrices,
+            };
+            bySku.set(values.sku.toLowerCase(), created);
+            byItemCode.set(values.itemCode.toLowerCase(), created);
+            byIdentity.set(
+              productIdentityKey(values.name, values.brand, values.weight),
+              created,
+            );
+
+            touchedProductIds.push(productId);
+            inserted++;
           }
 
-          insertedProductIds.push(productId);
-          inserted++;
           await client.query("RELEASE SAVEPOINT product_row");
         } catch (rowErr: any) {
           await client.query("ROLLBACK TO SAVEPOINT product_row");
@@ -267,12 +422,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    /* ---------------- DEFAULT STORE ASSIGNMENT ----------------
-       Scoped to just-inserted products only — this used to run against
-       every row in store_products, resetting price/quantity for the
-       entire catalog on every import. */
-
-    if (insertedProductIds.length > 0) {
+    if (touchedProductIds.length > 0) {
       await client.query(
         `
         INSERT INTO store_product_catalog (
@@ -296,7 +446,7 @@ export async function POST(req: NextRequest) {
           quantity = EXCLUDED.quantity,
           updated_at = now()
         `,
-        [insertedProductIds, DEFAULT_STORE_ID],
+        [touchedProductIds, DEFAULT_STORE_ID],
       );
     }
 
@@ -305,6 +455,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       inserted,
+      updated,
       skipped,
       failed: errors.length,
       errors,

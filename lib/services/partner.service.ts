@@ -5,12 +5,12 @@ import slugify from "slugify";
 import { randomUUID } from "crypto";
 
 import { generateUniqueApplicationId } from "@/lib/services/applicationId";
+import { allocateUniqueStoreSlug } from "@/lib/services/store-slug";
 
 // FIX: Receives the parent transaction client context directly to protect processing scopes
 export async function createStoreFromPartner(client: any, partner: any) {
   // 1️⃣ Generate structural UUIDs
   const storeId = randomUUID();
-  const userId = randomUUID();
 
   // A partner registration should always carry an application_id (Partner ID).
   // Older / seeded rows may not — generate and persist one so the store, the
@@ -27,16 +27,12 @@ export async function createStoreFromPartner(client: any, partner: any) {
     );
   }
 
-  // 2️⃣ Generate and validate tenant URL routing patterns
-  let slug = slugify(partner.company_name, { lower: true, strict: true });
-
-  const slugCheck = await client.query(`SELECT 1 FROM stores WHERE slug = $1`, [
-    slug,
-  ]);
-
-  if (slugCheck.rows.length > 0) {
-    slug = `${slug}-${Math.floor(1000 + Math.random() * 9000)}`;
-  }
+  // 2️⃣ Slug must be unique (stores_slug_key). A one-shot random suffix can
+  // still collide, so keep walking until the candidate is free.
+  const slug = await allocateUniqueStoreSlug(
+    client,
+    slugify(partner.company_name || "store", { lower: true, strict: true }),
+  );
 
   // 3️⃣ Create Store Record
   await client.query(
@@ -45,21 +41,42 @@ export async function createStoreFromPartner(client: any, partner: any) {
     [storeId, partner.company_name, slug, partner.business_email_address, applicationId],
   );
 
-  // 4️⃣ Create Core Platform Store Administrator
-  const tempPassword = Math.random().toString(36).slice(-10); // Extends security threshold slightly
-  const passwordHash = await hash(tempPassword, 10);
-
-  await client.query(
-    `INSERT INTO users (id, email, password_hash, name, store_id)
-     VALUES ($1, $2, $3, $4, $5)`,
-    [
-      userId,
-      partner.business_email_address,
-      passwordHash,
-      `${partner.first_name} ${partner.last_name}`,
-      storeId,
-    ],
+  // 4️⃣ Reuse existing user by email, or create one (avoid duplicate emails)
+  const ownerName = `${partner.first_name} ${partner.last_name}`;
+  const existingUser = await client.query(
+    `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+    [partner.business_email_address],
   );
+
+  let userId: string;
+  let tempPassword: string | undefined;
+
+  if (existingUser.rows.length > 0) {
+    userId = existingUser.rows[0].id;
+    await client.query(
+      `UPDATE users
+       SET store_id = $1,
+           name = COALESCE(NULLIF(TRIM(name), ''), $2),
+           role = 'store_owner'
+       WHERE id = $3`,
+      [storeId, ownerName, userId],
+    );
+  } else {
+    userId = randomUUID();
+    tempPassword = Math.random().toString(36).slice(-10);
+    const passwordHash = await hash(tempPassword, 10);
+    await client.query(
+      `INSERT INTO users (id, email, password_hash, name, store_id, role)
+       VALUES ($1, $2, $3, $4, $5, 'store_owner')`,
+      [
+        userId,
+        partner.business_email_address,
+        passwordHash,
+        ownerName,
+        storeId,
+      ],
+    );
+  }
 
   // 5️⃣ Identify store_owner permissions system structures
   const roleRes = await client.query(
@@ -76,7 +93,8 @@ export async function createStoreFromPartner(client: any, partner: any) {
   // 6️⃣ Execute Multi-Tenant Store User Allocations
   await client.query(
     `INSERT INTO store_users (store_id, user_id, role_id)
-     VALUES ($1, $2, $3)`,
+     VALUES ($1, $2, $3)
+     ON CONFLICT (store_id, user_id) DO UPDATE SET role_id = EXCLUDED.role_id`,
     [storeId, userId, roleId],
   );
 
@@ -209,6 +227,10 @@ export async function createStoreFromPartner(partner: any) {
        VALUES ($1, $2, $3)`,
       [storeId, userId, roleId],
     );
+
+    await client.query(`UPDATE users SET role = 'store_owner' WHERE id = $1`, [
+      userId,
+    ]);
 
     // 7️⃣ Default settings
     await createDefaultStoreSetup(client, storeId, partner);
