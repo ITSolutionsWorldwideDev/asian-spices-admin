@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
 
     const q = searchParams.get("q") || "";
     const is_active = searchParams.get("is_active");
+    const sort = searchParams.get("sort");
 
     const values: any[] = [];
     const where: string[] = [];
@@ -53,7 +54,15 @@ export async function GET(req: NextRequest) {
         ON r.category_id = rc.id
       ${whereClause}
       GROUP BY rc.id
-      ORDER BY rc.sort_order ASC, rc.created_at DESC
+      ${
+        sort === "desc" || sort === "Descending"
+          ? "ORDER BY rc.name DESC"
+          : sort === "newest" || sort === "Recently Added"
+          ? "ORDER BY rc.created_at DESC"
+          : sort === "sort_order"
+          ? "ORDER BY rc.sort_order ASC, rc.created_at DESC"
+          : "ORDER BY rc.name ASC"
+      }
     `;
 
     const { rows } = await pool.query(query, values);

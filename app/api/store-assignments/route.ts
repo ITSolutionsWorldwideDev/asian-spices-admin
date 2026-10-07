@@ -36,11 +36,13 @@ export async function GET(req: NextRequest) {
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-  let orderBy = `ORDER BY spc.updated_at DESC`;
+  let orderBy = `ORDER BY p.name ASC`;
 
   if (sort === "price_asc") orderBy = `ORDER BY spc.price ASC`;
   else if (sort === "price_desc") orderBy = `ORDER BY spc.price DESC`;
   else if (sort === "newest") orderBy = `ORDER BY spc.updated_at DESC`;
+  else if (sort === "desc" || sort === "descending") orderBy = `ORDER BY p.name DESC`;
+  else if (sort === "asc" || sort === "ascending") orderBy = `ORDER BY p.name ASC`;
 
   const query = `
     SELECT

@@ -68,11 +68,12 @@ export default function FilterBar({ onApply, initialValues }: FilterBarProps) {
 
       <select
         className="px-3 py-2 border rounded text-sm"
-        value={filters.sort || ""}
+        value={filters.sort || "asc"}
         onChange={(e) => update("sort", e.target.value)}
       >
-        <option value="">Sort</option>
-        <option value="newest">Newest</option>
+        <option value="asc">Ascending</option>
+        <option value="desc">Descending</option>
+        <option value="newest">Recently Added</option>
         <option value="price_asc">Price ↑</option>
         <option value="price_desc">Price ↓</option>
       </select>

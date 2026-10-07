@@ -31,7 +31,7 @@ export default function BrandListComponent() {
   // Added Filter States
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
-  const [sortFilter, setSortFilter] = useState("Recently Added");
+  const [sortFilter, setSortFilter] = useState("Ascending");
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -95,7 +95,7 @@ export default function BrandListComponent() {
         return a.name.localeCompare(b.name);
       }
       if (sortFilter === "Descending") {
-        return b.name.localeCompare(b.name);
+        return b.name.localeCompare(a.name);
       }
       if (sortFilter === "Recently Added") {
         const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;

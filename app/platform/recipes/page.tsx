@@ -18,6 +18,14 @@ export default async function RecipesPage({
   const page = Number(params.page ?? 1);
   const q = params.q as string | undefined;
   const status = params.status as string | undefined;
+  const sort = (params.sort as string | undefined) || "asc";
+
+  let orderBy = `ORDER BY r.title ASC`;
+  if (sort === "desc") {
+    orderBy = `ORDER BY r.title DESC`;
+  } else if (sort === "newest") {
+    orderBy = `ORDER BY r.created_at DESC`;
+  }
 
   const offset = (page - 1) * PAGE_SIZE;
 
@@ -74,7 +82,7 @@ export default async function RecipesPage({
 
     ${whereClause}
 
-    ORDER BY r.created_at DESC
+    ${orderBy}
 
     LIMIT ${PAGE_SIZE}
     OFFSET ${offset}

@@ -80,6 +80,19 @@ export default function FiltersBar() {
           Non Featured
         </option>
       </select>
+
+      {/* SORT */}
+      <select
+        defaultValue={params.get("sort") ?? "asc"}
+        onChange={(e) =>
+          update("sort", e.target.value)
+        }
+        className="input w-full lg:w-44"
+      >
+        <option value="asc">Ascending (A-Z)</option>
+        <option value="desc">Descending (Z-A)</option>
+        <option value="newest">Recently Added</option>
+      </select>
     </div>
   );
 }

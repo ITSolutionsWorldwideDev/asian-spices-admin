@@ -58,6 +58,10 @@ export default function RecipeCategoriesList() {
 
   const [saving, setSaving] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All Status");
+  const [sortFilter, setSortFilter] = useState("Ascending");
+
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -100,6 +104,43 @@ export default function RecipeCategoriesList() {
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  /*
+   * Client-side filtering & sorting logic
+   */
+  const filteredCategories = useMemo(() => {
+    let result = categories.filter((cat) => {
+      const matchesSearch =
+        cat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cat.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        Boolean(cat.description && cat.description.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      const matchesStatus =
+        statusFilter === "All Status" ||
+        statusFilter === "" ||
+        (statusFilter === "Active" && cat.is_active === true) ||
+        (statusFilter === "true" && cat.is_active === true) ||
+        (statusFilter === "Inactive" && cat.is_active === false) ||
+        (statusFilter === "false" && cat.is_active === false);
+
+      return matchesSearch && matchesStatus;
+    });
+
+    return [...result].sort((a, b) => {
+      if (sortFilter === "Ascending" || sortFilter === "asc") {
+        return a.name.localeCompare(b.name);
+      }
+      if (sortFilter === "Descending" || sortFilter === "desc") {
+        return b.name.localeCompare(a.name);
+      }
+      if (sortFilter === "Recently Added" || sortFilter === "newest") {
+        const dateA = (a as any).created_at ? new Date((a as any).created_at).getTime() : 0;
+        const dateB = (b as any).created_at ? new Date((b as any).created_at).getTime() : 0;
+        return dateB - dateA;
+      }
+      return 0;
+    });
+  }, [categories, searchQuery, statusFilter, sortFilter]);
 
   /*
    * MODALS
@@ -328,7 +369,14 @@ export default function RecipeCategoriesList() {
 
           <div className="card table-list-card">
             <div className="card-header">
-              <FiltersBar />
+              <FiltersBar
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+                sortFilter={sortFilter}
+                setSortFilter={setSortFilter}
+              />
             </div>
 
             <div className="card-body">
@@ -338,7 +386,7 @@ export default function RecipeCategoriesList() {
                   <p className="text-gray-500 font-medium">Loading...</p>
                 </div>
               ) : (
-                <Table columns={columns} dataSource={categories} rowKey="id" />
+                <Table columns={columns} dataSource={filteredCategories} rowKey="id" />
               )}
             </div>
           </div>

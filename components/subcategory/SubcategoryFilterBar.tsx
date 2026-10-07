@@ -35,9 +35,9 @@ export default function SubcategoryFilterBar({
   const staticFilters = {
     status: ["All Status", "Active", "InActive"],
     sort: [
-      "Recently Added",
       "Ascending",
       "Descending",
+      "Recently Added",
       "Last Month",
       "Last 7 Days",
     ],
@@ -53,7 +53,7 @@ export default function SubcategoryFilterBar({
   const hasActiveFilters =
     searchQuery ||
     statusFilter !== "All Status" ||
-    sortFilter !== "Recently Added" ||
+    sortFilter !== "Ascending" ||
     categoryFilter !== "All Categories";
 
   return (
@@ -156,7 +156,7 @@ export default function SubcategoryFilterBar({
           onClick={() => {
             setSearchQuery("");
             setStatusFilter("All Status");
-            setSortFilter("Recently Added");
+            setSortFilter("Ascending");
             setCategoryFilter("All Categories");
           }}
           className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700 px-2 py-1 transition-colors"
