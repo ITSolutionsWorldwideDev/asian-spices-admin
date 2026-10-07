@@ -42,10 +42,13 @@ export async function createStoreFromPartner(client: any, partner: any) {
   );
 
   // 4️⃣ Reuse existing user by email, or create one (avoid duplicate emails)
+  // When Initial Admin was set, owner_login_email is the admin email; otherwise business email.
+  const ownerLoginEmail =
+    partner.owner_login_email || partner.business_email_address;
   const ownerName = `${partner.first_name} ${partner.last_name}`;
   const existingUser = await client.query(
     `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
-    [partner.business_email_address],
+    [ownerLoginEmail],
   );
 
   let userId: string;
@@ -70,7 +73,7 @@ export async function createStoreFromPartner(client: any, partner: any) {
        VALUES ($1, $2, $3, $4, $5, 'store_owner')`,
       [
         userId,
-        partner.business_email_address,
+        ownerLoginEmail,
         passwordHash,
         ownerName,
         storeId,

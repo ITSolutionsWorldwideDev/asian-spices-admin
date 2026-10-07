@@ -8,10 +8,13 @@ import { revalidatePath } from "next/cache";
 import { logAudit } from "@/lib/audit";
 import { createStoreFromPartner } from "@/lib/services/partner.service";
 import { sendPartnerRegistrationEmail, sendPartnerApprovalEmail } from "@/core/email-templates";
+import { sendEmail } from "@/core/email";
 import { generateUniqueApplicationId } from "@/lib/services/applicationId";
 import { redirect } from "next/navigation";
 import { hash } from "bcryptjs";
 import { randomUUID } from "crypto";
+import { assertEmailNotPrivileged } from "@/lib/users/assertEmailAvailable";
+import { syncUserRoleColumn } from "@/lib/users/syncUserRole";
 
 /** Create partner registration only — store is created on approve. */
 export async function createPartner(formData: FormData) {
@@ -36,6 +39,9 @@ export async function createPartner(formData: FormData) {
     vatNumber,
     chamberExtractDocuments: chamberExtractRaw,
     powerOfAttorneyDocument,
+    adminEmail,
+    adminName,
+    adminPassword,
   } = data;
 
   const resolvedCompanyName = String(companyName || name || "").trim();
@@ -44,6 +50,26 @@ export async function createPartner(formData: FormData) {
   }
   if (!businessEmail) {
     return { success: false, error: "Business email is required" };
+  }
+
+  const initialAdminEmail = String(adminEmail || "").trim();
+  const initialAdminName = String(adminName || "").trim();
+  const initialAdminPassword = String(adminPassword || "");
+  const hasInitialAdmin =
+    Boolean(initialAdminEmail) &&
+    Boolean(initialAdminName) &&
+    Boolean(initialAdminPassword);
+
+  // All three Initial Admin fields are required together (or leave all empty)
+  if (
+    (initialAdminEmail || initialAdminName || initialAdminPassword) &&
+    !hasInitialAdmin
+  ) {
+    return {
+      success: false,
+      error:
+        "To create an Initial Admin Account, fill Admin Name, Email, and Password.",
+    };
   }
 
   let chamberExtractDocuments: string[] | null = null;
@@ -66,6 +92,19 @@ export async function createPartner(formData: FormData) {
 
   try {
     await client.query("BEGIN");
+
+    await assertEmailNotPrivileged(
+      client,
+      String(businessEmail),
+      "business email",
+    );
+    if (hasInitialAdmin) {
+      await assertEmailNotPrivileged(
+        client,
+        initialAdminEmail,
+        "admin email",
+      );
+    }
 
     const existingBizEmail = await client.query(
       `SELECT partner_id FROM partner_registration
@@ -162,12 +201,95 @@ export async function createPartner(formData: FormData) {
 
     const partnerId = rows[0].partner_id;
 
+    // Optional Initial Admin Account:
+    // - Admin user (role admin) with Initial Admin email/password
+    // - Store owner user (role store_owner) with business email + random password
+    // Both get store_users roles on approve. Credentials emailed to business email on approve.
+    let createdAdminPassword: string | undefined;
+    let createdOwnerPassword: string | undefined;
+    if (hasInitialAdmin) {
+      if (
+        initialAdminEmail.toLowerCase() ===
+        String(businessEmail).trim().toLowerCase()
+      ) {
+        throw new Error(
+          "Initial Admin email must be different from the business email.",
+        );
+      }
+
+      // Reuse existing non-privileged users (assertEmailNotPrivileged already
+      // blocked platform admins / store staff). Create only when missing.
+      const adminPasswordHash = await hash(initialAdminPassword, 10);
+      const existingAdmin = await client.query(
+        `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+        [initialAdminEmail],
+      );
+      if (existingAdmin.rows.length > 0) {
+        await client.query(
+          `UPDATE users
+           SET password_hash = $1,
+               name = $2,
+               status = 'active',
+               role = 'admin'
+           WHERE id = $3`,
+          [adminPasswordHash, initialAdminName, existingAdmin.rows[0].id],
+        );
+      } else {
+        await client.query(
+          `INSERT INTO users (email, password_hash, name, status, role)
+           VALUES ($1, $2, $3, 'active', 'admin')`,
+          [initialAdminEmail, adminPasswordHash, initialAdminName],
+        );
+      }
+      createdAdminPassword = initialAdminPassword;
+
+      createdOwnerPassword = Math.random().toString(36).slice(-10);
+      const ownerPasswordHash = await hash(createdOwnerPassword, 10);
+      const ownerName =
+        `${String(firstName || "").trim()} ${String(lastName || "").trim()}`.trim() ||
+        resolvedCompanyName ||
+        "Store Owner";
+      const ownerEmail = String(businessEmail).trim();
+      const existingOwner = await client.query(
+        `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+        [ownerEmail],
+      );
+      if (existingOwner.rows.length > 0) {
+        await client.query(
+          `UPDATE users
+           SET password_hash = $1,
+               name = $2,
+               status = 'active',
+               role = 'store_owner'
+           WHERE id = $3`,
+          [ownerPasswordHash, ownerName, existingOwner.rows[0].id],
+        );
+      } else {
+        await client.query(
+          `INSERT INTO users (email, password_hash, name, status, role)
+           VALUES ($1, $2, $3, 'active', 'store_owner')`,
+          [ownerEmail, ownerPasswordHash, ownerName],
+        );
+      }
+    }
+
     await logAudit({
       actorId: user.id,
       action: "partner.created",
       entity: "partner",
       entityId: partnerId,
-      metadata: { applicationId },
+      metadata: {
+        applicationId,
+        initialAdminCreated: Boolean(createdAdminPassword),
+        // Kept only until approve so credentials can be emailed then (not at create)
+        ...(createdAdminPassword
+          ? {
+              initialAdminPassword: createdAdminPassword,
+              initialAdminEmail: initialAdminEmail,
+              storeOwnerPassword: createdOwnerPassword,
+            }
+          : {}),
+      },
     });
 
     await client.query("COMMIT");
@@ -205,6 +327,10 @@ export async function approvePartner(partnerId: string) {
     storeId: string;
     userId: string;
     tempPassword?: string;
+    usedExistingCredentials?: boolean;
+    loginEmail?: string;
+    adminLoginEmail?: string;
+    adminPassword?: string;
   } | null = null;
 
   try {
@@ -229,6 +355,29 @@ export async function approvePartner(partnerId: string) {
     partnerCompanyName = partner.company_name;
     partnerApplicationId = partner.application_id || "";
 
+    // Recover Initial Admin + store-owner passwords saved at create (if any)
+    const auditRes = await client.query(
+      `SELECT id, metadata FROM audit_logs
+       WHERE entity = 'partner' AND entity_id = $1 AND action = 'partner.created'
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [partnerId],
+    );
+    const createMeta = auditRes.rows[0]?.metadata || {};
+    const initialAdminEmail = createMeta.initialAdminEmail
+      ? String(createMeta.initialAdminEmail)
+      : "";
+    const savedInitialPassword = createMeta.initialAdminPassword
+      ? String(createMeta.initialAdminPassword)
+      : "";
+    const savedOwnerPassword = createMeta.storeOwnerPassword
+      ? String(createMeta.storeOwnerPassword)
+      : "";
+    const hasInitialAdminAccounts = Boolean(initialAdminEmail);
+
+    // Store owner always uses business email. Initial Admin (if any) is a separate admin user.
+    const storeOwnerLogin = partnerEmail;
+
     // If a store was already created with this partner (pending), activate it.
     // Otherwise provision a new store (web registration flow).
     const existingStore = await client.query(
@@ -243,6 +392,10 @@ export async function approvePartner(partnerId: string) {
       storeId: string;
       userId: string;
       tempPassword?: string;
+      usedExistingCredentials?: boolean;
+      loginEmail?: string;
+      adminLoginEmail?: string;
+      adminPassword?: string;
     };
 
     if (existingStore.rows.length > 0) {
@@ -251,63 +404,154 @@ export async function approvePartner(partnerId: string) {
         `UPDATE stores SET status = 'active' WHERE id = $1`,
         [storeId],
       );
-      result = { storeId, userId: "" };
+      result = { storeId, userId: "", loginEmail: storeOwnerLogin };
     } else {
-      // FIX: Pass the active, transactional 'client' down directly to prevent deadlocks
-      result = await createStoreFromPartner(client, partner);
+      result = await createStoreFromPartner(client, {
+        ...partner,
+        owner_login_email: storeOwnerLogin,
+      });
+      result = { ...result, loginEmail: storeOwnerLogin };
     }
 
-    // Always ensure a login user + fresh temp password so credentials can be emailed
     if (!partnerEmail) {
       throw new Error("Partner business email is missing; cannot send login credentials.");
     }
 
-    if (!result.tempPassword) {
-      const tempPassword = Math.random().toString(36).slice(-10);
-      const passwordHash = await hash(tempPassword, 10);
-      const ownerName =
-        `${partner.first_name || ""} ${partner.last_name || ""}`.trim() ||
-        partnerCompanyName ||
-        "Partner";
+    const ownerRoleRes = await client.query(
+      `SELECT id FROM roles WHERE key = 'store_owner' LIMIT 1`,
+    );
+    const adminRoleRes = await client.query(
+      `SELECT id FROM roles WHERE key = 'admin' AND scope = 'store' LIMIT 1`,
+    );
 
-      const userRes = await client.query(
+    // Ensure store-owner account (business email) is linked
+    if (!result.tempPassword) {
+      const ownerRes = await client.query(
         `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
-        [partnerEmail],
+        [storeOwnerLogin],
       );
 
-      let userId: string;
-      if (userRes.rows.length > 0) {
-        userId = userRes.rows[0].id;
+      if (ownerRes.rows.length > 0) {
+        const userId = ownerRes.rows[0].id as string;
         await client.query(
           `UPDATE users
-           SET password_hash = $1,
-               store_id = COALESCE(store_id, $2),
-               role = COALESCE(NULLIF(role, ''), 'store_owner')
-           WHERE id = $3`,
-          [passwordHash, result.storeId, userId],
+           SET store_id = COALESCE(store_id, $1),
+               role = 'store_owner'
+           WHERE id = $2`,
+          [result.storeId, userId],
         );
+
+        if (ownerRoleRes.rows.length > 0) {
+          await client.query(
+            `INSERT INTO store_users (store_id, user_id, role_id)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (store_id, user_id) DO UPDATE SET role_id = EXCLUDED.role_id`,
+            [result.storeId, userId, ownerRoleRes.rows[0].id],
+          );
+        }
+        await syncUserRoleColumn(client, userId);
+
+        // Prefer password saved at create (Initial Admin flow).
+        // Otherwise issue a fresh temp password so credentials email can be sent.
+        let tempPassword = savedOwnerPassword || undefined;
+        if (!tempPassword) {
+          tempPassword = Math.random().toString(36).slice(-10);
+          const passwordHash = await hash(tempPassword, 10);
+          await client.query(
+            `UPDATE users SET password_hash = $1 WHERE id = $2`,
+            [passwordHash, userId],
+          );
+        }
+
+        result = {
+          ...result,
+          userId,
+          usedExistingCredentials: hasInitialAdminAccounts,
+          loginEmail: storeOwnerLogin,
+          tempPassword,
+        };
       } else {
-        userId = randomUUID();
+        const tempPassword = Math.random().toString(36).slice(-10);
+        const passwordHash = await hash(tempPassword, 10);
+        const ownerName =
+          `${partner.first_name || ""} ${partner.last_name || ""}`.trim() ||
+          partnerCompanyName ||
+          "Partner";
+
+        const userId = randomUUID();
         await client.query(
           `INSERT INTO users (id, email, password_hash, name, store_id, role)
            VALUES ($1, $2, $3, $4, $5, 'store_owner')`,
-          [userId, partnerEmail, passwordHash, ownerName, result.storeId],
+          [userId, storeOwnerLogin, passwordHash, ownerName, result.storeId],
         );
-      }
 
-      const roleRes = await client.query(
-        `SELECT id FROM roles WHERE key = 'store_owner' LIMIT 1`,
+        if (ownerRoleRes.rows.length > 0) {
+          await client.query(
+            `INSERT INTO store_users (store_id, user_id, role_id)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (store_id, user_id) DO UPDATE SET role_id = EXCLUDED.role_id`,
+            [result.storeId, userId, ownerRoleRes.rows[0].id],
+          );
+        }
+        await syncUserRoleColumn(client, userId);
+
+        result = {
+          ...result,
+          userId,
+          tempPassword,
+          loginEmail: storeOwnerLogin,
+        };
+      }
+    } else {
+      result = { ...result, loginEmail: storeOwnerLogin };
+    }
+
+    // Link Initial Admin as store "admin" (separate from store_owner)
+    if (hasInitialAdminAccounts && initialAdminEmail) {
+      const adminRes = await client.query(
+        `SELECT id FROM users WHERE lower(email) = lower($1) LIMIT 1`,
+        [initialAdminEmail],
       );
-      if (roleRes.rows.length > 0) {
+      if (adminRes.rows.length > 0) {
+        const adminUserId = adminRes.rows[0].id as string;
         await client.query(
-          `INSERT INTO store_users (store_id, user_id, role_id)
-           VALUES ($1, $2, $3)
-           ON CONFLICT (store_id, user_id) DO UPDATE SET role_id = EXCLUDED.role_id`,
-          [result.storeId, userId, roleRes.rows[0].id],
+          `UPDATE users
+           SET store_id = COALESCE(store_id, $1),
+               role = 'admin'
+           WHERE id = $2`,
+          [result.storeId, adminUserId],
         );
+
+        if (adminRoleRes.rows.length > 0) {
+          await client.query(
+            `INSERT INTO store_users (store_id, user_id, role_id)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (store_id, user_id) DO UPDATE SET role_id = EXCLUDED.role_id`,
+            [result.storeId, adminUserId, adminRoleRes.rows[0].id],
+          );
+        }
+        await syncUserRoleColumn(client, adminUserId);
+
+        result = {
+          ...result,
+          adminLoginEmail: initialAdminEmail,
+          adminPassword: savedInitialPassword || undefined,
+        };
       }
 
-      result = { ...result, userId, tempPassword };
+      if (auditRes.rows[0]?.id) {
+        await client.query(
+          `UPDATE audit_logs
+           SET metadata = (
+             metadata::jsonb
+             - 'initialAdminPassword'
+             - 'initialAdminEmail'
+             - 'storeOwnerPassword'
+           )
+           WHERE id = $1`,
+          [auditRes.rows[0].id],
+        );
+      }
     }
 
     await client.query(
@@ -338,15 +582,20 @@ export async function approvePartner(partnerId: string) {
     client.release();
   }
 
-  // Send login credentials after approval (never the application-received template)
+  // Send login credentials after approval to business email.
+  // - With Initial Admin: store_owner (business email) + admin (Initial Admin email)
+  // - Without: store_owner only (business email + random password)
   let emailSent = false;
-  if (emailPayload?.tempPassword && partnerEmail) {
+  if (partnerEmail && emailPayload?.tempPassword) {
     const mailResult = await sendPartnerApprovalEmail({
       email: partnerEmail,
       companyName: partnerCompanyName || "Your company",
       firstName: partnerFirstName || "Partner",
       applicationId: partnerApplicationId || undefined,
       tempPassword: emailPayload.tempPassword,
+      loginEmail: emailPayload.loginEmail || partnerEmail,
+      adminLoginEmail: emailPayload.adminLoginEmail,
+      adminPassword: emailPayload.adminPassword,
     });
     emailSent = Boolean(mailResult.success);
     if (!mailResult.success) {
@@ -358,7 +607,11 @@ export async function approvePartner(partnerId: string) {
   } else {
     console.error(
       "[approvePartner] Skipped credentials email — missing tempPassword or partnerEmail",
-      { partnerEmail, hasTempPassword: Boolean(emailPayload?.tempPassword) },
+      {
+        partnerEmail,
+        hasTempPassword: Boolean(emailPayload?.tempPassword),
+        usedExistingCredentials: Boolean(emailPayload?.usedExistingCredentials),
+      },
     );
   }
 
