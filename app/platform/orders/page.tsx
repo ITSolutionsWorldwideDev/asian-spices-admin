@@ -9,7 +9,7 @@ import { useToast } from "@/core/ui";
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
-  const [filters, setFilters] = useState<any>({});
+  const [filters, setFilters] = useState<any>({ sort: "newest" });
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);

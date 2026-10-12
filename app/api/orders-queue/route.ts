@@ -43,7 +43,8 @@ export async function GET(req: NextRequest) {
 
     const whereClause = `WHERE ${whereConditions.join(" AND ")}`;
 
-    let orderBy = `ORDER BY o.created_at ASC`;
+    let orderBy = `ORDER BY o.created_at DESC`;
+    if (sort === "date_asc") orderBy = `ORDER BY o.created_at ASC`;
     if (sort === "date_desc") orderBy = `ORDER BY o.created_at DESC`;
     if (sort === "total_desc") orderBy = `ORDER BY (COALESCE(o.subtotal, 0) + COALESCE(o.shipping_amount, 0)) DESC`;
     if (sort === "total_asc") orderBy = `ORDER BY (COALESCE(o.subtotal, 0) + COALESCE(o.shipping_amount, 0)) ASC`;

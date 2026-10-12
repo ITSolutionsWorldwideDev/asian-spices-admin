@@ -51,7 +51,7 @@ export default function ProductsCatalogComponent() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const [filters, setFilters] = useState({});
+  const [filters, setFilters] = useState<any>({ sort: "name_asc" });
 
   const [bulk, setBulk] = useState<BulkState>({
     type: "INCLUDE",
@@ -123,7 +123,9 @@ export default function ProductsCatalogComponent() {
   };
 
   useEffect(() => {
-    fetchProducts();
+    const initial = applyAssignedFilter({ sort: "name_asc" });
+    setFilters(initial);
+    fetchProducts(initial, 1);
   }, []);
 
   const updateField = (
