@@ -160,14 +160,22 @@ export async function sendPartnerApprovalEmail({
 }: PartnerApprovalEmailOptions) {
   try {
     const accountEmail = loginEmail || email;
+    const sameAccount =
+      Boolean(adminLoginEmail && adminPassword) &&
+      accountEmail.trim().toLowerCase() ===
+        String(adminLoginEmail).trim().toLowerCase();
     const adminBlock =
-      adminLoginEmail && adminPassword
+      !sameAccount && adminLoginEmail && adminPassword
         ? `
         <div style="background-color: #f9fafb; border-left: 4px solid #2563eb; padding: 15px; margin: 20px 0; border-radius: 4px;">
           <p style="margin: 0 0 8px 0;"><strong>Store Admin Login Email:</strong> ${adminLoginEmail}</p>
           <p style="margin: 0;"><strong>Store Admin Password:</strong> ${adminPassword}</p>
         </div>`
         : "";
+    const loginPassword =
+      sameAccount && adminPassword ? adminPassword : tempPassword;
+    const loginLabel = sameAccount ? "Password" : "Store Owner Password";
+    const loginEmailLabel = sameAccount ? "Login Email" : "Store Owner Login Email";
 
     const emailHtml = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 25px; border-radius: 12px; color: #1f2937;">
@@ -175,8 +183,8 @@ export async function sendPartnerApprovalEmail({
         <p>Hello ${firstName || "Partner"},</p>
         <p>Your partner store application for <strong>${companyName || "your company"}</strong> has been approved${applicationId ? ` (Application ID: <code>${applicationId}</code>)` : ""}.</p>
         <div style="background-color: #f9fafb; border-left: 4px solid #ea580c; padding: 15px; margin: 20px 0; border-radius: 4px;">
-          <p style="margin: 0 0 8px 0;"><strong>Store Owner Login Email:</strong> ${accountEmail}</p>
-          <p style="margin: 0;"><strong>Store Owner Password:</strong> ${tempPassword}</p>
+          <p style="margin: 0 0 8px 0;"><strong>${loginEmailLabel}:</strong> ${accountEmail}</p>
+          <p style="margin: 0;"><strong>${loginLabel}:</strong> ${loginPassword}</p>
         </div>
         ${adminBlock}
         <p>Please sign in and change your password after your first login.</p>

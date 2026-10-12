@@ -468,7 +468,8 @@ export default function PartnerForm({ store }: { store?: any }) {
               (role admin) and a store-owner account on the business email.
               Existing non-staff users with those emails are updated. Store is
               still created only on approve; credentials are emailed to the
-              business email then. Admin email must differ from business email.
+              business email then. The admin email can match the business email;
+              in that case only the password entered here is used.
             </p>
             <div className="space-y-4">
               <div>
