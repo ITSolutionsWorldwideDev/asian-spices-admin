@@ -13,10 +13,14 @@ type Filters = {
 
 export default function FilterBar({
   onApply,
+  initialSort = "date_desc",
 }: {
   onApply: (filters: Filters) => void;
+  initialSort?: string;
 }) {
-  const [filters, setFilters] = useState<Filters>({});
+  const [filters, setFilters] = useState<Filters>({
+    sort: initialSort,
+  });
 
   const update = (key: keyof Filters, value: string) => {
     const updated = { ...filters, [key]: value };
@@ -65,9 +69,9 @@ export default function FilterBar({
       {/* Sort */}
       <select
         className="px-3 py-2 border rounded-md text-sm"
+        value={filters.sort || "date_desc"}
         onChange={(e) => update("sort", e.target.value)}
       >
-        <option value="">Sort By</option>
         <option value="date_desc">Newest</option>
         <option value="date_asc">Oldest</option>
         <option value="total_desc">Total High → Low</option>

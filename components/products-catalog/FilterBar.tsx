@@ -42,10 +42,14 @@ type Filters = {
 
 export default function FilterBar({
   onApply,
+  initialSort = "name_asc",
 }: {
   onApply: (filters: Filters) => void;
+  initialSort?: string;
 }) {
-  const [filters, setFilters] = useState<Filters>({});
+  const [filters, setFilters] = useState<Filters>({
+    sort: initialSort,
+  });
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [countries, setCountries] = useState<Countries[]>([]);

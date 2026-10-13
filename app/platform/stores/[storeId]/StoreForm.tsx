@@ -23,6 +23,27 @@ type Countries = {
   iso2: string;
 };
 
+type PartnerOption = {
+  partner_id: string;
+  company_name: string | null;
+  application_id: string | null;
+  status: string | null;
+  business_email_address: string | null;
+  kvk_number: string | null;
+  chamber_of_commerce_number: string | null;
+  country: string | null;
+  street: string | null;
+  house_number: string | null;
+  additional_address: string | null;
+  postal_code: string | null;
+  city: string | null;
+  first_name: string | null;
+  middle_name: string | null;
+  last_name: string | null;
+  business_phone_number: string | null;
+  vat_number: string | null;
+};
+
 export default function StoreForm({ store }: { store?: any }) {
   const [pending, startTransition] = useTransition();
 
@@ -50,10 +71,12 @@ export default function StoreForm({ store }: { store?: any }) {
     businessEmail: store?.business_email_address || "",
     vatNumber: store?.vat_number || "",
     status: store?.status || "pending",
+    partnerId: store?.partner_registration_id || "",
   });
 
   const [isSlugLocked, setIsSlugLocked] = useState(isEdit);
   const [countries, setCountries] = useState<Countries[]>([]);
+  const [partners, setPartners] = useState<PartnerOption[]>([]);
   const [chamberFiles, setChamberFiles] = useState<File[]>([]);
   const [poaFiles, setPoaFiles] = useState<File[]>([]);
 
@@ -70,6 +93,25 @@ export default function StoreForm({ store }: { store?: any }) {
 
     fetchCountries();
   }, []);
+
+  useEffect(() => {
+    if (isEdit) return;
+
+    const fetchPartners = async () => {
+      try {
+        const res = await fetch("/api/partners");
+        const data = await res.json();
+        const approved = (Array.isArray(data) ? data : []).filter(
+          (p: PartnerOption) => p.status === "approved",
+        );
+        setPartners(approved);
+      } catch (err) {
+        console.error("Failed to load partners", err);
+      }
+    };
+
+    fetchPartners();
+  }, [isEdit]);
 
   useEffect(() => {
     if (countries.length && !formState.country) {
@@ -89,6 +131,35 @@ export default function StoreForm({ store }: { store?: any }) {
       .replace(/\s+/g, "-") // Replace spaces with -
       .replace(/[^\w-]+/g, "") // Remove all non-word chars
       .replace(/--+/g, "-"); // Replace multiple - with single -
+  };
+
+  const fillFromPartner = (partner: PartnerOption) => {
+    setFormState((prev) => ({
+      ...prev,
+      partnerId: partner.partner_id,
+      companyName: partner.company_name || "",
+      kvkNumber: partner.kvk_number || "",
+      chamberOfCommerceNumber: partner.chamber_of_commerce_number || "",
+      country: partner.country || prev.country || "NL",
+      street: partner.street || "",
+      houseNumber: partner.house_number || "",
+      addition: partner.additional_address || "",
+      postalCode: partner.postal_code || "",
+      city: partner.city || "",
+      firstName: partner.first_name || "",
+      middleName: partner.middle_name || "",
+      lastName: partner.last_name || "",
+      businessPhone: partner.business_phone_number || "",
+      businessEmail: partner.business_email_address || "",
+      vatNumber: partner.vat_number || "",
+      // Prefill store name/slug from company when still empty
+      name: prev.name || partner.company_name || "",
+      slug:
+        prev.slug ||
+        (partner.company_name
+          ? generateSlug(partner.company_name)
+          : prev.slug),
+    }));
   };
 
   // -----------------------
@@ -112,8 +183,8 @@ export default function StoreForm({ store }: { store?: any }) {
   const handleSubmit = async (formData: FormData) => {
     startTransition(async () => {
       try {
-        if (!isEdit && chamberFiles.length === 0) {
-          alert("Chamber of Commerce extract is required.");
+        if (!isEdit && !formState.partnerId) {
+          alert("Please select a partner before creating the store.");
           return;
         }
 
@@ -123,13 +194,15 @@ export default function StoreForm({ store }: { store?: any }) {
         });
 
         if (!isEdit) {
-          const chamberUrls = await Promise.all(
-            chamberFiles.map((f) => fileToDataUrl(f)),
-          );
-          formData.set(
-            "chamberExtractDocuments",
-            JSON.stringify(chamberUrls),
-          );
+          if (chamberFiles.length > 0) {
+            const chamberUrls = await Promise.all(
+              chamberFiles.map((f) => fileToDataUrl(f)),
+            );
+            formData.set(
+              "chamberExtractDocuments",
+              JSON.stringify(chamberUrls),
+            );
+          }
           if (poaFiles.length > 0) {
             formData.set(
               "powerOfAttorneyDocument",
@@ -187,6 +260,42 @@ export default function StoreForm({ store }: { store?: any }) {
         </div>
 
         <div className="grid grid-cols-1 gap-6">
+          {!isEdit && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Partner<span className="text-red-500 ml-1">*</span>
+              </label>
+              <select
+                name="partnerId"
+                value={formState.partnerId}
+                onChange={(e) => {
+                  const partnerId = e.target.value;
+                  const partner = partners.find(
+                    (p) => p.partner_id === partnerId,
+                  );
+                  if (partner) {
+                    fillFromPartner(partner);
+                  } else {
+                    handleChange("partnerId", "");
+                  }
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+                required
+              >
+                <option value="">Select a partner</option>
+                {partners.map((p) => (
+                  <option key={p.partner_id} value={p.partner_id}>
+                    {p.company_name || "Unnamed partner"}
+                    {p.application_id ? ` (${p.application_id})` : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">
+                A partner must be selected to create a store.
+              </p>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Store Name<span className="text-red-500 ml-1">*</span>
@@ -431,7 +540,12 @@ export default function StoreForm({ store }: { store?: any }) {
 
             {!isEdit && (
               <div className="mt-6 pt-6 border-t border-gray-100">
-                <h3 className="font-semibold text-gray-700 mb-4">Documents</h3>
+                <h3 className="font-semibold text-gray-700 mb-4">
+                  Documents (optional)
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  Leave empty to keep the selected partner&apos;s existing documents.
+                </p>
                 <UploadDocument
                   embedded
                   chamberFiles={chamberFiles}

@@ -24,9 +24,9 @@ export default function FilterBar({
   const filterItems = {
     status: ["All Status", "Active", "InActive"],
     sort: [
-      "Recently Added",
       "Ascending",
       "Descending",
+      "Recently Added",
       "Last Month",
       "Last 7 Days",
     ],
@@ -48,7 +48,7 @@ export default function FilterBar({
   const hasActiveFilters =
     searchQuery ||
     statusFilter !== "All Status" ||
-    sortFilter !== "Recently Added";
+    sortFilter !== "Ascending";
 
   return (
     <div className="flex flex-wrap gap-3 items-center justify-between w-full">
@@ -111,7 +111,7 @@ export default function FilterBar({
           onClick={() => {
             setSearchQuery("");
             setStatusFilter("All Status");
-            setSortFilter("Recently Added");
+            setSortFilter("Ascending");
           }}
           className="flex items-center gap-1 text-sm text-red-600 hover:text-red-700 px-2 py-1 transition-colors"
         >

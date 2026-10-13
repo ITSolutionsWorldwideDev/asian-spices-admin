@@ -463,6 +463,14 @@ export default function PartnerForm({ store }: { store?: any }) {
             <h3 className="text-md font-bold text-gray-900 mb-4">
               Initial Admin Account
             </h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Optional. If filled, creates or reuses two users: Initial Admin
+              (role admin) and a store-owner account on the business email.
+              Existing non-staff users with those emails are updated. Store is
+              still created only on approve; credentials are emailed to the
+              business email then. The admin email can match the business email;
+              in that case only the password entered here is used.
+            </p>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -473,7 +481,6 @@ export default function PartnerForm({ store }: { store?: any }) {
                   placeholder="John Doe"
                   autoComplete="off"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                  required
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -487,7 +494,6 @@ export default function PartnerForm({ store }: { store?: any }) {
                     placeholder="admin@store.com"
                     autoComplete="off"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                    required
                   />
                 </div>
                 <div>
@@ -500,7 +506,6 @@ export default function PartnerForm({ store }: { store?: any }) {
                     autoComplete="new-password"
                     placeholder="••••••••"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                    required
                   />
                 </div>
               </div>

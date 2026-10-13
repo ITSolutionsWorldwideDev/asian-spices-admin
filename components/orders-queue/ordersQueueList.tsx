@@ -34,7 +34,7 @@ export default function OrdersQueueListComponent() {
   const route = all_routes;
 
   const [orders, setOrders] = useState<Order[]>([]);
-  const [filters, setFilters] = useState<Filters>({});
+  const [filters, setFilters] = useState<Filters>({ sort: "date_desc" });
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
 
@@ -58,7 +58,7 @@ export default function OrdersQueueListComponent() {
   };
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrders({ sort: "date_desc" });
   }, []);
 
   const columns = [

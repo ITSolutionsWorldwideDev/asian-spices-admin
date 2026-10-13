@@ -49,7 +49,7 @@ export default function StoreAssignmentsListComponent() {
     category: searchParams.get("category") || "",
     brand: searchParams.get("brand") || "",
     status: searchParams.get("status") || "",
-    sort: searchParams.get("sort") || "",
+    sort: searchParams.get("sort") || "asc",
   });
 
   const [assignments, setAssignments] = useState<Assignment[]>([]);

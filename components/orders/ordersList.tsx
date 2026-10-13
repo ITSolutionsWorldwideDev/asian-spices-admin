@@ -36,7 +36,7 @@ export default function OrdersListComponent() {
   const route = all_routes;
 
   const [orders, setOrders] = useState<Order[]>([]);
-  const [filters, setFilters] = useState<Filters>({});
+  const [filters, setFilters] = useState<Filters>({ sort: "newest" });
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
 
@@ -60,7 +60,7 @@ export default function OrdersListComponent() {
   };
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrders({ sort: "newest" });
   }, []);
 
   const columns = [

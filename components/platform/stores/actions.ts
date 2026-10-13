@@ -10,8 +10,9 @@ import { redirect } from "next/navigation";
 import { hash } from "bcryptjs";
 import { generateUniqueApplicationId } from "@/lib/services/applicationId";
 import { allocateUniqueStoreSlug } from "@/lib/services/store-slug";
-import { sendPartnerRegistrationEmail } from "@/core/email-templates";
+import { sendPartnerApprovalEmail } from "@/core/email-templates";
 import { syncUserRoleColumn } from "@/lib/users/syncUserRole";
+import { assertEmailNotPrivileged } from "@/lib/users/assertEmailAvailable";
 
 export async function updateStore(
   storeId: string | undefined,
@@ -224,12 +225,22 @@ export async function saveStore(
     vatNumber,
     chamberExtractDocuments: chamberExtractRaw,
     powerOfAttorneyDocument,
+    partnerId: partnerIdRaw,
   } = data;
 
   let slug = String(data.slug || "");
+  const selectedPartnerId = String(partnerIdRaw || "").trim();
 
   if (!name || !slug) {
     throw new Error("Missing required fields");
+  }
+
+  // Creating a store requires selecting an existing partner
+  if (!storeId && !selectedPartnerId) {
+    return {
+      success: false,
+      error: "Please select a partner before creating the store.",
+    };
   }
 
   // KVK capture disabled — always store null
@@ -255,13 +266,25 @@ export async function saveStore(
   try {
     await client.query("BEGIN");
 
+    // Reject Initial Admin email if it already belongs to a platform admin
+    // or store staff (admin / store_owner / manager / editor).
+    if (adminEmail) {
+      await assertEmailNotPrivileged(
+        client,
+        String(adminEmail),
+        "admin email",
+      );
+    }
+
     // Block if this business email already exists on any partner registration
-    // (when editing, allow the partner already linked to this store).
+    // (when editing, allow the partner already linked to this store;
+    // when creating, allow the partner selected in the form).
     if (businessEmail) {
       const existingBizEmail = await client.query(
         `SELECT pr.partner_id
          FROM partner_registration pr
          WHERE lower(pr.business_email_address) = lower($1)
+           AND pr.partner_id::text <> COALESCE($3::text, '')
            AND NOT EXISTS (
              SELECT 1 FROM stores s
              WHERE $2::uuid IS NOT NULL
@@ -272,7 +295,7 @@ export async function saveStore(
                )
            )
          LIMIT 1`,
-        [businessEmail, storeId ?? null],
+        [businessEmail, storeId ?? null, selectedPartnerId || null],
       );
 
       if (existingBizEmail.rows.length > 0) {
@@ -284,10 +307,11 @@ export async function saveStore(
 
     // Block duplicate Chamber of Commerce / VAT numbers (same exclusion as email)
     const excludeOwnPartnerSql = `
+      AND pr.partner_id::text <> COALESCE($2::text, '')
       AND NOT EXISTS (
         SELECT 1 FROM stores s
-        WHERE $2::uuid IS NOT NULL
-          AND s.id = $2::uuid
+        WHERE $3::uuid IS NOT NULL
+          AND s.id = $3::uuid
           AND (
             s.partner_registration_id = pr.partner_id::text
             OR s.partner_registration_id = pr.application_id
@@ -303,7 +327,7 @@ export async function saveStore(
          WHERE lower(trim(pr.chamber_of_commerce_number)) = lower($1)
            ${excludeOwnPartnerSql}
          LIMIT 1`,
-        [coc, storeId ?? null],
+        [coc, selectedPartnerId || null, storeId ?? null],
       );
       if (existingCoc.rows.length > 0) {
         throw new Error(
@@ -320,7 +344,7 @@ export async function saveStore(
          WHERE lower(trim(pr.vat_number)) = lower($1)
            ${excludeOwnPartnerSql}
          LIMIT 1`,
-        [vat, storeId ?? null],
+        [vat, selectedPartnerId || null, storeId ?? null],
       );
       if (existingVat.rows.length > 0) {
         throw new Error(
@@ -479,36 +503,50 @@ export async function saveStore(
         );
       }
     } else {
-      const applicationId = await generateUniqueApplicationId(client);
-      createdApplicationId = applicationId;
-      const partnerRegData = await client.query(
-        `INSERT INTO partner_registration (
-        application_id,
-        kvk_number,
-        company_name,
-        chamber_of_commerce_number,
-        country,
-        street,
-        house_number,
-        additional_address,
-        postal_code,
-        city,
-        first_name,
-        middle_name,
-        last_name,
-        business_phone_number,
-        business_email_address,
-        vat_number,
-        chamber_of_commerce_extract_document,
-        power_of_attorney_document
-      )
-      VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,
-        $11,$12,$13,$14,$15,$16,$17,$18
-      )
-      RETURNING partner_id`,
+      // Create: must link to an existing partner (selected in the form)
+      const partnerCheck = await client.query(
+        `SELECT partner_id, application_id, status
+         FROM partner_registration
+         WHERE partner_id = $1::uuid
+         LIMIT 1`,
+        [selectedPartnerId],
+      );
+
+      if (partnerCheck.rows.length === 0) {
+        throw new Error("Selected partner was not found.");
+      }
+
+      if (partnerCheck.rows[0].status !== "approved") {
+        throw new Error("Only approved partners can be linked to a store.");
+      }
+
+      partnerRegId = partnerCheck.rows[0].partner_id;
+      createdApplicationId = partnerCheck.rows[0].application_id;
+
+      // Keep partner details in sync with the form (optional updates)
+      await client.query(
+        `
+        UPDATE partner_registration SET
+          kvk_number = $1,
+          company_name = $2,
+          chamber_of_commerce_number = $3,
+          country = $4,
+          street = $5,
+          house_number = $6,
+          additional_address = $7,
+          postal_code = $8,
+          city = $9,
+          first_name = $10,
+          middle_name = $11,
+          last_name = $12,
+          business_phone_number = $13,
+          business_email_address = $14,
+          vat_number = $15,
+          chamber_of_commerce_extract_document = COALESCE($16, chamber_of_commerce_extract_document),
+          power_of_attorney_document = COALESCE($17, power_of_attorney_document)
+        WHERE partner_id = $18::uuid
+        `,
         [
-          applicationId,
           kvkNumber,
           companyName,
           chamberOfCommerceNumber,
@@ -526,16 +564,15 @@ export async function saveStore(
           vatNumber,
           chamberExtractDocuments,
           poaDocument,
+          partnerRegId,
         ],
       );
 
-      const partnerRegId = partnerRegData.rows[0].partner_id;
-
       const storeRes = await client.query(
-        `INSERT INTO stores (name, slug, status,partner_registration_id)
-         VALUES ($1, $2, $3,$4)
+        `INSERT INTO stores (name, slug, status, partner_registration_id)
+         VALUES ($1, $2, $3, $4)
          RETURNING id`,
-        [name, slug, "pending", partnerRegId],
+        [name, slug, status || "pending", partnerRegId],
       );
 
       finalStoreId = storeRes.rows[0].id;
@@ -611,13 +648,15 @@ export async function saveStore(
 
     await client.query("COMMIT");
 
-    // Same Partner Application Received template as the web registration flow
-    if (!storeId && adminEmail && createdApplicationId) {
-      await sendPartnerRegistrationEmail({
-        email: String(adminEmail),
+    // Send admin credentials to business email (approval template)
+    if (!storeId && businessEmail && adminEmail && adminPassword && createdApplicationId) {
+      await sendPartnerApprovalEmail({
+        email: String(businessEmail),
         companyName: String(companyName || name),
         firstName: String(firstName || adminName || "Partner"),
         applicationId: createdApplicationId,
+        loginEmail: String(adminEmail),
+        tempPassword: String(adminPassword),
       });
     }
 

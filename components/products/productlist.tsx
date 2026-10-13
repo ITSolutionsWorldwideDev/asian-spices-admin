@@ -46,7 +46,7 @@ export default function ProductListComponent() {
     category: searchParams.get("category") || "",
     brand: searchParams.get("brand") || "",
     status: searchParams.get("status") || "",
-    sort: searchParams.get("sort") || "",
+    sort: searchParams.get("sort") || "asc",
   });
 
   const [products, setProducts] = useState<Product[]>([]);

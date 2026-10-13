@@ -208,14 +208,14 @@ export async function POST(req: NextRequest) {
       from: {
         // Label Afzender format:
         // asianspices.online
-        // Mandenmakerstraat 100 C
-        // 3194DG Hoogvliet Rotterdam
+        // Slakkenveen 341
+        // 3205 GK Spijkenisse Netherlands
         name: "asianspices.online",
-        street: store_addressRes.address_line1 || "",
-        number: store_addressRes.address_line2 || "",
-        city: store_addressRes.city || "",
-        postal_code: store_addressRes.postal_code || "",
-        country: store_addressRes.country || "NL",
+        street: "Slakkenveen",
+        number: "341",
+        city: "Spijkenisse",
+        postal_code: "3205 GK",
+        country: "NL",
         email: store_addressRes.store_email || "",
         phone: store_addressRes.store_phone || "",
         currency_code: store_addressRes.currency_code,

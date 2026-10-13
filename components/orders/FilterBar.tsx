@@ -13,15 +13,17 @@ type Filters = {
 
 export default function FilterBar({
   onApply,
+  initialSort = "newest",
 }: {
   onApply: (filters: Filters) => void;
+  initialSort?: string;
 }) {
 
   const [filters, setFilters] = useState<Filters>({
     search: "",
     product: "",
     status: "",
-    sort: "",
+    sort: initialSort,
   });
 
   const handleTextChange = (key: "search" | "product", value: string) => {
@@ -85,12 +87,12 @@ export default function FilterBar({
       <div className="flex flex-col gap-1">
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Ordering Sequence</label>
         <select
-          value={filters.sort}
+          value={filters.sort || "newest"}
           className="px-3 py-1.5 border rounded-lg text-sm bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-black"
           onChange={(e) => handleSelectChange("sort", e.target.value)}
         >
-          <option value="priority">Operational Priority Queue</option>
           <option value="newest">Created Date: Newest First</option>
+          <option value="priority">Operational Priority Queue</option>
           <option value="date_asc">Created Date: Oldest First</option>
           <option value="total_desc">Total Cash Amount: High → Low</option>
           <option value="total_asc">Total Cash Amount: Low → High</option>
