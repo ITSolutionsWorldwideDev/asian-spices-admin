@@ -77,14 +77,20 @@ export default function PartnerDetail({ partner }: any) {
   };
 
   const handleReject = async () => {
-    if (!reason.trim()) {
-      alert("Rejection reason required");
+    const trimmedReason = reason.trim();
+    if (!trimmedReason || trimmedReason.length < 5) {
+      alert("Please provide a valid rejection reason (minimum 5 characters) before rejecting.");
       return;
     }
 
     setLoading(true);
     try {
-      await rejectPartner(partner.partner_id, reason);
+      await rejectPartner(partner.partner_id, trimmedReason);
+      alert("Partner has been rejected and the notification email has been dispatched.");
+      window.location.href = "/platform/partners";
+    } catch (err: any) {
+      console.error("Failed to reject partner:", err);
+      alert(err?.message || "Failed to reject partner");
     } finally {
       setLoading(false);
     }
@@ -174,7 +180,30 @@ export default function PartnerDetail({ partner }: any) {
         <h3 className="font-semibold">Actions</h3>
 
         {partner.status === "pending" && (
-          <>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Rejection Reason <span className="text-red-500">*</span>
+                <span className="font-normal text-gray-500 ml-1">
+                  (Requiredto Reject)
+                </span>
+              </label>
+              <textarea
+                placeholder="Enter rejection reason (required to reject)..."
+                className={`w-full border rounded p-2 text-sm focus:outline-none focus:ring-1 ${
+                  !reason.trim() ? "border-red-300 focus:ring-red-400" : "border-gray-300 focus:ring-orange-500"
+                }`}
+                rows={3}
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+              />
+              {!reason.trim() && (
+                <p className="text-[11px] text-red-500 mt-0.5">
+                  Rejection reason is mandatory before you can click Reject.
+                </p>
+              )}
+            </div>
+
             <div className="flex gap-3">
               <button
                 className="btn btn-success"
@@ -185,21 +214,15 @@ export default function PartnerDetail({ partner }: any) {
               </button>
 
               <button
-                className="btn btn-danger"
-                disabled={loading}
+                className="btn btn-danger disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading || !reason.trim()}
+                title={!reason.trim() ? "Please enter a rejection reason first" : "Reject partner"}
                 onClick={handleReject}
               >
                 Reject
               </button>
             </div>
-
-            <textarea
-              placeholder="Rejection reason..."
-              className="w-full border p-2 text-sm"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-            />
-          </>
+          </div>
         )}
 
         <button

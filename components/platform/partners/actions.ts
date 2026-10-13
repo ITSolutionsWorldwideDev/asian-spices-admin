@@ -7,7 +7,11 @@ import { requirePlatformAdmin } from "@/lib/auth/guards";
 import { revalidatePath } from "next/cache";
 import { logAudit } from "@/lib/audit";
 import { createStoreFromPartner } from "@/lib/services/partner.service";
-import { sendPartnerRegistrationEmail, sendPartnerApprovalEmail } from "@/core/email-templates";
+import {
+  sendPartnerRegistrationEmail,
+  sendPartnerApprovalEmail,
+  sendPartnerRejectionEmail,
+} from "@/core/email-templates";
 import { sendEmail } from "@/core/email";
 import { generateUniqueApplicationId } from "@/lib/services/applicationId";
 import { redirect } from "next/navigation";
@@ -688,13 +692,15 @@ export async function rejectPartner(
   const client = await pool.connect();
   let partnerEmail = "";
   let partnerFirstName = "";
+  let partnerCompanyName = "";
+  let partnerApplicationId = "";
 
   try {
     await client.query("BEGIN");
 
     // Fetch details inside the transaction before making structural adjustments
     const { rows } = await client.query(
-      `SELECT first_name, business_email_address, status FROM partner_registration WHERE partner_id = $1 FOR UPDATE`,
+      `SELECT first_name, business_email_address, company_name, application_id, status FROM partner_registration WHERE partner_id = $1 FOR UPDATE`,
       [partnerId],
     );
 
@@ -708,6 +714,8 @@ export async function rejectPartner(
 
     partnerEmail = partner.business_email_address;
     partnerFirstName = partner.first_name;
+    partnerCompanyName = partner.company_name;
+    partnerApplicationId = partner.application_id;
 
     await client.query(
       `UPDATE partner_registration
@@ -736,7 +744,25 @@ export async function rejectPartner(
   }
 
   // Handle rejection email dispatch cleanly after database rollback safety
-  /* try {
+  try {
+    if (partnerEmail) {
+      await sendPartnerRejectionEmail({
+        email: partnerEmail,
+        companyName: partnerCompanyName,
+        firstName: partnerFirstName,
+        applicationId: partnerApplicationId,
+        reason,
+      });
+    }
+  } catch (mailErr) {
+    console.error(
+      "Database updated but rejection email failed to dispatch:",
+      mailErr,
+    );
+  }
+
+  /* [OLD INLINE REJECTION EMAIL COMMENTED OUT]
+  try {
     await sendEmail({
       to: partnerEmail,
       subject: "Update regarding your store application",
@@ -747,12 +773,8 @@ export async function rejectPartner(
         <p>If you believe this was an error or would like to re-apply after addressing the feedback above, please feel free to reach out to support.</p>
       `,
     });
-  } catch (mailErr) {
-    console.error(
-      "Database updated but rejection email failed to dispatch:",
-      mailErr,
-    );
-  } */
+  } catch (mailErr) {}
+  */
 
   revalidatePath("/platform/partners");
   return { success: true };

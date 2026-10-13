@@ -2,6 +2,9 @@
 
 import { pool } from "./db";
 import { sendEmail } from "./email";
+import { generatePartnerApplicationEmailHtml } from "./utils/mails/partner-application";
+import { generatePartnerCredentialsEmailHtml } from "./utils/mails/partner-credentials";
+import { generatePartnerRejectionEmailHtml } from "./utils/mails/partner-rejection";
 
 // Map delivery expectations contextually
 const DELIVERY_DAYS_MAP: Record<string, string> = {
@@ -95,7 +98,16 @@ export async function sendPartnerRegistrationEmail({
   applicationId,
 }: PartnerOnboardingEmailOptions) {
   try {
-    const emailHtml = `
+    // Generate new branded HTML template
+    const emailHtml = generatePartnerApplicationEmailHtml({
+      companyName,
+      firstName,
+      applicationId,
+      email,
+    });
+
+    /* [OLD TEMPLATE COMMENTED OUT]
+    const oldEmailHtml = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 25px; border-radius: 12px; color: #1f2937;">
         <h2 style="color: #ea580c; text-align: center; margin-bottom: 20px;">Partner Application Received!</h2>
         <p>Dear ${firstName},</p>
@@ -124,6 +136,7 @@ export async function sendPartnerRegistrationEmail({
         </p>
       </div>
     `;
+    */
 
     await sendEmail({
       to: email,
@@ -177,7 +190,21 @@ export async function sendPartnerApprovalEmail({
     const loginLabel = sameAccount ? "Password" : "Store Owner Password";
     const loginEmailLabel = sameAccount ? "Login Email" : "Store Owner Login Email";
 
-    const emailHtml = `
+    // Generate new branded HTML credentials template
+    const emailHtml = generatePartnerCredentialsEmailHtml({
+      firstName: firstName || "Partner",
+      companyName: companyName || undefined,
+      applicationId: applicationId || undefined,
+      username: accountEmail,
+      tempPassword: loginPassword,
+      loginEmailLabel,
+      loginPasswordLabel: loginLabel,
+      adminLoginEmail: !sameAccount ? adminLoginEmail : undefined,
+      adminPassword: !sameAccount ? adminPassword : undefined,
+    });
+
+    /* [OLD TEMPLATE COMMENTED OUT]
+    const oldEmailHtml = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; padding: 25px; border-radius: 12px; color: #1f2937;">
         <h2 style="color: #ea580c; text-align: center; margin-bottom: 20px;">Your Store is Approved!</h2>
         <p>Hello ${firstName || "Partner"},</p>
@@ -194,6 +221,7 @@ export async function sendPartnerApprovalEmail({
         </p>
       </div>
     `;
+    */
 
     await sendEmail({
       to: email,
@@ -215,6 +243,54 @@ export async function sendPartnerApprovalEmail({
   } catch (error) {
     console.error(
       `[Partner Approval Email Failure] to=${email} applicationId=${applicationId || "n/a"}`,
+      error,
+    );
+    return { success: false, error };
+  }
+}
+
+interface PartnerRejectionEmailOptions {
+  email: string;
+  companyName?: string;
+  firstName?: string;
+  applicationId?: string;
+  reason?: string;
+}
+
+export async function sendPartnerRejectionEmail({
+  email,
+  companyName,
+  firstName,
+  applicationId,
+  reason,
+}: PartnerRejectionEmailOptions) {
+  try {
+    const emailHtml = generatePartnerRejectionEmailHtml({
+      email,
+      companyName,
+      firstName: firstName || "Partner",
+      applicationId: applicationId || undefined,
+      reason,
+    });
+
+    await sendEmail({
+      to: email,
+      cc: [
+        "cheila.lopes@itsolutionshub2010.com",
+        "ahmed.mehmood@itsolutionshub2010.com",
+      ],
+      subject: `Update over uw Asian Spices partneraanvraag${applicationId ? ` - ${applicationId}` : ""}`,
+      html: emailHtml,
+      fromAccount: "partners",
+    });
+
+    console.log(
+      `[Partner Rejection Email Sent] to=${email} applicationId=${applicationId || "n/a"}`,
+    );
+    return { success: true };
+  } catch (error) {
+    console.error(
+      `[Partner Rejection Email Failure] to=${email} applicationId=${applicationId || "n/a"}`,
       error,
     );
     return { success: false, error };

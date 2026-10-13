@@ -1,6 +1,5 @@
 // core/email.ts
 import nodemailer from "nodemailer";
-
 interface EmailOptions {
   to: string;
   subject: string;
@@ -14,15 +13,17 @@ interface EmailOptions {
     contentType?: string;
   }>;
 }
-
+function cleanVal(v?: string) {
+  return (v || "").replace(/^['"]|['"]$/g, "").trim();
+}
 const SMTP_PROFILES = {
   default: {
     host: "mail.asianspices.online",
     port: 465,
     secure: true,
     auth: {
-      user: process.env.SMTP_ORDER_USER || "order@asianspices.online",
-      pass: process.env.SMTP_ORDER_PASS || "",
+      user: cleanVal(process.env.SMTP_ORDER_USER) || "order@asianspices.online",
+      pass: cleanVal(process.env.SMTP_ORDER_PASS) || "",
     },
     fromAddress: '"Asian Spices Orders" <order@asianspices.online>',
   },
@@ -31,8 +32,8 @@ const SMTP_PROFILES = {
     port: 465,
     secure: true,
     auth: {
-      user: process.env.SMTP_ORDER_USER || "order@asianspices.online",
-      pass: process.env.SMTP_ORDER_PASS || "",
+      user: cleanVal(process.env.SMTP_ORDER_USER) || "order@asianspices.online",
+      pass: cleanVal(process.env.SMTP_ORDER_PASS) || "",
     },
     fromAddress: '"Asian Spices Orders" <order@asianspices.online>',
   },
@@ -41,41 +42,36 @@ const SMTP_PROFILES = {
     port: 465,
     secure: true,
     auth: {
-      user: process.env.SMTP_FINANCE_USER || "finance@asianspices.online",
-      pass: process.env.SMTP_FINANCE_PASS || "",
+      user: cleanVal(process.env.SMTP_FINANCE_USER) || "finance@asianspices.online",
+      pass: cleanVal(process.env.SMTP_FINANCE_PASS) || "",
     },
     fromAddress: '"Asian Spices Finance" <finance@asianspices.online>',
   },
-
   partners: {
     host: "mail.asianspices.online",
     port: 465,
     secure: true,
     auth: {
-      user: process.env.SMTP_PARTNERS_USER || "partners@asianspices.online",
-      pass: process.env.SMTP_PARTNERS_PASS || "",
+      user: cleanVal(process.env.SMTP_PARTNERS_USER) || "partners@asianspices.online",
+      pass: cleanVal(process.env.SMTP_PARTNERS_PASS) || "",
     },
     fromAddress: '"Asian Spices Partners" <partners@asianspices.online>',
   },
-  
   support: {
     host: "mail.asianspices.online",
     port: 465,
     secure: true,
     auth: {
-      user: process.env.SMTP_SUPPORT_USER || "support@asianspices.online",
-      pass: process.env.SMTP_SUPPORT_PASS || "",
+      user: cleanVal(process.env.SMTP_SUPPORT_USER) || "support@asianspices.online",
+      pass: cleanVal(process.env.SMTP_SUPPORT_PASS) || "",
     },
     fromAddress: '"Asian Spices Support" <support@asianspices.online>',
   },
 };
-
 type ProfileKey = keyof typeof SMTP_PROFILES;
 const transporterCache = new Map<string, nodemailer.Transporter>();
-
 function getTransporter(profileKey: ProfileKey) {
   const profile = SMTP_PROFILES[profileKey] || SMTP_PROFILES.default;
-
   if (!transporterCache.has(profileKey)) {
     // NOTE: pooling is intentionally OFF. Pooled transporters keep SMTP sockets
     // open; with dev hot-reloads (and other apps on this machine) those idle
@@ -98,13 +94,11 @@ function getTransporter(profileKey: ProfileKey) {
     } as any);
     transporterCache.set(profileKey, transporter);
   }
-
   return {
     transporter: transporterCache.get(profileKey)!,
     fromAddress: profile.fromAddress,
   };
 }
-
 export async function sendEmail({
   to,
   subject,
@@ -117,10 +111,11 @@ export async function sendEmail({
   const profileKey: ProfileKey = SMTP_PROFILES[fromAccount]
     ? fromAccount
     : "default";
- 
-  // const defaultCC = ["admin@asianspices.online", "backup@asianspices.online"];
-  // const finalCC = cc ? (Array.isArray(cc) ? [...cc, ...defaultCC] : [cc, ...defaultCC]) : defaultCC;
-
+  // IS_TEST_EMAIL logic: Automatically prepends [TEST] to subject if enabled
+  const isTest = cleanVal(process.env.IS_TEST_EMAIL) === "true";
+  const finalSubject = isTest && !subject.trim().toUpperCase().startsWith("[TEST]")
+    ? `[TEST] ${subject}`
+    : subject;
   // Plain-text alternative improves deliverability (spam scoring) for HTML-only mail
   const text = html
     .replace(/<style[\s\S]*?<\/style>/gi, "")
@@ -130,25 +125,20 @@ export async function sendEmail({
     .replace(/&nbsp;/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
-
   const buildOptions = (fromAddress: string) => ({
     from: fromAddress,
     to,
     cc,
-    subject,
+    subject: finalSubject,
     html,
     text,
     replyTo,
     attachments,
   });
-
-  // Attempt order (with a short back-off between attempts so a transient
-  // network/TLS blip or a connection-limit rejection doesn't take out every
-  // attempt at once):
+  // Attempt order:
   //  1. cached transporter for the requested profile (465, implicit TLS)
   //  2. fresh connection, same profile, 465 implicit TLS
-  //  3. fresh connection, same profile, 587 STARTTLS — tolerates a server that
-  //     answers in plaintext first ("ssl3_get_record:wrong version number")
+  //  3. fresh connection, same profile, 587 STARTTLS
   //  4. fresh connection via the default profile, 465
   //  5. fresh connection via the default profile, 587 STARTTLS
   type Attempt = {
@@ -158,8 +148,6 @@ export async function sendEmail({
     starttls?: boolean;
     delayMs: number;
   };
-  // Delays grow so that a "421 Too many concurrent SMTP connections" window
-  // (idle sockets being released by the server) has time to clear.
   const attempts: Attempt[] = [
     { label: `${profileKey} (465)`, key: profileKey, fresh: false, delayMs: 0 },
     { label: `${profileKey} (fresh 465)`, key: profileKey, fresh: true, delayMs: 3000 },
@@ -171,13 +159,10 @@ export async function sendEmail({
       { label: "default (fresh 587 STARTTLS fallback)", key: "default", fresh: true, starttls: true, delayMs: 10000 },
     );
   }
-
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
   let lastError: unknown = null;
   for (const attempt of attempts) {
     if (attempt.delayMs) await sleep(attempt.delayMs);
-
     const profile = SMTP_PROFILES[attempt.key];
     const transporter = attempt.fresh
       ? nodemailer.createTransport({
@@ -191,11 +176,10 @@ export async function sendEmail({
           socketTimeout: 30000,
         } as any)
       : getTransporter(attempt.key).transporter;
-
     try {
       const info = await transporter.sendMail(buildOptions(profile.fromAddress));
       console.log(
-        `[Email Sent] ID: ${info.messageId} via [${attempt.label}] to=${Array.isArray(to) ? to.join(",") : to} accepted=${JSON.stringify(info.accepted)} rejected=${JSON.stringify(info.rejected)}`,
+        `[Email Sent] ID: ${info.messageId} via [${attempt.label}] | To: ${Array.isArray(to) ? to.join(",") : to} | Subject: ${finalSubject}`,
       );
       if (attempt.fresh) transporter.close();
       return { success: true, messageId: info.messageId };
@@ -207,7 +191,6 @@ export async function sendEmail({
       );
       if (attempt.fresh) transporter.close();
       if (!attempt.fresh) {
-        // Drop the possibly-broken pooled transporter so the next call rebuilds it
         try {
           getTransporter(attempt.key).transporter.close();
         } catch {}
@@ -215,7 +198,6 @@ export async function sendEmail({
       }
     }
   }
-
   throw new Error(
     `Email dispatch failed via SMTP profile: ${profileKey} (${
       lastError instanceof Error ? lastError.message : String(lastError)

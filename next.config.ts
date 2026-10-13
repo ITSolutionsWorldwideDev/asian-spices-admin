@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 import { join } from "path";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: __dirname,
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: "20mb",
