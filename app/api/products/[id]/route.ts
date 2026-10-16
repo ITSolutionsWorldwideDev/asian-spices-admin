@@ -9,6 +9,8 @@ import {
   uniqueViolationResponse,
 } from "@/lib/products/uniqueCodes";
 
+const DEFAULT_STORE_ID = "afef3fd5-c31a-440a-ae56-99eca0b24359";
+
 /* ------------------ GET (Single Product) ------------------ */
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await requirePlatformAdmin();
@@ -145,6 +147,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         );
       }
     }
+
+    // Automatically update price in Asian Spices Head Office store only
+    await client.query(
+      `
+      UPDATE store_product_catalog
+      SET price = COALESCE($1, 0),
+          updated_at = NOW()
+      WHERE product_id = $2
+        AND store_id = $3
+      `,
+      [body.base_price, id, DEFAULT_STORE_ID],
+    );
 
     // Assign to any newly selected stores (does not remove existing assignments)
     const storeIds: string[] = Array.isArray(body.store_ids)
