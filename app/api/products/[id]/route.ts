@@ -152,7 +152,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     await client.query(
       `
       UPDATE store_product_catalog
-      SET price = COALESCE($1, 0),
+      SET price = COALESCE($1::numeric, 0),
           updated_at = NOW()
       WHERE product_id = $2
         AND store_id = $3
@@ -174,7 +174,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       await client.query(
         `
         INSERT INTO store_product_catalog (store_id, product_id, price, quantity, status)
-        SELECT s.id, $1, COALESCE($2, 0), COALESCE($3, 0), 1
+        SELECT s.id, $1, COALESCE($2::numeric, 0), COALESCE($3::integer, 0), 1
         FROM unnest($4::uuid[]) AS s(id)
         ON CONFLICT (store_id, product_id) DO NOTHING
         `,
