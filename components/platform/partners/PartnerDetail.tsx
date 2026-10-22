@@ -113,6 +113,9 @@ export default function PartnerDetail({ partner }: any) {
       {/* 🏢 COMPANY INFO */}
       <Section title="Company Info">
         <Field label="Company Name" value={partner.company_name} />
+        {partner.store_name && (
+          <Field label="Associated Store" value={partner.store_name} />
+        )}
         <Field label="KVK Number" value={partner.kvk_number} />
         <Field label="VAT Number" value={partner.vat_number} />
         <Field

@@ -113,6 +113,7 @@ export async function POST(req: NextRequest, { params }: any) {
         UPDATE store_orders
         SET order_status = 'cancelled',
             routing_status = 'cancelled',
+            fulfillment_status = 'close',
             current_store_id = NULL
         WHERE id = $1
       `,

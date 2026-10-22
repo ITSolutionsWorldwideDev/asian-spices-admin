@@ -31,16 +31,17 @@ export default async function PartnersPage({
     values.push(`%${q}%`);
     where.push(`
       (
-        company_name ILIKE $${values.length}
-        OR business_email_address ILIKE $${values.length}
-        OR application_id ILIKE $${values.length}
+        pr.company_name ILIKE $${values.length}
+        OR pr.business_email_address ILIKE $${values.length}
+        OR pr.application_id ILIKE $${values.length}
+        OR st.store_name ILIKE $${values.length}
       )
     `);
   }
 
   if (status) {
     values.push(status);
-    where.push(`status = $${values.length}`);
+    where.push(`pr.status = $${values.length}`);
   }
 
   const whereClause = where.length ? `WHERE ${where.join(" AND ")}` : "";
@@ -52,16 +53,23 @@ export default async function PartnersPage({
   const { rows } = await pool.query(
     `
     SELECT 
-      partner_id,
-      application_id,
-      company_name,
-      business_email_address,
-      status,
-      created_at,
+      pr.partner_id,
+      pr.application_id,
+      pr.company_name,
+      pr.business_email_address,
+      pr.status,
+      pr.created_at,
+      st.store_name,
       COUNT(*) OVER() AS total
-    FROM partner_registration
+    FROM partner_registration pr
+    LEFT JOIN LATERAL (
+      SELECT STRING_AGG(s.name, ', ' ORDER BY s.created_at ASC) AS store_name
+      FROM stores s
+      WHERE s.partner_registration_id = pr.partner_id::text
+         OR (pr.application_id IS NOT NULL AND s.partner_registration_id = pr.application_id)
+    ) st ON true
     ${whereClause}
-    ORDER BY created_at DESC
+    ORDER BY pr.created_at DESC
     LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
     `,
     values,

@@ -25,9 +25,16 @@ export default async function PartnerDetailPage({
 
   const { rows } = await pool.query(
     `
-    SELECT *
-    FROM partner_registration
-    WHERE partner_id = $1
+    SELECT pr.*,
+           st.store_name
+    FROM partner_registration pr
+    LEFT JOIN LATERAL (
+      SELECT STRING_AGG(s.name, ', ' ORDER BY s.created_at ASC) AS store_name
+      FROM stores s
+      WHERE s.partner_registration_id = pr.partner_id::text
+         OR (pr.application_id IS NOT NULL AND s.partner_registration_id = pr.application_id)
+    ) st ON true
+    WHERE pr.partner_id = $1
     `,
     [id],
   );
