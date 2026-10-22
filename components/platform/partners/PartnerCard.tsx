@@ -28,6 +28,12 @@ export default function PartnerCard({ partner, onApprove, onReject }: any) {
         <p className="text-xs text-gray-500">
           Applicant ID: {partner.application_id}
         </p>
+
+        {partner.store_name && (
+          <p className="text-xs text-gray-500">
+            Store: {partner.store_name}
+          </p>
+        )}
       </div>
 
       <div className="flex justify-between items-center mt-4">

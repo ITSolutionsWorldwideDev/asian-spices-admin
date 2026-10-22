@@ -39,7 +39,7 @@ export const productSchema = z
 
     base_price: z.preprocess(
       toNumber,
-      z.number().min(1, "Base price must be greater than 0"),
+      z.number().gt(0, "Base price must be greater than 0"),
     ),
     purchase_price: z.preprocess(toNumber, z.number().nullable().optional()),
     sale_price: z.preprocess(toNumber, z.number().nullable().optional()),
