@@ -483,7 +483,7 @@ async function _legacyAssignMultiStore(client: any, orderId: string) {
       continue;
     }
 
-    const { rows: stores } = await client.query(
+    const { rows: candidateStores } = await client.query(
       `
       SELECT
         spc.store_id,
@@ -507,6 +507,14 @@ async function _legacyAssignMultiStore(client: any, orderId: string) {
       `,
       [item.product_id, order.country],
     );
+
+    // skip stores that are closed right now, same rule as the single-store path
+    const stores = [];
+    for (const store of candidateStores) {
+      if (await isStoreOpenNow(client, store.store_id)) {
+        stores.push(store);
+      }
+    }
 
     let remaining = remainingQty;
 
