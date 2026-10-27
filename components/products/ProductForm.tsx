@@ -1053,7 +1053,7 @@ export default function ProductFormComponent({
 
                   <div>
                     <label className="block mb-1 text-sm font-medium text-gray-700">
-                      Base Price (Incl. Tax){" "}
+                      Base Price (Excl. Vat){" "}
                       <span className="text-red-500">*</span>
                     </label>
                     <input
