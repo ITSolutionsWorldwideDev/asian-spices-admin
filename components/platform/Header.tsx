@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronsLeft } from "react-feather";
 import { signOut, useSession } from "next-auth/react";
-import { all_routes as route } from "@/data/all_routes";
+import { all_routes as route } from "@/data/navigation/all_routes";
 
 export default function PlatformHeader() {
   const pathname = usePathname();

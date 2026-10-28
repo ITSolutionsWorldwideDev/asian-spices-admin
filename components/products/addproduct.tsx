@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Select, { SingleValue } from "react-select";
 import { Info, LifeBuoy, Figma, PlusCircle, X } from "react-feather";
-import TextEditorNew from "@/core/common/texteditor/texteditor";
+import TextEditorNew from "@/components/common/texteditor/texteditor";
 import { memo } from "react";
 
 const MemoTextEditor = memo(TextEditorNew);
@@ -12,8 +12,8 @@ const MemoTextEditor = memo(TextEditorNew);
 import Image from "next/image";
 import Link from "next/link";
 
-import { all_routes } from "@/data/all_routes";
-import { useToast } from "@/core/ui";
+import { all_routes } from "@/data/navigation/all_routes";
+import { useToast } from "@/components/ui";
 import { useRouter } from "next/navigation";
 
 /* ------------------ Types ------------------ */

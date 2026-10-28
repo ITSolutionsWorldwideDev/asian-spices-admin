@@ -9,9 +9,9 @@ import { ArrowLeft } from "react-feather";
 import { useEffect, useState, useTransition } from "react";
 import { saveRecipe } from "@/components/platform/recipes/actions";
 import RecipeEngagement from "@/components/platform/recipes/RecipeEngagement";
-import TextEditorNew from "@/core/common/texteditor/texteditor";
+import TextEditorNew from "@/components/common/texteditor/texteditor";
 
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 import { extractYoutubeData } from "@/core/utils";
 
 export default function RecipeForm({ recipe }: { recipe?: any }) {

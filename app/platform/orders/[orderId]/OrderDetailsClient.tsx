@@ -7,12 +7,12 @@ import OrderTimeline from "@/components/platform/orders/OrderTimeline";
 import { CheckCircle, AlertTriangle, XCircle } from "lucide-react";
 import OrderCountdown from "@/components/store/OrderCountdown";
 
-import SmartActionButton from "@/components/SmartActionButton";
-import { getOrderActionState } from "@/lib/order-actions";
+import SmartActionButton from "@/components/shared/SmartActionButton";
+import { getOrderActionState } from "@/lib/orders/actions";
 
-import { useToast } from "@/core/ui";
-import LoaderOverlay from "@/components/loader-overlay";
-import StoreOrderFulfillment from "@/components/StoreOrderFulfillment";
+import { useToast } from "@/components/ui";
+import LoaderOverlay from "@/components/layout/loader-overlay";
+import StoreOrderFulfillment from "@/components/shared/StoreOrderFulfillment";
 
 export default function OrderDetailsClient({ orderId }: { orderId: string }) {
   const [order, setOrder] = useState<any>(null);

@@ -13,7 +13,7 @@ import {
   Truck,
   AlertTriangle,
 } from "react-feather";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 import Link from "next/link";
 
 type OrderItem = {

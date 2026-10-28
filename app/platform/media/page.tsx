@@ -5,7 +5,7 @@
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 
 import { UploadDropzone } from "@uploadthing/react";
 import type { MediaRouter } from "@/app/api/uploadthing/core";
@@ -640,7 +640,7 @@ export default function MediaLibrary() {
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 
 import { UploadButton, UploadDropzone } from "@uploadthing/react";
 import type { MediaRouter } from "@/app/api/uploadthing/core";

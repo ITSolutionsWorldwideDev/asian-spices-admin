@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 import { suggestedDiscountFromLikes } from "@/lib/recipes/like-discount-utils";
 
 type RecipeRow = {

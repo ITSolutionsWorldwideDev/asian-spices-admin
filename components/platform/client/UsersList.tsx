@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { TbCirclePlus, TbTrash, TbEdit, TbSearch, TbChevronLeft, TbChevronRight } from "react-icons/tb";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 
 type User = {
   id: string;

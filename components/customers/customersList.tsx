@@ -2,11 +2,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Table from "@/core/common/pagination/datatable";
+import Table from "@/components/common/pagination/datatable";
 import Link from "next/link";
 import { Eye } from "react-feather";
 import CustomerFilterBar from "./CustomerFilterBar";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 
 type Customer = {
   id: string;

@@ -12,7 +12,7 @@ import {
   Printer,
   Truck,
 } from "react-feather";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 import Link from "next/link";
 
 type OrderItem = {

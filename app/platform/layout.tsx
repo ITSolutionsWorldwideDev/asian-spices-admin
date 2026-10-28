@@ -3,7 +3,7 @@
 import PlatformHeader from "@/components/platform/Header";
 import PlatformSidebar from "@/components/platform/Sidebar";
 import { requirePlatformAdmin } from "@/lib/auth/guards";
-import { ToastProvider } from "@/core/ui";
+import { ToastProvider } from "@/components/ui";
 
 import "../layout.css";
 

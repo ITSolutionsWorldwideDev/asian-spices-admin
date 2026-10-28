@@ -11,14 +11,14 @@ import { Info, LifeBuoy, Figma, PlusCircle, X } from "react-feather";
 import Image from "next/image";
 import Link from "next/link";
 
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 import { useRouter } from "next/navigation";
 
 import { useForm, Controller, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { productSchema } from "./FormSections/product.schema";
 
-import TextEditorNew from "@/core/common/texteditor/texteditor";
+import TextEditorNew from "@/components/common/texteditor/texteditor";
 
 import RHFSelect from "./FormSections/RHFSelect";
 import { productSlug, slugify } from "@/lib/utils/slugify";

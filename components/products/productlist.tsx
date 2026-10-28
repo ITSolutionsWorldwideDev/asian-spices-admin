@@ -2,14 +2,14 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import Table from "@/core/common/pagination/datatable";
+import Table from "@/components/common/pagination/datatable";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Download, Edit, Eye, Trash2 } from "react-feather";
 import { TbCirclePlus, TbTrash } from "react-icons/tb";
 import FilterBar from "./FilterBar";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 import ProductImportModal from "./ProductImportModal";
 import DiscountImportModal from "./DiscountImportModal";
 

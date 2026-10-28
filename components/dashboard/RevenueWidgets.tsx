@@ -12,7 +12,7 @@ import {
   HiOutlineArrowDown
 } from "react-icons/hi";
 
-import { all_routes } from "@/data/all_routes";
+import { all_routes } from "@/data/navigation/all_routes";
 
 interface RevenueWidgetProps {
   title: string;

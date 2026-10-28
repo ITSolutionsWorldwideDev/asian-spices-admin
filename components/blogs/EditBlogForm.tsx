@@ -3,8 +3,8 @@
 
 import { useEffect, useState, memo } from "react";
 import { useRouter } from "next/navigation";
-import { Button, useToast } from "@/core/ui";
-import TextEditorNew from "@/core/common/texteditor/texteditor";
+import { Button, useToast } from "@/components/ui";
+import TextEditorNew from "@/components/common/texteditor/texteditor";
 import FeaturedImageUpload from "@/components/media/FeaturedImageUpload";
 
 const MemoTextEditor = memo(TextEditorNew);

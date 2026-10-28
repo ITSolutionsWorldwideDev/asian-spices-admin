@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import Table from "@/core/common/pagination/datatable";
+import Table from "@/components/common/pagination/datatable";
 
 import { Edit, Trash2 } from "react-feather";
 
@@ -14,7 +14,7 @@ import { TbCirclePlus, TbTrash } from "react-icons/tb";
 
 import FiltersBar from "./FiltersBar";
 
-import { Button, useToast } from "@/core/ui";
+import { Button, useToast } from "@/components/ui";
 
 type RecipeCategory = {
   id: string;

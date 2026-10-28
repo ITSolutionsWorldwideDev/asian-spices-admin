@@ -2,9 +2,9 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import Table from "@/core/common/pagination/datatable";
+import Table from "@/components/common/pagination/datatable";
 import { Trash2, PlusCircle, Tag } from "react-feather";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 import { TbTrash } from "react-icons/tb";
 
 type PromoCode = {

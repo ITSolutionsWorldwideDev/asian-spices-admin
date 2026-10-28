@@ -4,7 +4,7 @@
 import { useTransition } from "react";
 // import { assignPlanToStore } from "@/app/(platform)/platform/billing/actions";
 import { assignPlanToStore } from "@/app/platform/billing/actions";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 
 export default function StorePlanSelectorClient({
   storeId,
@@ -57,7 +57,7 @@ export default function StorePlanSelectorClient({
 /* "use client";
 
 import { useTransition } from "react";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 import { assignPlanToStore } from "@/app/(platform)/billing/actions";
 
 type Props = {

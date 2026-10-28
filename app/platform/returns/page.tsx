@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import ReturnsFilterBar from "@/components/platform/returns/ReturnsFilterBar";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 import { RefreshCw, ArrowLeftRight, CheckCircle, XCircle } from "lucide-react";
 
 export default function AdminReturnsPage() {

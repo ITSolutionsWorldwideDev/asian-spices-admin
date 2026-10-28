@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import OrderFilterBar from "@/components/orders/FilterBar";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);

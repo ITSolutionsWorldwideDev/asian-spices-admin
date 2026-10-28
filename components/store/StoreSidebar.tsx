@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import PerfectScrollbar from "react-perfect-scrollbar";
 import "react-perfect-scrollbar/dist/css/styles.css";
-import { SidebarData } from "@/data/sidebar_data";
+import { SidebarData } from "@/data/navigation/sidebar_data";
 import { ChevronsLeft } from "react-feather";
 
 interface SidebarProps {

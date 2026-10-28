@@ -7,8 +7,8 @@ import {
   requireStorePermission2,
 } from "@/lib/auth/guards";
 import { PERMISSIONS } from "@/lib/auth/permissions";
-import { StoreProvider } from "@/components/store-context";
-import { ToastProvider } from "@/core/ui";
+import { StoreProvider } from "@/components/layout/store-context";
+import { ToastProvider } from "@/components/ui";
 
 import "../../layout.css";
 import StoreShell from "@/components/store/StoreShell";

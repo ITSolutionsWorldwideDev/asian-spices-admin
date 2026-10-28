@@ -4,8 +4,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 // import { slugify } from "@/lib/slugify";
-import { Button, useToast } from "@/core/ui";
-import TextEditorNew from "@/core/common/texteditor/texteditor";
+import { Button, useToast } from "@/components/ui";
+import TextEditorNew from "@/components/common/texteditor/texteditor";
 import FeaturedImageUpload from "@/components/media/FeaturedImageUpload";
 import { memo } from "react";
 import Link from "next/link";

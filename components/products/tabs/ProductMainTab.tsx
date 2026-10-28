@@ -4,7 +4,7 @@
 
 import { Controller } from "react-hook-form";
 import RHFSelect from "../FormSections/RHFSelect";
-import TextEditorNew from "@/core/common/texteditor/texteditor";
+import TextEditorNew from "@/components/common/texteditor/texteditor";
 
 interface Props {
   register: any;

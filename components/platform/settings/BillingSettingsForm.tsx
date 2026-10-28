@@ -4,7 +4,7 @@
 
 import { useState, useTransition } from "react";
 import { updatePlatformSetting } from "./actions";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 
 type Props = {
   initialValues: {

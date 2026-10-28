@@ -3,13 +3,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Table from "@/core/common/pagination/datatable";
-import { all_routes } from "@/data/all_routes";
+import Table from "@/components/common/pagination/datatable";
+import { all_routes } from "@/data/navigation/all_routes";
 
 import Link from "next/link";
 import { Eye } from "react-feather";
 import FilterBar from "./FilterBar";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 
 type Order = {
   order_id: string;

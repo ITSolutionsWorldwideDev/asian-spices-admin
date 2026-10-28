@@ -11,7 +11,7 @@ import {
   TbCircleFilled,
 } from "react-icons/tb";
 
-import { all_routes } from "@/data/all_routes";
+import { all_routes } from "@/data/navigation/all_routes";
 
 type Props = {
   route?: typeof all_routes; // optional override, default used if not provided

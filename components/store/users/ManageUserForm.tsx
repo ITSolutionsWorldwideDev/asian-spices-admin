@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { userSchema, type UserFormValues } from "@/lib/validations/user";
 import { useRouter } from "next/navigation";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 import { useState } from "react";
 import { SubmitHandler } from "react-hook-form";
 

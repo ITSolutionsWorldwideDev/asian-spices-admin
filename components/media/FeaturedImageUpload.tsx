@@ -3,7 +3,7 @@
 
 import { UploadButton } from "@uploadthing/react";
 import type { MediaRouter } from "@/app/api/uploadthing/core";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 import { normalizeFilesForUpload } from "@/lib/media/normalizeImageForUpload";
 import { toCleanImageUrl } from "@/lib/media/toCleanImageUrl";
 

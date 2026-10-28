@@ -5,7 +5,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { RefreshCw, CheckCircle, AlertTriangle, Package } from "lucide-react";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 
 export default function StoreReturnsInspectionPage() {
   const { tenant } = useParams();

@@ -9,8 +9,8 @@ export {
   INSTAGRAM_ICON_BASE64,
   FACEBOOK_ICON_BASE64,
   YOUTUBE_ICON_BASE64,
-} from '@/core/partner-icons-data';
-export { ASIAN_SPICES_LOGO_BASE64 } from '@/core/partner-logo-data';
+} from '@/data/partners/partner-icons-data';
+export { ASIAN_SPICES_LOGO_BASE64 } from '@/data/partners/partner-logo-data';
 
 const CDN_BASE = 'https://www.asianspices.online/images';
 

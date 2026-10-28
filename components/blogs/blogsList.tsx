@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import { TbCirclePlus, TbTrash } from "react-icons/tb";
 import FilterBar from "./FilterBar";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 import Link from "next/link";
 import BlogCard from "./BlogCard";
 

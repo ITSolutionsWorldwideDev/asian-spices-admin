@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useToast } from "@/core/ui";
+import { useToast } from "@/components/ui";
 import { createPlan } from "../actions";
 
 export default function PlanForm() {

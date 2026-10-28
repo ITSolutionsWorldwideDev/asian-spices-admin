@@ -1,6 +1,6 @@
 // app/layout.tsx
 import type { Metadata } from "next";
-import SessionProviderWrapper from "@/components/SessionProviderWrapper";
+import SessionProviderWrapper from "@/components/layout/SessionProviderWrapper";
 import { AuthedGenieChatWidget } from "@/components/chatbot/AuthedGenieChatWidget";
 import { Geist, Geist_Mono } from "next/font/google";
 

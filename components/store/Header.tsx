@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronsLeft } from "react-feather";
 import { signOut, useSession } from "next-auth/react";
-import { useStore } from "../store-context";
+import { useStore } from "@/components/layout/store-context";
 
 interface HeaderProps {
   collapsed: boolean;

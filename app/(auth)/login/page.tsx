@@ -1,5 +1,5 @@
 // app/(auth)/login/page.tsx
-import SigninComponent from "@/components/pages/login/signin";
+import SigninComponent from "@/components/auth/signin";
 
 export default function Signin(){
     return(

@@ -1,10 +1,10 @@
-import { ASIAN_SPICES_LOGO_BASE64 } from '@/core/partner-logo-data';
+import { ASIAN_SPICES_LOGO_BASE64 } from '@/data/partners/partner-logo-data';
 import {
   TIKTOK_ICON_BASE64,
   INSTAGRAM_ICON_BASE64,
   FACEBOOK_ICON_BASE64,
   YOUTUBE_ICON_BASE64,
-} from '@/core/partner-icons-data';
+} from '@/data/partners/partner-icons-data';
 
 export interface EmailFooterOptions {
   logoUrl?: string;
