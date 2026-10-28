@@ -6,6 +6,7 @@ import Table from "@/components/common/pagination/datatable";
 import FilterBar from "./FilterBar";
 import { CatalogProduct } from "@/core/types";
 import { useToast } from "@/components/ui";
+import { stripHtml } from "@/core/utils";
 import debounce from "lodash.debounce";
 
 /* ------------------------------------
@@ -746,12 +747,15 @@ export default function ProductsCatalogComponent() {
 
                       <p className="text-sm text-gray-600">
                         Description:{" "}
-                        {productDetail.description || "No description"}
+                        {stripHtml(productDetail.description) || "No description"}
                       </p>
 
-                      <p className="text-sm text-gray-600">
-                        Health Benefits: {productDetail.health_benefits || ""}
-                      </p>
+                      {stripHtml(productDetail.health_benefits) ? (
+                        <p className="text-sm text-gray-600">
+                          Health Benefits:{" "}
+                          {stripHtml(productDetail.health_benefits)}
+                        </p>
+                      ) : null}
 
                       <div className="flex justify-between text-sm">
                         <span>Price:</span>

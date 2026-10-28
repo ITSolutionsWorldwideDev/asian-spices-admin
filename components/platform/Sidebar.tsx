@@ -1,7 +1,7 @@
 // components/platform/Sidebar.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import PerfectScrollbar from "react-perfect-scrollbar";
@@ -266,8 +266,26 @@ export default function PlatformSidebar() {
 
   const [subOpen, setSubOpen] = useState("");
   const [subSidebar, setSubSidebar] = useState("");
-  const [toggle, setToggle] = useState(false);
+  const [isMini, setIsMini] = useState(false);
   const [expandMenus, setExpandMenus] = useState(false);
+  const isHoverDisabledRef = useRef(false);
+
+  useEffect(() => {
+    setIsMini(document.body.classList.contains("mini-sidebar"));
+
+    const handleSync = () => {
+      const isMiniActive = document.body.classList.contains("mini-sidebar");
+      setIsMini(isMiniActive);
+      if (isMiniActive) {
+        document.body.classList.remove("expand-menu");
+        setExpandMenus(false);
+        isHoverDisabledRef.current = true;
+      }
+    };
+
+    window.addEventListener("sidebar-toggle", handleSync);
+    return () => window.removeEventListener("sidebar-toggle", handleSync);
+  }, []);
 
   const toggleSidebar = (title: string) => {
     setSubOpen(subOpen === title ? "" : title);
@@ -278,16 +296,24 @@ export default function PlatformSidebar() {
   };
 
   const handleSidebar = () => {
-    document.body.classList.toggle("mini-sidebar");
-    setToggle(!toggle);
+    const isNowMini = document.body.classList.toggle("mini-sidebar");
+    if (isNowMini) {
+      document.body.classList.remove("expand-menu");
+      setExpandMenus(false);
+      isHoverDisabledRef.current = true;
+    }
+    window.dispatchEvent(new Event("sidebar-toggle"));
   };
 
   const expandMenuOpen = () => {
-    setExpandMenus(true);
-    document.body.classList.add("expand-menu");
+    if (document.body.classList.contains("mini-sidebar") && !isHoverDisabledRef.current) {
+      setExpandMenus(true);
+      document.body.classList.add("expand-menu");
+    }
   };
 
   const expandMenuClose = () => {
+    isHoverDisabledRef.current = false;
     setExpandMenus(false);
     document.body.classList.remove("expand-menu");
   };
@@ -298,17 +324,31 @@ export default function PlatformSidebar() {
 
   return (
     <div
-      className={`sidebar pb-28 ${toggle ? "" : "active"} ${expandMenus ? "expand-menu" : ""}`}
+      className={`sidebar pb-28 ${isMini ? "" : "active"} ${expandMenus ? "expand-menu" : ""}`}
       onMouseOver={expandMenuOpen}
       onMouseLeave={expandMenuClose}
       id="sidebar"
     >
-      <div className="sidebar-logo p-3 flex items-center justify-between">
-        <Link href="/platform/dashboard" className="logo">
+      <div className={`sidebar-logo p-3 flex items-center ${isMini ? "justify-center" : "justify-between"}`}>
+        <Link href="/platform/dashboard" className={`logo ${isMini ? "hidden" : ""}`}>
           <img src="/assets/img/logo.svg" alt="Logo" />
         </Link>
-        <button onClick={handleSidebar}>
-          <ChevronsLeft />
+        <Link
+          href="/platform/dashboard"
+          className={`logo-small ${isMini ? "flex items-center justify-center w-full" : "hidden"}`}
+        >
+          <img
+            src="/assets/img/logo-small.svg"
+            alt="Logo"
+            className="h-8 w-8 object-contain"
+          />
+        </Link>
+        <button
+          onClick={handleSidebar}
+          className={`p-1 hover:bg-gray-100 rounded-md transition-colors ${isMini ? "hidden" : ""}`}
+          title="Collapse sidebar"
+        >
+          <ChevronsLeft className="w-5 h-5" />
         </button>
       </div>
       <PerfectScrollbar>

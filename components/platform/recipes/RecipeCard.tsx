@@ -54,24 +54,29 @@ export default function RecipeCard({
           {recipe.ingredients_count || 0} ingredients · {recipe.instructions_count || 0} steps
         </p>
 
-        <div className="flex gap-2 mt-5">
+        <div className="flex items-center gap-2 mt-5">
           <Link
             href={`/platform/recipes/${recipe.id}`}
-            className="btn btn-primary flex-1"
+            className="btn btn-primary !px-3 !py-1.5 text-xs text-center"
           >
             Edit
           </Link>
 
           <button
             onClick={onToggleStatus}
-            className="btn btn-secondary"
+            className="btn btn-secondary !px-2.5 !py-1.5 text-xs flex-1 whitespace-nowrap text-center font-medium"
+            title={
+              recipe.status === "published"
+                ? "Switch to Draft"
+                : "Switch to Published"
+            }
           >
-            Toggle
+            Toggle ({recipe.status === "published" ? "Draft" : "Publish"})
           </button>
 
           <button
             onClick={onDelete}
-            className="btn btn-danger"
+            className="btn btn-danger !px-3 !py-1.5 text-xs text-center"
           >
             Delete
           </button>

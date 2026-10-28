@@ -12,15 +12,29 @@ export default function PlatformHeader() {
   const pathname = usePathname();
   const { data: session } = useSession();
 
-  const [toggle, setToggle] = useState(false);
+  const [isMini, setIsMini] = useState(false);
   const [expandMenus, setExpandMenus] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
 
+  useEffect(() => {
+    setIsMini(document.body.classList.contains("mini-sidebar"));
+
+    const handleSync = () => {
+      setIsMini(document.body.classList.contains("mini-sidebar"));
+    };
+
+    window.addEventListener("sidebar-toggle", handleSync);
+    return () => window.removeEventListener("sidebar-toggle", handleSync);
+  }, []);
+
   const handleSidebar = () => {
-    document.body.classList.toggle("mini-sidebar");
-    setToggle(!toggle);
+    const isNowMini = document.body.classList.toggle("mini-sidebar");
+    if (isNowMini) {
+      document.body.classList.remove("expand-menu");
+    }
+    window.dispatchEvent(new Event("sidebar-toggle"));
   };
 
   const toggleFullscreen = () => {
@@ -37,6 +51,7 @@ export default function PlatformHeader() {
     document.body.classList.remove("slide-nav", "expand-menu");
     setExpandMenus(false);
     setMobileDropdownOpen(false);
+    setIsMini(document.body.classList.contains("mini-sidebar"));
   }, [pathname]);
 
   return (
@@ -55,9 +70,14 @@ export default function PlatformHeader() {
           {/* Desktop sidebar toggle */}
           <button
             onClick={handleSidebar}
-            className="hidden md:flex p-1 hover:bg-gray-100 rounded-md"
+            className="hidden md:flex p-1 hover:bg-gray-100 rounded-md transition-colors"
+            title={isMini ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <ChevronsLeft className="w-5 h-5" />
+            <ChevronsLeft
+              className={`w-5 h-5 transition-transform duration-300 ${
+                isMini ? "rotate-180" : ""
+              }`}
+            />
           </button>
 
           {/* Mobile menu toggle */}

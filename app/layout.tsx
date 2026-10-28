@@ -59,8 +59,8 @@ export const metadata: Metadata = {
     "inventory management, admin dashboard, bootstrap template, invoicing, estimates, business management, responsive admin, POS system",
   // author: "IT Solutions Worldwide",
   icons: {
-    icon: "favicon.png",
-    shortcut: "favicon.png", // Add shortcut icon for better support
-    apple: "favicon.png", // Optional: for Apple devices (place in `public/`)
+    icon: "/assets/img/favicon.png",
+    shortcut: "/assets/img/favicon.png",
+    apple: "/assets/img/favicon.png",
   },
 };
