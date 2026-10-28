@@ -2,6 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { pool } from "@/core/db";
+import { toCleanImageUrl } from "@/lib/media/toCleanImageUrl";
 
 import { getServerSession } from "next-auth";
 // import { authOptions } from "@/core/auth";
@@ -49,7 +50,13 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Blog not found" }, { status: 404 });
       }
 
-      return NextResponse.json(result.rows[0]);
+      const blogRow = result.rows[0];
+      return NextResponse.json({
+        ...blogRow,
+        featured_image_url: blogRow.featured_image_url
+          ? toCleanImageUrl(blogRow.featured_image_url)
+          : blogRow.featured_image_url,
+      });
     }
 
     /* -------- List categories -------- */
@@ -102,7 +109,12 @@ export async function GET(req: NextRequest) {
     ]);
 
     return NextResponse.json({
-      items: dataRes.rows,
+      items: dataRes.rows.map((row: any) => ({
+        ...row,
+        featured_image_url: row.featured_image_url
+          ? toCleanImageUrl(row.featured_image_url)
+          : row.featured_image_url,
+      })),
       totalResults: countRes.rows[0].count,
       page,
       pageSize: limit,

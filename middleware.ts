@@ -127,6 +127,11 @@ export default withAuth(
           return true;
         }
 
+        // Public product image proxy route
+        if (req.nextUrl.pathname.startsWith("/product-images/")) {
+          return true;
+        }
+
         return !!token;
       },
     },

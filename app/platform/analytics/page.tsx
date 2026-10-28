@@ -154,9 +154,12 @@ export default async function RecipesAnalyticsPage() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-4">
                             <img
-                              src={recipe.thumbnail_url || "/placeholder.png"}
+                              src={recipe.thumbnail_url || "/assets/img/icons/image.svg"}
                               alt={recipe.title}
                               className="w-16 h-16 rounded-lg object-cover border"
+                              onError={(e) => {
+                                e.currentTarget.src = "/assets/img/icons/image.svg";
+                              }}
                             />
 
                             <div>

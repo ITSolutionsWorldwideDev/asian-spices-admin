@@ -279,9 +279,12 @@ export default function RecipeCategoriesList() {
         render: (_: any, record: RecipeCategory) => (
           <div className="flex items-center gap-3">
             <img
-              src={record.image_url || "/placeholder.png"}
+              src={record.image_url || "/assets/img/icons/image.svg"}
               alt={record.name}
               className="w-12 h-12 rounded-lg object-cover border"
+              onError={(e) => {
+                e.currentTarget.src = "/assets/img/icons/image.svg";
+              }}
             />
 
             <div>

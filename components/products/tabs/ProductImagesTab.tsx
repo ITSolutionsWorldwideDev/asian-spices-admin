@@ -132,6 +132,7 @@ export default function ProductImagesTab({
                 alt={item.file_name}
                 width={250}
                 height={250}
+                unoptimized
                 className="w-full rounded"
               />
 

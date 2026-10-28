@@ -1,14 +1,9 @@
 // components/products/utils/getThumb.ts
 
+import { toCleanImageUrl } from "@/lib/media/toCleanImageUrl";
 
-export function getThumb(url: string, size = 300) {
-  if (!url) return "/placeholder.png";
+export function getThumb(url: string, _size = 300) {
+  if (!url) return "/assets/img/icons/image.svg";
 
-  // already external image
-  if (url.startsWith("http")) {
-    return `${url}?w=${size}&h=${size}&fit=crop`;
-  }
-
-  // media id or local file
-  return url;
+  return toCleanImageUrl(url);
 }

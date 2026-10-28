@@ -65,8 +65,11 @@ type TierPrice = {
 
 // ------------------ Utils ------------------
 
-export function getThumb(url: string, size = 300) {
-  return `${url}?w=${size}&h=${size}&fit=crop`;
+import { toCleanImageUrl } from "@/lib/media/toCleanImageUrl";
+
+export function getThumb(url: string, _size = 300) {
+  if (!url) return "/assets/img/icons/image.svg";
+  return toCleanImageUrl(url);
 }
 
 export function generateSlug(text: string) {
@@ -475,6 +478,7 @@ export default function AddProductComponent({
             alt={item.file_name}
             width={200}
             height={200}
+            unoptimized
             className="rounded object-cover"
           />
 
@@ -515,6 +519,7 @@ export default function AddProductComponent({
             alt={item.file_name}
             width={200}
             height={200}
+            unoptimized
             className="rounded object-cover"
           />
 

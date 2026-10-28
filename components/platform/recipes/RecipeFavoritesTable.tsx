@@ -157,9 +157,12 @@ export default function RecipeFavoritesTable({
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
                         <img
-                          src={recipe.thumbnail_url || "/placeholder.png"}
+                          src={recipe.thumbnail_url || "/assets/img/icons/image.svg"}
                           alt={recipe.title}
                           className="w-14 h-14 rounded-lg object-cover border"
+                          onError={(e) => {
+                            e.currentTarget.src = "/assets/img/icons/image.svg";
+                          }}
                         />
                         <div>
                           <p className="font-semibold">{recipe.title}</p>

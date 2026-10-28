@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
@@ -27,6 +28,14 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "**.ufs.sh",
+      },
+      {
+        protocol: "https",
+        hostname: "www.asianspices.online",
+      },
+      {
+        protocol: "https",
+        hostname: "asianspices.online",
       },
       {
         protocol: "https",

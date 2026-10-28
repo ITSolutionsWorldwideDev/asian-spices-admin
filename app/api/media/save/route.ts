@@ -6,7 +6,7 @@ import { pool } from "@/core/db";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-
+console.log (body)
     const { file_name, file_url, file_type, size } = body;
 
     if (!file_url) {

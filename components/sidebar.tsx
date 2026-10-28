@@ -51,7 +51,7 @@ export default function Sidebar() {
     >
       <div className="sidebar-logo p-3">
         <Link href="/" className="logo">
-          <img src="assets/img/logo.svg" alt="Logo" />
+          <img src="/assets/img/logo.svg" alt="Logo" />
         </Link>
         <button id="toggle_btn" onClick={handleSidebar}>
           <ChevronsLeft />

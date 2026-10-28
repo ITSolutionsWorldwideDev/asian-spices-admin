@@ -10,6 +10,7 @@ import { useToast } from "@/core/ui";
 import { UploadDropzone } from "@uploadthing/react";
 import type { MediaRouter } from "@/app/api/uploadthing/core";
 import MediaFilterBar from "@/components/media/MediaFilterBar";
+import { normalizeFilesForUpload } from "@/lib/media/normalizeImageForUpload";
 
 interface MediaItem {
   media_id: number;
@@ -467,6 +468,7 @@ export default function MediaLibrary() {
                 return "Choose files or drag and drop here";
               },
             }}
+            onBeforeUploadBegin={(files) => normalizeFilesForUpload(files)}
             onUploadBegin={(files) => {
               console.log("🚀 Uploading initialized for files:", files);
             }}
@@ -483,7 +485,7 @@ export default function MediaLibrary() {
                       },
                       body: JSON.stringify({
                         file_name: file.name,
-                        file_url: file.ufsUrl,
+                        file_url: file.serverData?.url || file.ufsUrl,
                         file_type: file.type,
                         size: file.size,
                       }),
@@ -572,6 +574,7 @@ export default function MediaLibrary() {
                         src={item.file_url}
                         alt={item.file_name}
                         fill
+                        unoptimized
                         sizes="(max-width: 768px) 50vw, 25vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />

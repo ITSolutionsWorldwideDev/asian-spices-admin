@@ -87,7 +87,7 @@ export default function ForgotPasswordComponent() {
                       className="login-logo logo-white"
                       style={{ marginInline: 0 }}
                     >
-                      <img src="assets/img/logo.svg" alt="Img" />
+                      <img src="/assets/img/logo.svg" alt="Img" />
                     </a>
                     <div className="login-userheading">
                       <h3>Forgot Password</h3>
@@ -215,7 +215,7 @@ export default function ForgotPasswordComponent() {
             <div className="p-0">
               <div className="login-img w-full h-screen justify-items-center content-center">
                 <img
-                  src="assets/img/Login Art.png"
+                  src="/assets/img/Login Art.png"
                   alt="img"
                   width={400}
                   height={400}

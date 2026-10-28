@@ -4,6 +4,14 @@ import { getServerSession } from "next-auth";
 import { adminAuthOptions } from "@/core/auth";
 import { NextResponse, NextRequest } from "next/server";
 import { pool } from "@/core/db";
+import { toCleanImageUrl } from "@/lib/media/toCleanImageUrl";
+
+function mapMediaRows(rows: any[]) {
+  return rows.map((row) => ({
+    ...row,
+    file_url: toCleanImageUrl(row.file_url, row.file_name),
+  }));
+}
 
 // --------------------------
 // GET - List or Single Media
@@ -38,7 +46,7 @@ export async function GET(req: NextRequest) {
         `,
         [ids],
       );
-      return NextResponse.json({ media: dataResult.rows });
+      return NextResponse.json({ media: mapMediaRows(dataResult.rows) });
     } catch (err: any) {
       console.error("MEDIA FETCH BY IDS ERROR:", err);
       return NextResponse.json(
@@ -124,7 +132,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      media: rows,
+      media: mapMediaRows(rows),
       pagination: {
         page,
         limit,

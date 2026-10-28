@@ -41,7 +41,7 @@ export default function Header() {
       <div className="flex items-center justify-between px-4 py-2">
         <div className="flex items-center space-x-2">
           <Link href={route.dashboard} className="flex items-center">
-            <img src="assets/img/logo.svg" alt="Logo" className="h-8 w-auto" />
+            <img src="/assets/img/logo.svg" alt="Logo" className="h-8 w-auto" />
           </Link>
           <button
             onClick={handleSidebar}
@@ -69,7 +69,7 @@ export default function Header() {
               className="flex items-center rounded-full hover:bg-gray-100 p-1 focus:outline-none"
             >
               <img
-                src="assets/img/profiles/avator1.jpg"
+                src="/assets/img/profiles/avator1.jpg"
                 alt="Profile"
                 className="h-8 w-8 rounded-full"
               />
@@ -78,7 +78,7 @@ export default function Header() {
               <div className="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow-lg z-50">
                 <div className="flex items-center p-3 border-b">
                   <img
-                    src="assets/img/profiles/avator1.jpg"
+                    src="/assets/img/profiles/avator1.jpg"
                     alt="Profile"
                     className="h-10 w-10 rounded-full mr-2"
                   />
@@ -186,7 +186,7 @@ export default function Header() {
           onMouseLeave={expandMenuClose}
         >
           <Link href="/dashboard" className="flex items-center">
-            <img src="assets/img/logo.svg" alt="Logo" className="h-8 w-auto" />
+            <img src="/assets/img/logo.svg" alt="Logo" className="h-8 w-auto" />
           </Link>
 
     
@@ -227,7 +227,7 @@ export default function Header() {
               className="flex items-center rounded-full hover:bg-gray-100 p-1 focus:outline-none"
             >
               <img
-                src="assets/img/profiles/avator1.jpg"
+                src="/assets/img/profiles/avator1.jpg"
                 alt="Profile"
                 className="h-8 w-8 rounded-full"
               />
@@ -237,7 +237,7 @@ export default function Header() {
               <div className="absolute right-0 mt-2 w-56 bg-white border rounded-md shadow-lg z-50">
                 <div className="flex items-center p-3 border-b">
                   <img
-                    src="assets/img/profiles/avator1.jpg"
+                    src="/assets/img/profiles/avator1.jpg"
                     alt="Profile"
                     className="h-10 w-10 rounded-full mr-2"
                   />

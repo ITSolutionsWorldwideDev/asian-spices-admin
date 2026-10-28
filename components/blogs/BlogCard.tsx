@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Edit, Trash2 } from "react-feather";
+import { toCleanImageUrl } from "@/lib/media/toCleanImageUrl";
 
 type Props = {
   blog: any;
@@ -9,13 +10,20 @@ type Props = {
 };
 
 export default function BlogCard({ blog, onDelete }: Props) {
+  const imgSrc = blog.featured_image_url
+    ? toCleanImageUrl(blog.featured_image_url)
+    : "/assets/img/icons/image.svg";
+
   return (
     <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
       <div className="relative">
         <img
-          src={blog.featured_image_url || "/placeholder/blog.jpg"}
+          src={imgSrc}
           alt={blog.title}
           className="h-48 w-full object-cover"
+          onError={(e) => {
+            e.currentTarget.src = "/assets/img/icons/image.svg";
+          }}
         />
         <span
           className={`absolute top-3 right-3 text-xs px-2 py-1 rounded-full ${
