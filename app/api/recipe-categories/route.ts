@@ -43,7 +43,17 @@ export async function GET(req: NextRequest) {
         rc.name,
         rc.slug,
         rc.description,
-        rc.image_url,
+        COALESCE(
+          NULLIF(rc.image_url, ''),
+          (
+            SELECT r2.thumbnail_url
+            FROM recipes r2
+            WHERE r2.category_id = rc.id
+              AND r2.thumbnail_url IS NOT NULL
+              AND r2.thumbnail_url != ''
+            LIMIT 1
+          )
+        ) AS image_url,
         rc.is_active,
         rc.sort_order,
         rc.created_at,

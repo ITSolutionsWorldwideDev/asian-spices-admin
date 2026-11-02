@@ -235,11 +235,11 @@ export default function RecipeCategoriesList() {
 
       setIsModalOpen(false);
       fetchCategories();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       setSaving(false);
 
-      showToast("error", "Failed to save category");
+      showToast("error", err?.message || "Failed to save category");
     }
   };
 
@@ -281,10 +281,11 @@ export default function RecipeCategoriesList() {
             <img
               src={record.image_url || "/assets/img/icons/image.svg"}
               alt={record.name}
-              className="w-12 h-12 rounded-lg object-cover border"
               onError={(e) => {
+                e.currentTarget.onerror = null;
                 e.currentTarget.src = "/assets/img/icons/image.svg";
               }}
+              className="w-12 h-12 rounded-lg object-cover border bg-gray-50 shrink-0"
             />
 
             <div>

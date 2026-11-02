@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui";
 import ProductImportModal from "./ProductImportModal";
 import DiscountImportModal from "./DiscountImportModal";
 import { exportToCsv } from "@/core/utils/exportCsv";
+import { stripHtml } from "@/core/utils";
 
 /* ------------------------------------
    Types
@@ -145,7 +146,11 @@ export default function StoreAssignmentsListComponent() {
       [
         { title: "Product", dataIndex: "product_name" },
         { title: "SKU", dataIndex: "sku" },
-        { title: "Description", dataIndex: "description" },
+        {
+          title: "Description",
+          dataIndex: "description",
+          format: (v) => stripHtml(v as string),
+        },
         {
           title: "Base Price",
           dataIndex: "base_price",
@@ -190,14 +195,17 @@ export default function StoreAssignmentsListComponent() {
       title: "Description",
       dataIndex: "description",
       width: 260,
-      render: (description: string | null) => (
-        <span
-          title={description || ""}
-          className="block max-w-[240px] truncate text-gray-600"
-        >
-          {description || "-"}
-        </span>
-      ),
+      render: (description: string | null) => {
+        const clean = stripHtml(description);
+        return (
+          <span
+            title={clean}
+            className="block max-w-[240px] truncate text-gray-600"
+          >
+            {clean || "-"}
+          </span>
+        );
+      },
     },
     {
       title: "Base Price",

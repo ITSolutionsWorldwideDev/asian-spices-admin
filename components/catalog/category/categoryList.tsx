@@ -139,9 +139,14 @@ export default function CategoryListComponent() {
       Create / Update
   ------------------------------------ */
   const handleSubmit = async () => {
+    if (!formData.name?.trim()) {
+      showToast("error", "Category name is required");
+      return;
+    }
+
     try {
       const payload = {
-        name: formData.name,
+        name: formData.name.trim(),
         status: formData.status ? 1 : 0,
       };
 
@@ -153,7 +158,18 @@ export default function CategoryListComponent() {
         ),
       });
 
-      if (!res.ok) throw new Error();
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        showToast(
+          "error",
+          data?.error ||
+            (isEditMode
+              ? "Failed to update Category"
+              : "Failed to save Category"),
+        );
+        return;
+      }
 
       showToast(
         "success",
@@ -162,9 +178,9 @@ export default function CategoryListComponent() {
 
       setIsModalOpen(false);
       fetchCategories();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Save failed", err);
-      showToast("error", "Failed to save Category");
+      showToast("error", err?.message || "Failed to save Category");
     }
   };
 

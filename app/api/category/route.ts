@@ -139,14 +139,28 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { name, status = 1 } = body;
 
-    if (!name) {
+    if (!name || !name.trim()) {
       return NextResponse.json(
         { error: "Category is required" },
         { status: 400 },
       );
     }
 
-    const slug = slugify(name);
+    const trimmedName = name.trim();
+    const slug = slugify(trimmedName);
+
+    // Pre-check for duplicate category name or slug
+    const existing = await pool.query(
+      `SELECT id FROM store_categories WHERE LOWER(TRIM(name)) = LOWER($1) OR slug = $2 LIMIT 1`,
+      [trimmedName, slug],
+    );
+
+    if (existing.rows.length > 0) {
+      return NextResponse.json(
+        { error: "Category already exists" },
+        { status: 409 },
+      );
+    }
 
     const result = await pool.query(
       `
@@ -154,17 +168,8 @@ export async function POST(req: NextRequest) {
       VALUES ($1, $2, $3)
       RETURNING *
       `,
-      [name, slug, status],
+      [trimmedName, slug, status],
     );
-
-    // const result = await pool.query(
-    //   `
-    //   INSERT INTO store_categories (store_id, name, slug, status)
-    //   VALUES ($1, $2, $3, $4)
-    //   RETURNING *
-    //   `,
-    //   [storeId, name, slug, status],
-    // );
 
     return NextResponse.json(result.rows[0], { status: 201 });
   } catch (err: any) {
@@ -196,13 +201,31 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const { id, name, status } = body;
 
-    const slug = name ? slugify(name) : undefined;
-
     if (!id) {
       return NextResponse.json(
         { error: "Category ID required" },
         { status: 400 },
       );
+    }
+
+    const trimmedName = name ? name.trim() : undefined;
+    const slug = trimmedName ? slugify(trimmedName) : undefined;
+
+    if (trimmedName && slug) {
+      const existing = await pool.query(
+        `SELECT id FROM store_categories 
+         WHERE (LOWER(TRIM(name)) = LOWER($1) OR slug = $2) 
+           AND id != $3 
+         LIMIT 1`,
+        [trimmedName, slug, id],
+      );
+
+      if (existing.rows.length > 0) {
+        return NextResponse.json(
+          { error: "Category already exists" },
+          { status: 409 },
+        );
+      }
     }
 
     const result = await pool.query(
@@ -216,22 +239,8 @@ export async function PUT(req: NextRequest) {
       WHERE id = $4
       RETURNING *
       `,
-      [name, slug, status, id],
+      [trimmedName, slug, status, id],
     );
-
-    // const result = await pool.query(
-    //   `
-    //   UPDATE store_categories
-    //   SET
-    //     name = COALESCE($1, name),
-    //     slug = COALESCE($2, slug),
-    //     status = COALESCE($3, status),
-    //     updated_at = NOW()
-    //   WHERE id = $4 AND store_id = $5
-    //   RETURNING *
-    //   `,
-    //   [name, slug, status, id, storeId],
-    // );
 
     if (!result.rows.length) {
       return NextResponse.json(
@@ -246,7 +255,7 @@ export async function PUT(req: NextRequest) {
 
     if (err.code === "23505") {
       return NextResponse.json(
-        { error: "Category slug already exists" },
+        { error: "Category already exists" },
         { status: 409 },
       );
     }

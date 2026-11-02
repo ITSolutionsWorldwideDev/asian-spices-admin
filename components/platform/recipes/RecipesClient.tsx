@@ -3,7 +3,7 @@
 "use client";
 
 import Link from "next/link";
-import { useOptimistic } from "react";
+import { useOptimistic, startTransition } from "react";
 
 import RecipeCard from "./RecipeCard";
 import FiltersBar from "./FiltersBar";
@@ -73,30 +73,34 @@ export default function RecipesClient({
             <RecipeCard
               key={recipe.id}
               recipe={recipe}
-              onDelete={async () => {
-                updateOptimistic({
-                  type: "delete",
-                  id: recipe.id,
-                });
+              onDelete={() => {
+                startTransition(async () => {
+                  updateOptimistic({
+                    type: "delete",
+                    id: recipe.id,
+                  });
 
-                await deleteRecipe(recipe.id);
+                  await deleteRecipe(recipe.id);
+                });
               }}
-              onToggleStatus={async () => {
+              onToggleStatus={() => {
                 const status =
                   recipe.status === "published"
                     ? "draft"
                     : "published";
 
-                updateOptimistic({
-                  type: "status",
-                  id: recipe.id,
-                  status,
-                });
+                startTransition(async () => {
+                  updateOptimistic({
+                    type: "status",
+                    id: recipe.id,
+                    status,
+                  });
 
-                await setRecipeStatus(
-                  recipe.id,
-                  status
-                );
+                  await setRecipeStatus(
+                    recipe.id,
+                    status
+                  );
+                });
               }}
             />
           ))}
