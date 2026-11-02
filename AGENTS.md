@@ -5,10 +5,10 @@ Next.js (App Router, TypeScript) admin dashboard for Asian Spices. Dev server ru
 ## Structure
 - `app/` — pages and API routes (`app/api/**/route.ts`); route paths map to URLs — do not reshuffle casually
 - `components/` — all React UI
-  - `layout/` — shell wrappers (session, store context, loaders)
+  - `layout/` — shell wrappers (session, store context, loaders, bootstrap)
   - `shared/` — cross-feature widgets
-  - `ui/` — primitives (button, toast)
-  - `common/` — shared admin chrome (pagination, text editor)
+  - `ui/` — primitives (button, toast, card)
+  - `common/` — shared admin chrome (sidebar helpers, pagination, text editor)
   - `auth/` — login / forgot-password UI
   - `catalog/` — brand, category, subcategory, tax
   - `products/` — product forms/lists + `products/catalog` (store catalog assignment)
