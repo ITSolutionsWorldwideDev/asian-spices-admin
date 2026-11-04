@@ -17191,3 +17191,20 @@ body {
     border-color: var(--color-border-color) !important;
   }
 }
+
+/* UploadThing styling ensures button text & choose file text is always visible */
+[data-ut-element="button"] {
+  color: #ffffff !important;
+  background-color: #f97316 !important;
+}
+
+[data-ut-element="button"]:disabled {
+  color: #ffffff !important;
+  opacity: 0.9 !important;
+}
+
+[data-ut-element="label"] {
+  color: #1f2937 !important;
+  width: auto !important;
+  max-width: 100% !important;
+}

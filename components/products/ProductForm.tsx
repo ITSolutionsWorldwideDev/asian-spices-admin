@@ -192,7 +192,7 @@ export default function ProductFormComponent({
       sale_price: 0,
       purchase_price: 0,
       customer_type: "B2C",
-      quantity: 99999,
+      quantity: 0,
       discount_type: null,
       discount_value: 0,
       promo_code: "",
@@ -1009,27 +1009,6 @@ export default function ProductFormComponent({
               </div>
             </Accordion>
 
-            {/* <div>
-                    <label className="block mb-1 text-sm font-medium">
-                      Quantity <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      {...register("quantity", { valueAsNumber: true })}
-                      placeholder="0"
-                      min={0}
-                      step="1"
-                      disabled={isView}
-                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                    />
-
-                    {errors.quantity && (
-                      <p className="text-red-600 text-sm">
-                        {errors.quantity.message as string}
-                      </p>
-                    )}
-                  </div> */}
-
             <Accordion
               title="Pricing & Stocks"
               icon={LifeBuoy}
@@ -1037,8 +1016,8 @@ export default function ProductFormComponent({
               onToggle={() => setPricingOpen(!pricingOpen)}
             >
               <div className="p-4 space-y-6">
-                {/* 🌟 Row 1: Customer Type Segment Selector */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 border-b pb-4">
+                {/* 🌟 Row 1: Customer Type Segment Selector & Pricing/Stock */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 border-b pb-4">
                   <div>
                     <label className="block mb-1 text-sm font-medium text-gray-700">
                       Target Customer Classification{" "}
@@ -1089,6 +1068,26 @@ export default function ProductFormComponent({
                       disabled={isView}
                       className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block mb-1 text-sm font-medium text-gray-700">
+                      Quantity <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      {...register("quantity", { valueAsNumber: true })}
+                      placeholder="0"
+                      min={0}
+                      step="1"
+                      disabled={isView}
+                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    />
+                    {errors.quantity && (
+                      <p className="text-red-600 text-xs mt-1">
+                        {errors.quantity.message as string}
+                      </p>
+                    )}
                   </div>
                 </div>
 

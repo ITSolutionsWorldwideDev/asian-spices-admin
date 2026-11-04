@@ -249,7 +249,7 @@ export default function Header() {
                 <button
                   onClick={() => {
                     setProfileDropdownOpen(false);
-                    signOut({ callbackUrl: "admin/login" }); // redirect to login page after logout
+                    signOut({ callbackUrl: "/login" }); // redirect to login page after logout
                   }}
                   className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-gray-700"
                 >
@@ -281,7 +281,7 @@ export default function Header() {
           <button
             onClick={() => {
               setMobileDropdownOpen(false);
-              signOut({ callbackUrl: "admin/login" });
+              signOut({ callbackUrl: "/login" });
             }}
             className="block w-full text-left px-4 py-2 hover:bg-gray-100"
           >

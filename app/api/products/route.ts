@@ -147,7 +147,9 @@ export async function POST(req: NextRequest) {
       body.purchase_price || null,
       body.customer_type || "B2C",
       body.promo_code || null,
-      99999,
+      body.quantity !== undefined && body.quantity !== null && !isNaN(Number(body.quantity))
+        ? Number(body.quantity)
+        : 0,
       body.discount_type || null,
       body.discount_value || null,
       body.status ?? 1,

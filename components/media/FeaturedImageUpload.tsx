@@ -17,6 +17,19 @@ export default function FeaturedImageUpload({
     <UploadButton<MediaRouter, "productImage">
       endpoint="productImage"
       className="rounded border border-dashed border-gray-400 px-6 py-3 hover:border-primary "
+      appearance={{
+        button: {
+          backgroundColor: "#f97316",
+          color: "#ffffff",
+          fontWeight: "600",
+        },
+      }}
+      content={{
+        button({ isUploading }) {
+          if (isUploading) return "Uploading...";
+          return "Choose file";
+        },
+      }}
       onBeforeUploadBegin={(files) => normalizeFilesForUpload(files)}
       onClientUploadComplete={async (res) => {
         console.log("CLIENT UPLOAD DONE", res);

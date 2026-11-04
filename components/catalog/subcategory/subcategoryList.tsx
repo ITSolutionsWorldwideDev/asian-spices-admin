@@ -161,7 +161,7 @@ export default function SubcategoryListComponent() {
       Submit
   ------------------------------------ */
   const handleSubmit = async () => {
-    if (!formData.name || !formData.category_id) {
+    if (!formData.name?.trim() || !formData.category_id) {
       showToast("error", "Name and Category are required");
       return;
     }
@@ -170,7 +170,7 @@ export default function SubcategoryListComponent() {
 
     const payload = {
       category_id: formData.category_id,
-      name: formData.name,
+      name: formData.name.trim(),
       status: formData.status ? 1 : 0,
     };
 
@@ -181,7 +181,18 @@ export default function SubcategoryListComponent() {
         body: JSON.stringify(isEditMode ? { id: formData.id, ...payload } : payload),
       });
 
-      if (!res.ok) throw new Error();
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        showToast(
+          "error",
+          data?.error ||
+            (isEditMode
+              ? "Failed to update Subcategory"
+              : "Failed to save Subcategory"),
+        );
+        return;
+      }
 
       showToast(
         "success",
@@ -190,8 +201,9 @@ export default function SubcategoryListComponent() {
 
       setIsModalOpen(false);
       fetchData();
-    } catch {
-      showToast("error", "Failed to save subcategory");
+    } catch (err: any) {
+      console.error("Save failed", err);
+      showToast("error", err?.message || "Failed to save Subcategory");
     } finally {
       setSaving(false);
     }

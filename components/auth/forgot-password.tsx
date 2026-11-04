@@ -77,7 +77,7 @@ export default function ForgotPasswordComponent() {
     <div className="main-wrapper">
       <div className="account-content">
         <div className="login-wrapper">
-          <div className="grid grid-cols-1 lg:grid-cols-2 m-0">
+          <div className="grid grid-cols-1 lg:grid-cols-2 m-0 w-full min-h-screen">
             <div className="p-0">
               <div className="login-content bg-black">
                 <form onSubmit={step === "email" ? sendOtp : resetPassword}>
@@ -90,14 +90,14 @@ export default function ForgotPasswordComponent() {
                       <img src="/assets/img/logo.svg" alt="Img" />
                     </a>
                     <div className="login-userheading">
-                      <h3>Forgot Password</h3>
+                      <h3 className="text-white text-2xl font-bold">Forgot Password</h3>
                       {errorMsg && (
                         <p className="text-red-500 mb-3">{errorMsg}</p>
                       )}
                       {successMsg && (
                         <p className="text-green-400 mb-3">{successMsg}</p>
                       )}
-                      <h4 className="text-[16px]">
+                      <h4 className="text-[16px] text-gray-300">
                         {step === "email"
                           ? "Enter your email and we’ll send a one-time code."
                           : "Enter the OTP from your email and choose a new password."}
@@ -105,7 +105,7 @@ export default function ForgotPasswordComponent() {
                     </div>
 
                     <div className="mb-4">
-                      <label className="form-label block mb-2">
+                      <label className="form-label block mb-2 !text-white">
                         Email <span className="text-red-600"> *</span>
                       </label>
                       <div className="input-group w-auto input-group-flat bg-white rounded-b-md">
@@ -126,7 +126,7 @@ export default function ForgotPasswordComponent() {
                     {step === "reset" && (
                       <>
                         <div className="mb-4">
-                          <label className="form-label block mb-2">
+                          <label className="form-label block mb-2 !text-white">
                             OTP <span className="text-red-600"> *</span>
                           </label>
                           <input
@@ -140,7 +140,7 @@ export default function ForgotPasswordComponent() {
                           />
                         </div>
                         <div className="mb-4">
-                          <label className="form-label block mb-2">
+                          <label className="form-label block mb-2 !text-white">
                             New Password <span className="text-red-600"> *</span>
                           </label>
                           <input
@@ -153,7 +153,7 @@ export default function ForgotPasswordComponent() {
                           />
                         </div>
                         <div className="mb-4">
-                          <label className="form-label block mb-2">
+                          <label className="form-label block mb-2 !text-white">
                             Confirm Password{" "}
                             <span className="text-red-600"> *</span>
                           </label>

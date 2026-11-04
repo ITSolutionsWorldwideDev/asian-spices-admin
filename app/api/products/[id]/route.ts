@@ -96,7 +96,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         body.brand_id,
         body.description,
         body.base_price,
-        99999,
+        body.quantity !== undefined && body.quantity !== null && !isNaN(Number(body.quantity))
+          ? Number(body.quantity)
+          : 0,
         body.discount_type || null,
         body.discount_value || null,
         body.status ?? 1,
@@ -153,11 +155,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       `
       UPDATE store_product_catalog
       SET price = COALESCE($1::numeric, 0),
+          quantity = COALESCE($2::integer, quantity),
           updated_at = NOW()
-      WHERE product_id = $2
-        AND store_id = $3
+      WHERE product_id = $3
+        AND store_id = $4
       `,
-      [body.base_price, id, DEFAULT_STORE_ID],
+      [
+        body.base_price,
+        body.quantity !== undefined && body.quantity !== null && !isNaN(Number(body.quantity))
+          ? Number(body.quantity)
+          : null,
+        id,
+        DEFAULT_STORE_ID,
+      ],
     );
 
     // Assign to any newly selected stores (does not remove existing assignments)
