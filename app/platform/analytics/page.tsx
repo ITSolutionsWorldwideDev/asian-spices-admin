@@ -157,9 +157,6 @@ export default async function RecipesAnalyticsPage() {
                               src={recipe.thumbnail_url || "/assets/img/icons/image.svg"}
                               alt={recipe.title}
                               className="w-16 h-16 rounded-lg object-cover border"
-                              onError={(e) => {
-                                e.currentTarget.src = "/assets/img/icons/image.svg";
-                              }}
                             />
 
                             <div>

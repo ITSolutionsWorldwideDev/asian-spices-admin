@@ -22,8 +22,18 @@ export default withAuth(
     const isStorePath = pathname.startsWith("/store");
     const isPlatformPath = pathname.startsWith("/platform");
     const isAuthPath =
-      pathname.startsWith("/login") || pathname.startsWith("/forgot-password");
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/forgot-password") ||
+      pathname === "/unauthorized";
     const isApi = pathname.startsWith("/api");
+
+    // Store-prefixed unauthorized URL has no page — reuse the shared /unauthorized page
+    const storeUnauthorizedMatch = pathname.match(
+      /^\/store\/[^/]+\/unauthorized\/?$/,
+    );
+    if (storeUnauthorizedMatch) {
+      return NextResponse.rewrite(new URL("/unauthorized", req.url));
+    }
 
     if (isApi) {
       const referer = req.headers.get("referer");
@@ -62,12 +72,11 @@ export default withAuth(
     }
 
     // 3. Handle Root and Unprefixed Paths
+    // Keep /unauthorized as-is (do not rewrite to /store/{slug}/unauthorized)
     if (
       !isStorePath &&
       !isPlatformPath &&
-      !isAuthPath &&
-      pathname !== "/login" &&
-      pathname !== "/forgot-password"
+      !isAuthPath
     ) {
       // CASE: Super Admin
       if (token?.isPlatformAdmin) {

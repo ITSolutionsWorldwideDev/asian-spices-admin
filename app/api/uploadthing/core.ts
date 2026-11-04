@@ -1,6 +1,10 @@
 // app/api/uploadthing/core.ts
 
-import { createUploadthing, type FileRouter, UTFiles } from "uploadthing/next";
+import {
+  createUploadthing,
+  UTFiles,
+  type FileRouter,
+} from "uploadthing/next";
 import { getServerSession } from "next-auth";
 import { adminAuthOptions } from "@/core/auth";
 import crypto from "crypto";

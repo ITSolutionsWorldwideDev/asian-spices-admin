@@ -6,7 +6,7 @@ import { memo } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import Select from "react-select";
-import { Info, LifeBuoy, Figma, PlusCircle, X } from "react-feather";
+import { Info, LifeBuoy, Figma, PlusCircle, Upload, X } from "react-feather";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -21,6 +21,7 @@ import { productSchema } from "./FormSections/product.schema";
 import TextEditorNew from "@/components/common/texteditor/texteditor";
 
 import RHFSelect from "./FormSections/RHFSelect";
+import FeaturedImageUpload from "@/components/media/FeaturedImageUpload";
 import { productSlug, slugify } from "@/lib/utils/slugify";
 
 // const MemoTextEditor = memo(TextEditorNew);
@@ -1017,7 +1018,7 @@ export default function ProductFormComponent({
             >
               <div className="p-4 space-y-6">
                 {/* 🌟 Row 1: Customer Type Segment Selector & Pricing/Stock */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 border-b pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 border-b pb-4">
                   <div>
                     <label className="block mb-1 text-sm font-medium text-gray-700">
                       Target Customer Classification{" "}
@@ -1039,15 +1040,20 @@ export default function ProductFormComponent({
                       Base Price (Excl. Tax){" "}
                       <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="number"
-                      {...register("base_price", { valueAsNumber: true })}
-                      placeholder="0.00"
-                      min={0}
-                      step="0.01"
-                      disabled={isView}
-                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="relative">
+                      <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm font-medium text-gray-500">
+                        €
+                      </span>
+                      <input
+                        type="number"
+                        {...register("base_price", { valueAsNumber: true })}
+                        placeholder="0.00"
+                        min={0}
+                        step="0.01"
+                        disabled={isView}
+                        className="w-full rounded border border-gray-300 py-2 pl-7 pr-3 text-sm focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
                     {errors.base_price && (
                       <p className="text-red-600 text-xs mt-1">
                         {errors.base_price.message as string}
@@ -1059,15 +1065,20 @@ export default function ProductFormComponent({
                     <label className="block mb-1 text-sm font-medium text-gray-700">
                       Purchase Price (Cost)
                     </label>
-                    <input
-                      type="number"
-                      {...register("purchase_price", { valueAsNumber: true })}
-                      placeholder="0.00"
-                      min={0}
-                      step="0.01"
-                      disabled={isView}
-                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="relative">
+                      <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm font-medium text-gray-500">
+                        €
+                      </span>
+                      <input
+                        type="number"
+                        {...register("purchase_price", { valueAsNumber: true })}
+                        placeholder="0.00"
+                        min={0}
+                        step="0.01"
+                        disabled={isView}
+                        className="w-full rounded border border-gray-300 py-2 pl-7 pr-3 text-sm focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
                   </div>
 
                   <div>
@@ -1126,14 +1137,19 @@ export default function ProductFormComponent({
                     <label className="block mb-1 text-sm font-medium text-gray-700">
                       Calculated Sale Price (Display Preview)
                     </label>
-                    <input
-                      type="number"
-                      {...register("sale_price", { valueAsNumber: true })}
-                      placeholder="0.00"
-                      step="0.01"
-                      disabled={isView}
-                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm bg-gray-50 font-semibold"
-                    />
+                    <div className="relative">
+                      <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-sm font-medium text-gray-500">
+                        €
+                      </span>
+                      <input
+                        type="number"
+                        {...register("sale_price", { valueAsNumber: true })}
+                        placeholder="0.00"
+                        step="0.01"
+                        disabled={isView}
+                        className="w-full rounded border border-gray-300 bg-gray-50 py-2 pl-7 pr-3 text-sm font-semibold"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1436,33 +1452,81 @@ export default function ProductFormComponent({
               open={imagesOpen}
               onToggle={() => setImagesOpen(!imagesOpen)}
             >
-              {/* 🔍 SEARCH FIELD */}
               {mode !== "view" && (
-                <div className="mb-5 max-w-md">
-                  <label
-                    htmlFor="image-search"
-                    className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5"
-                  >
-                    Search Gallery By Name
-                  </label>
-                  <div className="relative rounded-md shadow-sm">
-                    <input
-                      id="image-search"
-                      type="text"
-                      placeholder="Type image name..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="w-full pl-3 pr-10 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                    />
-                    {search && (
-                      <button
-                        type="button"
-                        onClick={() => setSearch("")}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
+                <div className="mb-5 space-y-3">
+                  <div>
+                    <p className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5">
+                      Upload New Image
+                    </p>
+                    <div className="rounded-xl border-2 border-dashed border-orange-300 bg-orange-50/60 p-5">
+                      <div className="mb-3 flex flex-col items-center gap-2 text-center">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+                          <Upload size={24} />
+                        </div>
+                        <p className="text-sm font-semibold text-gray-800">
+                          Upload product image
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Use the button below to choose an image
+                        </p>
+                      </div>
+                      <div className="flex justify-center">
+                        <FeaturedImageUpload
+                          onUpload={(mediaId, url) => {
+                            setMedia((prev) => {
+                              if (
+                                prev.some((item) => item.media_id === mediaId)
+                              ) {
+                                return prev;
+                              }
+                              return [
+                                {
+                                  media_id: mediaId,
+                                  file_name: url.split("/").pop() || "image",
+                                  file_url: url,
+                                },
+                                ...prev,
+                              ];
+                            });
+                            setSelectedMedia((prev) =>
+                              prev.includes(mediaId)
+                                ? prev
+                                : [...prev, mediaId],
+                            );
+                            setPrimaryMedia((prev) => prev ?? mediaId);
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 🔍 SEARCH FIELD */}
+                  <div className="max-w-md">
+                    <label
+                      htmlFor="image-search"
+                      className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1.5"
+                    >
+                      Or Search Gallery By Name
+                    </label>
+                    <div className="relative rounded-md shadow-sm">
+                      <input
+                        id="image-search"
+                        type="text"
+                        placeholder="Type image name..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full pl-3 pr-10 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      />
+                      {search && (
+                        <button
+                          type="button"
+                          onClick={() => setSearch("")}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
