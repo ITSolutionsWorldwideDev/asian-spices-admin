@@ -14,6 +14,7 @@ type Props = {
   options: Option[];
   isMulti?: boolean;
   isDisabled?: boolean;
+  isClearable?: boolean;
   placeholder?: string;
 };
 
@@ -23,6 +24,7 @@ export default function RHFSelect({
   options,
   isMulti = false,
   isDisabled = false,
+  isClearable = false,
   placeholder = '',
 }: Props) {
   return (
@@ -43,6 +45,7 @@ export default function RHFSelect({
             value={getValue()}
             isMulti={isMulti}
             isDisabled={isDisabled}
+            isClearable={isClearable}
             placeholder={placeholder || "Select..."}
             onChange={(val: any) => {
               if (isMulti) {

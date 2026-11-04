@@ -181,7 +181,10 @@ export default function SubcategoryListComponent() {
         body: JSON.stringify(isEditMode ? { id: formData.id, ...payload } : payload),
       });
 
-      if (!res.ok) throw new Error();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to save subcategory");
+      }
 
       showToast(
         "success",
@@ -190,8 +193,8 @@ export default function SubcategoryListComponent() {
 
       setIsModalOpen(false);
       fetchData();
-    } catch {
-      showToast("error", "Failed to save subcategory");
+    } catch (err: any) {
+      showToast("error", err?.message || "Failed to save subcategory");
     } finally {
       setSaving(false);
     }
@@ -527,7 +530,10 @@ export default function SubcategoryListComponent() {
         body: JSON.stringify(isEditMode ? { id: formData.id, ...payload } : payload),
       });
 
-      if (!res.ok) throw new Error();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to save subcategory");
+      }
 
       showToast(
         "success",
@@ -536,8 +542,8 @@ export default function SubcategoryListComponent() {
 
       setIsModalOpen(false);
       fetchData();
-    } catch {
-      showToast("error", "Failed to save subcategory");
+    } catch (err: any) {
+      showToast("error", err?.message || "Failed to save subcategory");
     } finally {
       setSaving(false);
     }

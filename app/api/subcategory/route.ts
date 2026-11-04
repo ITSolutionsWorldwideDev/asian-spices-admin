@@ -121,14 +121,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Category and name are required" }, { status: 400 });
     }
 
-    const slug = slugify(name);
+    const trimmedName = String(name).trim();
+    const slug = slugify(trimmedName);
+
+    const duplicate = await pool.query(
+      `SELECT id FROM store_subcategories
+       WHERE category_id = $1
+         AND (LOWER(TRIM(name)) = LOWER($2) OR slug = $3)
+       LIMIT 1`,
+      [category_id, trimmedName, slug],
+    );
+
+    if (duplicate.rows.length) {
+      return NextResponse.json(
+        { error: "Subcategory already exists in this category" },
+        { status: 409 },
+      );
+    }
 
     const res = await pool.query(
       `INSERT INTO store_subcategories
        (category_id, name, slug, status, created_at, updated_at)
        VALUES ($1, $2, $3, $4, NOW(), NOW())
        RETURNING *`,
-      [category_id, name, slug, status]
+      [category_id, trimmedName, slug, status]
     );
 
     // const res = await pool.query(
@@ -162,7 +178,36 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Subcategory ID required" }, { status: 400 });
     }
 
-    const slug = name ? slugify(name) : undefined;
+    const trimmedName = name != null ? String(name).trim() : undefined;
+    const slug = trimmedName ? slugify(trimmedName) : undefined;
+
+    if (trimmedName) {
+      const existing = await pool.query(
+        `SELECT category_id FROM store_subcategories WHERE id = $1`,
+        [id],
+      );
+
+      if (!existing.rows.length) {
+        return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
+      }
+
+      const categoryId = existing.rows[0].category_id;
+      const duplicate = await pool.query(
+        `SELECT id FROM store_subcategories
+         WHERE category_id = $1
+           AND id <> $2
+           AND (LOWER(TRIM(name)) = LOWER($3) OR slug = $4)
+         LIMIT 1`,
+        [categoryId, id, trimmedName, slug],
+      );
+
+      if (duplicate.rows.length) {
+        return NextResponse.json(
+          { error: "Subcategory already exists in this category" },
+          { status: 409 },
+        );
+      }
+    }
 
     const res = await pool.query(
       `UPDATE store_subcategories
@@ -173,7 +218,7 @@ export async function PUT(req: NextRequest) {
          updated_at = NOW()
        WHERE id = $4
        RETURNING *`,
-      [name, slug, status, id]
+      [trimmedName ?? null, slug ?? null, status, id]
     );
 
     // const res = await pool.query(

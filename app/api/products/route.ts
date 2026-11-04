@@ -147,7 +147,9 @@ export async function POST(req: NextRequest) {
       body.purchase_price || null,
       body.customer_type || "B2C",
       body.promo_code || null,
-      99999,
+      Number.isFinite(Number(body.quantity)) && Number(body.quantity) >= 1
+        ? Number(body.quantity)
+        : 99999,
       body.discount_type || null,
       body.discount_value || null,
       body.status ?? 1,
