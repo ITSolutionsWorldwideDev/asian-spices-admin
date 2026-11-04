@@ -1085,7 +1085,7 @@ export default function ProductFormComponent({
               onToggle={() => setPricingOpen(!pricingOpen)}
             >
               <div className="p-4 space-y-6">
-                {/* 🌟 Row 1: Customer Type Segment Selector */}
+                {/* 🌟 Row 1: Customer Type Segment Selector & Pricing/Stock */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 border-b pb-4">
                   <div>
                     <label className="block mb-1 text-sm font-medium text-gray-700">

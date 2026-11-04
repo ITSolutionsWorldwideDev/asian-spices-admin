@@ -209,11 +209,12 @@ export default function ProductListComponent() {
       sorter: (a: Product, b: Product) => a.base_price - b.base_price,
       render: (base_price: number) => `€${base_price.toLocaleString()}`,
     },
-    // {
-    //   title: "Qty",
-    //   dataIndex: "quantity",
-    //   sorter: (a: Product, b: Product) => a.quantity - b.quantity,
-    // },
+    {
+      title: "Qty",
+      dataIndex: "quantity",
+      sorter: (a: Product, b: Product) => (a.quantity || 0) - (b.quantity || 0),
+      render: (q: number) => q ?? 0,
+    },
     {
       title: "Status",
       dataIndex: "status",

@@ -67,7 +67,7 @@ export default function SigninComponent() {
       <div className="main-wrapper">
         <div className="account-content">
           <div className="login-wrapper">
-            <div className="grid grid-cols-1 lg:grid-cols-2 m-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2 m-0 w-full min-h-screen">
               <div className="p-0">
                 <div className="login-content bg-black">
                   <form onSubmit={handleLogin}>
@@ -80,20 +80,20 @@ export default function SigninComponent() {
                         <img src="/assets/img/logo.svg" alt="Img" />
                       </a>
                       <div className="login-userheading">
-                        <h3>Sign In</h3>
+                        <h3 className="text-white text-2xl font-bold">Sign In</h3>
 
                         {errorMsg && (
                           <p className="text-red-500 mb-3">{errorMsg}</p>
                         )}
 
-                        <h4 className="text-[16px]">
+                        <h4 className="text-[16px] text-gray-300">
                           Access the Asian Spices panel using your email and
                           passcode.
                         </h4>
                       </div>
                       <div className="mb-4">
                         {" "}
-                        <label className="form-label block mb-2">
+                        <label className="form-label block mb-2 !text-white">
                           Email <span className="text-red-600"> *</span>
                         </label>
                         <div className="input-group w-auto input-group-flat bg-white rounded-b-md">
@@ -108,7 +108,7 @@ export default function SigninComponent() {
                         </div>
                       </div>
                       <div className="mb-4">
-                        <label className="form-label block mb-2">
+                        <label className="form-label block mb-2 !text-white">
                           Password<span className="text-red-600"> *</span>
                         </label>
                         <div className="relative pass-group">
@@ -155,7 +155,7 @@ export default function SigninComponent() {
                       </p>
 
                       <div className="my-6 flex justify-center items-center copyright-text">
-                        <p>Copyright &copy; 2026 Asian Spices</p>
+                        <p className="text-gray-400">Copyright &copy; 2026 Asian Spices</p>
                       </div>
                     </div>
                   </form>

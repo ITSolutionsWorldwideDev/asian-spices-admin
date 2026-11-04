@@ -6,35 +6,6 @@ import { pool } from "@/core/db";
 import { requirePlatformAdmin } from "@/lib/auth/guards";
 
 /* ------------------------------------
-   Utils
------------------------------------- */
-// const generateCategoryCode = async (category_id: number) => {
-//   // Get parent category slug
-//   const catRes = await pool.query(
-//     `SELECT categoryslug FROM categories WHERE category_id = $1`,
-//     [category_id]
-//   );
-
-//   if (!catRes.rows.length) {
-//     throw new Error("Invalid category");
-//   }
-
-//   const alias = catRes.rows[0].categoryslug
-//     .substring(0, 2)
-//     .toUpperCase();
-
-//   // Count existing subcategories
-//   const countRes = await pool.query(
-//     `SELECT COUNT(*)::int AS count FROM subcategories WHERE category_id = $1`,
-//     [category_id]
-//   );
-
-//   const nextNumber = String(countRes.rows[0].count + 1).padStart(2, "0");
-
-//   return `${alias}${nextNumber}`;
-// };
-
-/* ------------------------------------
    Utility: slugify
 ------------------------------------ */
 function slugify(text: string) {
@@ -58,7 +29,6 @@ export async function GET(req: NextRequest) {
 
   try {
     if (id) {
-
       const res = await pool.query(
         `SELECT s.*, c.name AS category
         FROM store_subcategories s
@@ -117,7 +87,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const { category_id, name, status = 1 } = await req.json();
-    if (!category_id || !name) {
+    if (!category_id || !name || !name.trim()) {
       return NextResponse.json({ error: "Category and name are required" }, { status: 400 });
     }
 
@@ -157,8 +127,16 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(res.rows[0], { status: 201 });
 
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
+
+    if (err?.code === "23505") {
+      return NextResponse.json(
+        { error: "Subcategory already exists" },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json({ error: "Failed to create subcategory" }, { status: 500 });
   }
 }
@@ -173,7 +151,7 @@ export async function PUT(req: NextRequest) {
   await requirePlatformAdmin();
 
   try {
-    const { id, name, status } = await req.json();
+    const { id, category_id, name, status } = await req.json();
     if (!id) {
       return NextResponse.json({ error: "Subcategory ID required" }, { status: 400 });
     }
@@ -212,11 +190,12 @@ export async function PUT(req: NextRequest) {
     const res = await pool.query(
       `UPDATE store_subcategories
        SET
-         name = COALESCE($1, name),
-         slug = COALESCE($2, slug),
-         status = COALESCE($3, status),
+         category_id = COALESCE($1, category_id),
+         name = COALESCE($2, name),
+         slug = COALESCE($3, slug),
+         status = COALESCE($4, status),
          updated_at = NOW()
-       WHERE id = $4
+       WHERE id = $5
        RETURNING *`,
       [trimmedName ?? null, slug ?? null, status, id]
     );
@@ -238,8 +217,16 @@ export async function PUT(req: NextRequest) {
     }
 
     return NextResponse.json(res.rows[0]);
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
+
+    if (err?.code === "23505") {
+      return NextResponse.json(
+        { error: "Subcategory already exists" },
+        { status: 409 }
+      );
+    }
+
     return NextResponse.json({ error: "Failed to update subcategory" }, { status: 500 });
   }
 }
@@ -261,7 +248,6 @@ export async function DELETE(req: NextRequest) {
   }
 
   try {
-
     const res = await pool.query(
       `DELETE FROM store_subcategories WHERE id = $1 RETURNING *`,
       [id]

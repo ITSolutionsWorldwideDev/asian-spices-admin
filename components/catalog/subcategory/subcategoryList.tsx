@@ -161,7 +161,7 @@ export default function SubcategoryListComponent() {
       Submit
   ------------------------------------ */
   const handleSubmit = async () => {
-    if (!formData.name || !formData.category_id) {
+    if (!formData.name?.trim() || !formData.category_id) {
       showToast("error", "Name and Category are required");
       return;
     }
@@ -170,7 +170,7 @@ export default function SubcategoryListComponent() {
 
     const payload = {
       category_id: formData.category_id,
-      name: formData.name,
+      name: formData.name.trim(),
       status: formData.status ? 1 : 0,
     };
 

@@ -436,21 +436,41 @@ export default function MediaLibrary() {
                 backgroundColor: "#ffffff",
                 padding: "24px",
               },
+              uploadIcon: {
+                color: "#f97316",
+                width: "48px",
+                height: "48px",
+              },
               button: {
                 backgroundColor: "#f97316",
+                color: "#ffffff",
                 fontSize: "0.875rem",
                 fontWeight: "600",
                 padding: "8px 24px",
                 borderRadius: "0.5rem",
+                cursor: "pointer",
+                opacity: 1,
               },
               label: {
-                color: "#4b5563",
+                color: "#1f2937",
+                fontSize: "0.95rem",
+                fontWeight: "600",
+                width: "auto",
+                maxWidth: "100%",
+                cursor: "pointer",
               },
               allowedContent: {
-                color: "#9ca3af",
+                color: "#6b7280",
+                fontSize: "0.85rem",
               },
             }}
             content={{
+              button({ ready, isUploading, files }) {
+                if (isUploading) return "Uploading...";
+                if (files.length > 0)
+                  return `Upload ${files.length} file${files.length > 1 ? "s" : ""}`;
+                return "Choose file";
+              },
               label({ ready, isUploading, files }) {
                 if (isUploading)
                   return (
