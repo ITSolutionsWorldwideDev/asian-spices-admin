@@ -19,6 +19,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { productSchema } from "./FormSections/product.schema";
 
 import TextEditorNew from "@/components/common/texteditor/texteditor";
+import LoaderOverlay from "@/components/layout/loader-overlay";
 
 import RHFSelect from "./FormSections/RHFSelect";
 import FeaturedImageUpload from "@/components/media/FeaturedImageUpload";
@@ -82,6 +83,7 @@ type AssignedStores = {
   name: string;
   product_id: string;
   price: number;
+  assignment_id: string | number;
 };
 
 // ------------------ Utils ------------------
@@ -158,8 +160,12 @@ export default function ProductFormComponent({
   const [b2bPrices, setB2bPrices] = useState<TierPrice[]>([]);
   const [selectedMedia, setSelectedMedia] = useState<number[]>([]);
   const [primaryMedia, setPrimaryMedia] = useState<number | null>(null);
+  const [promoCodes, setPromoCodes] = useState<
+    { id: number; code: string; status: number; discount_type: string; discount_value: number }[]
+  >([]);
 
   const [assignedStores, setassignedStores] = useState<AssignedStores[]>([]);
+  const [unassigningId, setUnassigningId] = useState<string | number | null>(null);
   const [mounted, setMounted] = useState(false);
   // Stores available for assignment (create / edit)
   const [allStores, setAllStores] = useState<{ id: string; name: string }[]>([]);
@@ -193,10 +199,10 @@ export default function ProductFormComponent({
       sale_price: 0,
       purchase_price: 0,
       customer_type: "B2C",
-      quantity: 0,
+      quantity: undefined,
       discount_type: null,
       discount_value: 0,
-      promo_code: "",
+      promo_code: null,
       weight: "",
       status: 1,
     },
@@ -301,6 +307,10 @@ export default function ProductFormComponent({
       .then((r) => r.json())
       .then((rows) => setAllStores(Array.isArray(rows) ? rows : []))
       .catch(() => setAllStores([]));
+    fetch("/api/products/promos")
+      .then((r) => r.json())
+      .then((d) => setPromoCodes(d.items || []))
+      .catch(() => setPromoCodes([]));
   }, []);
 
   // const [page, setPage] = useState(1);
@@ -422,6 +432,38 @@ export default function ProductFormComponent({
       })),
     [originCountries],
   );
+
+  const watchedPromoCode = watch("promo_code");
+
+  const promoCodeOptions = useMemo(() => {
+    const isPercent = (type: string) =>
+      type === "PERCENT" || type === "percentage";
+
+    const active = promoCodes
+      .filter((p) => Number(p.status) === 1)
+      .map((p) => {
+        const discountLabel = isPercent(p.discount_type)
+          ? `${p.discount_value}% Off`
+          : `€${Number(p.discount_value).toLocaleString()} Flat`;
+        return {
+          value: p.code,
+          label: `${p.code} — ${discountLabel}`,
+        };
+      });
+
+    // Keep a saved/inactive code visible on edit if it's no longer in the active list
+    if (
+      watchedPromoCode &&
+      !active.some((o) => o.value === watchedPromoCode)
+    ) {
+      active.unshift({
+        value: watchedPromoCode,
+        label: watchedPromoCode,
+      });
+    }
+
+    return active;
+  }, [promoCodes, watchedPromoCode]);
 
   const [accordionOpen, setAccordionOpen] = useState(true);
   const [pricingOpen, setPricingOpen] = useState(true);
@@ -686,6 +728,30 @@ export default function ProductFormComponent({
     return Number.isNaN(n) ? null : n;
   };
 
+  const handleUnassignStore = async (assignmentId: string | number) => {
+    if (mode === "view") return;
+    if (!confirm("Remove this product from this store?")) return;
+
+    try {
+      setUnassigningId(assignmentId);
+      const res = await fetch(`/api/store-assignments?id=${assignmentId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || "Failed to unassign store");
+      }
+      setassignedStores((prev) =>
+        prev.filter((s) => String(s.assignment_id) !== String(assignmentId)),
+      );
+      showToast("success", "Product removed from store");
+    } catch (err: any) {
+      showToast("error", err?.message || "Failed to unassign store");
+    } finally {
+      setUnassigningId(null);
+    }
+  };
+
   useEffect(() => {
     if (!productId || mode === "create") return;
 
@@ -719,7 +785,9 @@ export default function ProductFormComponent({
         setValue("item_code", data.item_code || "");
         setValue("weight", data.weight ? String(data.weight) : "");
         setValue("base_price", safeNumber(data.base_price) ?? 0);
+        setValue("purchase_price", safeNumber(data.purchase_price) ?? 0);
         setValue("quantity", safeNumber(data.quantity) ?? 0);
+        setValue("promo_code", data.promo_code || null);
 
         // console.log("data.images === ", data.images);
 
@@ -1083,13 +1151,13 @@ export default function ProductFormComponent({
 
                   <div>
                     <label className="block mb-1 text-sm font-medium text-gray-700">
-                      Quantity <span className="text-red-500">*</span>
+                      Quantity
                     </label>
                     <input
                       type="number"
                       {...register("quantity", { valueAsNumber: true })}
-                      placeholder="0"
-                      min={0}
+                      placeholder="Defaults to 99999"
+                      min={1}
                       step="1"
                       disabled={isView}
                       className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
@@ -1159,12 +1227,13 @@ export default function ProductFormComponent({
                     <label className="block mb-1 text-sm font-medium text-gray-700">
                       Promo Code
                     </label>
-                    <input
-                      type="text"
-                      {...register("promo_code")}
-                      placeholder="e.g. ASIANTIGER10"
-                      disabled={isView}
-                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm uppercase"
+                    <RHFSelect
+                      name="promo_code"
+                      control={control}
+                      options={promoCodeOptions}
+                      placeholder="Select promo code"
+                      isDisabled={isView}
+                      isClearable
                     />
                   </div>
 
@@ -1664,7 +1733,7 @@ export default function ProductFormComponent({
                     </select>
                     <p className="text-xs text-gray-500 mt-1">
                       Hold Ctrl (Windows) or Cmd (Mac) to select multiple stores.
-                      To change an existing assignment, use Store Assignments → Edit.
+                      Use the remove button on a store card to unlink it from this product.
                     </p>
                   </div>
                 )}
@@ -1677,20 +1746,38 @@ export default function ProductFormComponent({
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {assignedStores.map((store) => (
                           <div
-                            key={store.id}
-                            className="flex items-center gap-3 p-3 rounded-lg border bg-white shadow-sm hover:shadow-md transition"
+                            key={store.assignment_id ?? store.id}
+                            className="relative flex items-center gap-3 p-3 rounded-lg border bg-white shadow-sm hover:shadow-md transition"
                           >
                             <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
                               <LifeBuoy size={18} className="text-blue-600" />
                             </div>
 
-                            <div>
-                              <p className="font-semibold">{store.name}</p>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold truncate">{store.name}</p>
                               <p className="font-semibold p-0 mb-0">
                                 Product Price: €
                                 {Number(store.price).toFixed(2)}
                               </p>
                             </div>
+
+                            {mode === "edit" && store.assignment_id != null && (
+                              <button
+                                type="button"
+                                disabled={unassigningId === store.assignment_id}
+                                onClick={() =>
+                                  handleUnassignStore(store.assignment_id)
+                                }
+                                className="shrink-0 flex h-8 w-8 items-center justify-center rounded-full text-red-600 hover:bg-red-50 disabled:opacity-50"
+                                title={`Remove from ${store.name}`}
+                              >
+                                {unassigningId === store.assignment_id ? (
+                                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-red-600 border-t-transparent" />
+                                ) : (
+                                  <X size={16} />
+                                )}
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -1702,14 +1789,24 @@ export default function ProductFormComponent({
           </div>
 
           <div className="flex justify-end gap-3 my-4">
-            <Link href="/products" className="btn btn-secondary">
+            <Link
+              href="/products"
+              className={`btn btn-secondary ${saving ? "pointer-events-none opacity-50" : ""}`}
+            >
               Cancel
             </Link>
             {mode !== "view" && (
               <button
+                type="submit"
                 disabled={saving}
-                className="bg-blue-600 text-white px-6 py-2 rounded"
+                className="bg-blue-600 text-white px-6 py-2 rounded inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed min-w-[140px]"
               >
+                {saving && (
+                  <span
+                    className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"
+                    aria-hidden="true"
+                  />
+                )}
                 {saving
                   ? "Saving..."
                   : mode === "edit"
@@ -1718,8 +1815,18 @@ export default function ProductFormComponent({
               </button>
             )}
           </div>
+
         </form>
       </div>
+
+      <LoaderOverlay
+        show={saving || unassigningId != null}
+        message={
+          unassigningId != null
+            ? "Removing product from store..."
+            : "Saving product..."
+        }
+      />
     </div>
   );
 }

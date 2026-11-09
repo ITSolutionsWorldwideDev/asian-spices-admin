@@ -91,21 +91,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Category and name are required" }, { status: 400 });
     }
 
-    const trimmedName = name.trim();
+    const trimmedName = String(name).trim();
     const slug = slugify(trimmedName);
 
-    // Pre-check for duplicate subcategory name or slug
-    const existing = await pool.query(
-      `SELECT id FROM store_subcategories 
-       WHERE (category_id = $1 AND LOWER(TRIM(name)) = LOWER($2)) OR slug = $3 
+    const duplicate = await pool.query(
+      `SELECT id FROM store_subcategories
+       WHERE category_id = $1
+         AND (LOWER(TRIM(name)) = LOWER($2) OR slug = $3)
        LIMIT 1`,
-      [category_id, trimmedName, slug]
+      [category_id, trimmedName, slug],
     );
 
-    if (existing.rows.length > 0) {
+    if (duplicate.rows.length) {
       return NextResponse.json(
-        { error: "Subcategory already exists" },
-        { status: 409 }
+        { error: "Subcategory already exists in this category" },
+        { status: 409 },
       );
     }
 
@@ -156,22 +156,33 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Subcategory ID required" }, { status: 400 });
     }
 
-    const trimmedName = name ? name.trim() : undefined;
+    const trimmedName = name != null ? String(name).trim() : undefined;
     const slug = trimmedName ? slugify(trimmedName) : undefined;
 
-    if (trimmedName && slug) {
+    if (trimmedName) {
       const existing = await pool.query(
-        `SELECT id FROM store_subcategories 
-         WHERE ((category_id = COALESCE($1, category_id) AND LOWER(TRIM(name)) = LOWER($2)) OR slug = $3)
-           AND id != $4 
-         LIMIT 1`,
-        [category_id || null, trimmedName, slug, id]
+        `SELECT category_id FROM store_subcategories WHERE id = $1`,
+        [id],
       );
 
-      if (existing.rows.length > 0) {
+      if (!existing.rows.length) {
+        return NextResponse.json({ error: "Subcategory not found" }, { status: 404 });
+      }
+
+      const categoryId = existing.rows[0].category_id;
+      const duplicate = await pool.query(
+        `SELECT id FROM store_subcategories
+         WHERE category_id = $1
+           AND id <> $2
+           AND (LOWER(TRIM(name)) = LOWER($3) OR slug = $4)
+         LIMIT 1`,
+        [categoryId, id, trimmedName, slug],
+      );
+
+      if (duplicate.rows.length) {
         return NextResponse.json(
-          { error: "Subcategory already exists" },
-          { status: 409 }
+          { error: "Subcategory already exists in this category" },
+          { status: 409 },
         );
       }
     }
@@ -186,7 +197,7 @@ export async function PUT(req: NextRequest) {
          updated_at = NOW()
        WHERE id = $5
        RETURNING *`,
-      [category_id || null, trimmedName, slug, status, id]
+      [trimmedName ?? null, slug ?? null, status, id]
     );
 
     // const res = await pool.query(

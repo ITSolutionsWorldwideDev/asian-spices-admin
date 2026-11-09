@@ -42,6 +42,7 @@ interface ProductSummary {
 export default function MediaLibrary() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [selected, setSelected] = useState<number[]>([]);
 
   // Filter States
@@ -270,6 +271,17 @@ export default function MediaLibrary() {
 
   return (
     <div className="page-wrapper">
+      {uploading && (
+        <div
+          className="fixed inset-0 z-[9999] flex flex-col items-center justify-center gap-3 bg-black/50"
+          aria-busy="true"
+          aria-live="assertive"
+        >
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-white border-t-transparent" />
+          <p className="text-sm font-semibold text-white">Uploading media…</p>
+          <p className="text-xs text-white/80">Please wait — do not leave this page</p>
+        </div>
+      )}
       <div className="content max-w-6xl mx-auto space-y-6 p-4">
         {/* Header Title Section */}
         <div className="flex justify-between items-baseline flex-wrap gap-2">
@@ -488,46 +500,61 @@ export default function MediaLibrary() {
                 return "Choose files or drag and drop here";
               },
             }}
-            onBeforeUploadBegin={(files) => normalizeFilesForUpload(files)}
+            onBeforeUploadBegin={async (files) => {
+              setUploading(true);
+              try {
+                return await normalizeFilesForUpload(files);
+              } catch (err) {
+                setUploading(false);
+                throw err;
+              }
+            }}
             onUploadBegin={(files) => {
+              setUploading(true);
               console.log("🚀 Uploading initialized for files:", files);
             }}
             onClientUploadComplete={async (res) => {
-              if (!res?.length) return;
-
               try {
-                await Promise.all(
-                  res.map((file) =>
-                    fetch("/api/media/save", {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify({
-                        file_name: file.name,
-                        file_url: file.serverData?.url || file.ufsUrl,
-                        file_type: file.type,
-                        size: file.size,
-                      }),
-                    }),
-                  ),
-                );
+                if (!res?.length) return;
 
-                showToast("success", "Files uploaded successfully");
-                setCurrentPage(1);
-                fetchMedia(1);
-              } catch (err: any) {
-                showToast(
-                  "error",
-                  err.message || "Failed linking files downstream",
-                );
+                try {
+                  await Promise.all(
+                    res.map((file) =>
+                      fetch("/api/media/save", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          file_name: file.name,
+                          file_url: file.serverData?.url || file.ufsUrl,
+                          file_type: file.type,
+                          size: file.size,
+                        }),
+                      }),
+                    ),
+                  );
+
+                  showToast("success", "Files uploaded successfully");
+                  setCurrentPage(1);
+                  fetchMedia(1);
+                } catch (err: any) {
+                  showToast(
+                    "error",
+                    err.message || "Failed linking files downstream",
+                  );
+                }
+              } finally {
+                setUploading(false);
               }
             }}
             onUploadError={(err) => {
+              setUploading(false);
               console.error("Upload error:", err);
               showToast("error", err.message || "Upload failed");
             }}
             onUploadAborted={() => {
+              setUploading(false);
               showToast("error", "Upload was cancelled");
             }}
           />

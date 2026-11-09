@@ -44,12 +44,11 @@ export const productSchema = z
     purchase_price: z.preprocess(toNumber, z.number().nullable().optional()),
     sale_price: z.preprocess(toNumber, z.number().nullable().optional()),
     customer_type: z.enum(["B2C", "B2B"]).default("B2C"),
-    quantity: z.preprocess(
-      toNumber,
-      z
-        .number({ message: "Quantity is required" })
-        .min(0, "Quantity cannot be negative"),
-    ),
+    quantity: z.preprocess((val) => {
+      if (val === "" || val === null || val === undefined) return undefined;
+      const n = Number(val);
+      return Number.isNaN(n) ? undefined : n;
+    }, z.number().min(1).optional()),
 
     description: z.string().optional(),
     health_benefits: z.string().optional(),

@@ -25,9 +25,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const images = await pool.query(`SELECT * FROM store_product_images WHERE product_id = $1`, [id]);
   
   const assignedStores = await pool.query(
-    `SELECT sp.product_id, s.id, s.name,sp.price 
+    `SELECT sp.id AS assignment_id, sp.product_id, s.id, s.name, sp.price
      FROM store_product_catalog AS sp
-     LEFT JOIN stores AS s ON s.id = sp.store_id 
+     LEFT JOIN stores AS s ON s.id = sp.store_id
      WHERE sp.product_id = $1`,
     [id]
   );
@@ -96,9 +96,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         body.brand_id,
         body.description,
         body.base_price,
-        body.quantity !== undefined && body.quantity !== null && !isNaN(Number(body.quantity))
+        Number.isFinite(Number(body.quantity)) && Number(body.quantity) >= 1
           ? Number(body.quantity)
-          : 0,
+          : 99999,
         body.discount_type || null,
         body.discount_value || null,
         body.status ?? 1,

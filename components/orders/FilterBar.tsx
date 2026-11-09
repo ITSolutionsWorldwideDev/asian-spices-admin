@@ -80,6 +80,7 @@ export default function FilterBar({
           <option value="rejected">Rejected/Bounced Nodes</option>
           <option value="shipped">Shipped</option>
           <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
         </select>
       </div>
 

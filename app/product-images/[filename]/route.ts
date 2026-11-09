@@ -2,7 +2,19 @@
 
 import { NextRequest, NextResponse } from "next/server";
 
-const UFS_BASE = "https://luyetxymax.ufs.sh/f";
+function cleanEnv(v?: string) {
+  return (v || "").replace(/^['"]|['"];?$/g, "").trim();
+}
+
+function getUfsBase(): string {
+  const fromEnv = cleanEnv(process.env.UFS_BASE);
+  if (fromEnv) return fromEnv.replace(/\/+$/, "");
+
+  const appId = cleanEnv(process.env.UPLOADTHING_APP_ID);
+  if (appId) return `https://${appId}.ufs.sh/f`;
+
+  throw new Error("UFS_BASE or UPLOADTHING_APP_ID must be set");
+}
 
 function getMimeTypeFromExt(ext: string): string {
   switch (ext.toLowerCase()) {
@@ -37,16 +49,17 @@ export async function GET(
   }
 
   const [, baseKey, ext] = match;
+  const ufsBase = getUfsBase();
 
   try {
     // 1. Try full filename first (matches new uploads where customId ends with .jpg/.png)
-    let upstream = await fetch(`${UFS_BASE}/${encodeURIComponent(filename)}`, {
+    let upstream = await fetch(`${ufsBase}/${encodeURIComponent(filename)}`, {
       next: { revalidate: 60 * 60 * 24 * 30 },
     });
 
     // 2. Fallback to key without extension (matches older uploads keyed by raw UploadThing key)
     if (!upstream.ok) {
-      upstream = await fetch(`${UFS_BASE}/${encodeURIComponent(baseKey)}`, {
+      upstream = await fetch(`${ufsBase}/${encodeURIComponent(baseKey)}`, {
         next: { revalidate: 60 * 60 * 24 * 30 },
       });
     }
