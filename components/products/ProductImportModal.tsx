@@ -123,8 +123,8 @@ export default function ProductImportModal({
     (preview.create ?? 0) + (preview.update ?? 0) > 0;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
-      <div className="bg-white rounded-lg p-6 w-full max-w-3xl">
+    <div className="fixed inset-0 z-[1100] bg-black/40 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg p-6 w-full max-w-3xl relative z-[1101]">
         <div className="flex justify-between items-center mb-4">
           <h4 className="text-lg font-semibold">
             Import Products (Step {step}/2)

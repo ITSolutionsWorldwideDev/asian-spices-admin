@@ -85,7 +85,7 @@ export default function DiscountImportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[1100] bg-black/40 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg p-6 w-full max-w-xl shadow-xl">
         {/* Header */}
         <div className="flex justify-between items-center mb-4">

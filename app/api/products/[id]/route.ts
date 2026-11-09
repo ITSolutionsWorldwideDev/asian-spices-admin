@@ -8,6 +8,10 @@ import {
   normalizeProductCode,
   uniqueViolationResponse,
 } from "@/lib/products/uniqueCodes";
+import {
+  allocateUniqueProductSlug,
+  resolveBrandNameForSlug,
+} from "@/lib/products/product-slug";
 
 const DEFAULT_STORE_ID = "afef3fd5-c31a-440a-ae56-99eca0b24359";
 
@@ -76,6 +80,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         ? null
         : String(body.weight).trim();
 
+    const brandName = await resolveBrandNameForSlug(client, body.brand_id);
+    const slug = await allocateUniqueProductSlug(
+      client,
+      body.slug || body.name,
+      id,
+      brandName,
+    );
+
     const product = await client.query(
       `
       UPDATE store_products SET
@@ -88,7 +100,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       `,
       [
         body.name,
-        body.slug,
+        slug,
         sku,
         itemCode,
         body.category_id,
@@ -288,6 +300,13 @@ export async function PUT(
     await client.query("BEGIN");
 
     const body = await req.json();
+    const brandName = await resolveBrandNameForSlug(client, body.brand_id);
+    const slug = await allocateUniqueProductSlug(
+      client,
+      body.slug || body.name,
+      id,
+      brandName,
+    );
 
     const product = await client.query(
       `
@@ -312,7 +331,7 @@ export async function PUT(
       `,
       [
         body.name,
-        body.slug,
+        slug,
         body.sku,
         body.item_code,
         body.category_id,

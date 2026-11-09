@@ -357,31 +357,27 @@ export default function ProductListComponent() {
 
       {/* ------------------------- IMPORT MODAL ------------------------- */}
       {showImportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <ProductImportModal
-            onClose={() => setShowImportModal(false)}
-            onSuccess={() => {
-              fetchProducts(filters); // refresh list after import
-              showToast("success", "Products imported successfully");
-            }}
-          />
-        </div>
+        <ProductImportModal
+          onClose={() => setShowImportModal(false)}
+          onSuccess={() => {
+            fetchProducts(filters); // refresh list after import
+            showToast("success", "Products imported successfully");
+          }}
+        />
       )}
 
       {/* ------------------------- [ADDED] DISCOUNT IMPORT MODAL ------------------------- */}
       {showDiscountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <DiscountImportModal
-            onClose={() => setShowDiscountModal(false)}
-            onSuccess={() => {
-              fetchProducts(filters); // Refresh data to accurately reflect new price schemas
-              showToast(
-                "success",
-                "Product pricing discount matrix updated successfully",
-              );
-            }}
-          />
-        </div>
+        <DiscountImportModal
+          onClose={() => setShowDiscountModal(false)}
+          onSuccess={() => {
+            fetchProducts(filters); // Refresh data to accurately reflect new price schemas
+            showToast(
+              "success",
+              "Product pricing discount matrix updated successfully",
+            );
+          }}
+        />
       )}
     </>
   );
