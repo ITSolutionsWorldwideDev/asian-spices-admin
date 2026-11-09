@@ -70,9 +70,18 @@ export async function POST(req: NextRequest) {
         sp.slug,
         sp.id as provider_id
       FROM store_shipping_providers as shp
-	    LEFT JOIN shipping_methods sm ON sm.provider_id = sm.provider_id
+	    LEFT JOIN shipping_methods sm ON sm.provider_id = shp.provider_id
       LEFT JOIN shipping_providers sp ON sm.provider_id = sp.id
-      WHERE sm.name = $1 AND shp.store_id = $2 AND sm.is_active = true
+      WHERE shp.store_id = $2
+        AND sm.is_active = true
+        AND (
+          sm.name = $1
+          OR sm.id::text = $1
+          OR (
+            LOWER(TRIM($1)) = 'standard shipping'
+            AND LOWER(TRIM(sm.name)) = 'standard'
+          )
+        )
       `,
       [shippingMethodId, storeId],
     );
