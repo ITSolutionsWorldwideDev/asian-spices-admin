@@ -17208,3 +17208,56 @@ body {
   width: auto !important;
   max-width: 100% !important;
 }
+
+/* Auth / Login page contrast & text visibility */
+.login-wrapper .login-content {
+  background-color: #000000 !important;
+}
+
+.login-wrapper .login-content .login-logo {
+  display: block !important;
+}
+
+.login-wrapper .login-content .login-logo img {
+  display: block !important;
+  max-height: 48px;
+  width: auto;
+}
+
+.login-wrapper .login-content .login-userheading h3 {
+  color: #ffffff !important;
+}
+
+.login-wrapper .login-content .login-userheading h4 {
+  color: #d1d5db !important;
+}
+
+.login-wrapper .login-content .form-label {
+  color: #ffffff !important;
+}
+
+.login-wrapper .login-content a {
+  color: #ffffff !important;
+}
+
+.login-wrapper .login-content a:hover {
+  color: #fb923c !important;
+}
+
+.login-wrapper .login-content button.underline {
+  color: #ffffff !important;
+}
+
+.login-wrapper .login-content button.underline:hover {
+  color: #fb923c !important;
+}
+
+.login-wrapper .login-content .copyright-text p {
+  color: #9ca3af !important;
+}
+
+@media (min-width: 768px) {
+  .platform-header-logo {
+    display: none !important;
+  }
+}
