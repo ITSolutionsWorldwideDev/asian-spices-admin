@@ -55,30 +55,31 @@ export default function PlatformHeader() {
   }, [pathname]);
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
+    <header className={`bg-white shadow-sm sticky top-0 z-50 transition-all duration-300 ${isMini ? "md:ml-[86px]" : "md:ml-[252px]"}`}>
       <div className="flex items-center justify-between px-4 py-2">
         {/* LEFT */}
         <div className="flex items-center space-x-2">
-          <Link href="/platform/dashboard" className="flex items-center">
-            <img
-              src="/assets/img/logo.svg"
-              alt="Logo"
-              className="h-8 w-auto"
-            />
-          </Link>
+          {/* Mobile-only logo (hidden on desktop) */}
+          <div className="platform-header-logo md:hidden">
+            <Link href="/platform/dashboard" className="flex items-center">
+              <img
+                src="/assets/img/logo.svg"
+                alt="Logo"
+                className="h-8 w-auto"
+              />
+            </Link>
+          </div>
 
-          {/* Desktop sidebar toggle */}
-          <button
-            onClick={handleSidebar}
-            className="hidden md:flex p-1 hover:bg-gray-100 rounded-md transition-colors"
-            title={isMini ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            <ChevronsLeft
-              className={`w-5 h-5 transition-transform duration-300 ${
-                isMini ? "rotate-180" : ""
-              }`}
-            />
-          </button>
+          {/* Desktop sidebar toggle - only rendered when sidebar is collapsed */}
+          {isMini && (
+            <button
+              onClick={handleSidebar}
+              className="hidden md:flex p-1 hover:bg-gray-100 rounded-md transition-colors"
+              title="Expand sidebar"
+            >
+              <ChevronsLeft className="w-5 h-5 rotate-180" />
+            </button>
+          )}
 
           {/* Mobile menu toggle */}
           <button

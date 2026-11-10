@@ -40,21 +40,8 @@ export default function StoreTabs({ storeId }: { storeId: string }) {
   ];
 
 
-  const activeIndex = Math.max(
-    tabs.findIndex((t) => t.isActive),
-    0,
-  );
-
   return (
-    <div className="relative flex gap-2 bg-gray-100 p-1 rounded-xl w-fit pr-0">
-      <div
-        className="absolute top-1 bottom-1 rounded-lg bg-white shadow-sm transition-all duration-300"
-        style={{
-          width: `${100 / tabs.length}%`,
-          transform: `translateX(${activeIndex * 100}%)`,
-        }}
-      />
-
+    <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl w-fit">
       {tabs.map((tab) => {
         const Icon = tab.icon;
 
@@ -62,18 +49,16 @@ export default function StoreTabs({ storeId }: { storeId: string }) {
           <Link
             key={tab.href}
             href={tab.href}
-            className={`relative z-10 flex hover:scale-[1.03] active:scale-[0.98] items-center gap-2 px-4 py-2 text-sm font-medium transition-colors
-              ${
-                tab.isActive
-                  ? "text-blue-600"
-                  : "text-gray-600 hover:text-gray-900"
-              }
-            `}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+              tab.isActive
+                ? "bg-white text-blue-600 shadow-sm"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-200/50"
+            }`}
           >
             <Icon
               size={16}
               className={`transition-colors ${
-                tab.isActive ? "text-blue-600 scale-110" : "text-gray-500"
+                tab.isActive ? "text-blue-600" : "text-gray-500"
               }`}
             />
 

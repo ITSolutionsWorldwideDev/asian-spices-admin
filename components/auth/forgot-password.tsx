@@ -82,22 +82,22 @@ export default function ForgotPasswordComponent() {
               <div className="login-content bg-black">
                 <form onSubmit={step === "email" ? sendOtp : resetPassword}>
                   <div className="login-userset">
-                    <a
+                    <Link
                       href="/login"
-                      className="login-logo logo-white"
+                      className="login-logo !block mb-6"
                       style={{ marginInline: 0 }}
                     >
-                      <img src="/assets/img/logo.svg" alt="Img" />
-                    </a>
+                      <img src="/assets/img/logo.svg" alt="Asian Spices" className="h-10 w-auto" />
+                    </Link>
                     <div className="login-userheading">
-                      <h3 className="text-white text-2xl font-bold">Forgot Password</h3>
+                      <h3 className="!text-white text-2xl font-bold">Forgot Password</h3>
                       {errorMsg && (
                         <p className="text-red-500 mb-3">{errorMsg}</p>
                       )}
                       {successMsg && (
                         <p className="text-green-400 mb-3">{successMsg}</p>
                       )}
-                      <h4 className="text-[16px] text-gray-300">
+                      <h4 className="text-[16px] !text-gray-300">
                         {step === "email"
                           ? "Enter your email and we’ll send a one-time code."
                           : "Enter the OTP from your email and choose a new password."}
@@ -179,11 +179,11 @@ export default function ForgotPasswordComponent() {
                       </button>
                     </div>
 
-                    <p className="mt-4 text-center text-white text-sm space-x-3">
+                    <p className="mt-4 text-center !text-white text-sm space-x-3">
                       {step === "reset" && (
                         <button
                           type="button"
-                          className="underline hover:text-orange-400 mr-3"
+                          className="!text-white underline hover:!text-orange-400 mr-3"
                           onClick={() => {
                             setStep("email");
                             setOtp("");
@@ -198,14 +198,14 @@ export default function ForgotPasswordComponent() {
                       )}
                       <Link
                         href="/login"
-                        className="underline hover:text-orange-400"
+                        className="!text-white underline hover:!text-orange-400"
                       >
                         Back to Sign In
                       </Link>
                     </p>
 
                     <div className="my-6 flex justify-center items-center copyright-text">
-                      <p>Copyright &copy; 2026 Asian Spices</p>
+                      <p className="!text-gray-400">Copyright &copy; 2026 Asian Spices</p>
                     </div>
                   </div>
                 </form>
