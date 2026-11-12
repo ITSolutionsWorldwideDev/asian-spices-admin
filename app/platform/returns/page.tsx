@@ -157,7 +157,7 @@ export default function AdminReturnsPage() {
                         {r.return_number}
                       </td>
                       <td className="p-4 font-mono text-gray-600">
-                        #{r.order_number}
+                        {r.order_number}
                       </td>
                       <td className="p-4 font-medium text-gray-800">
                         {r.customer_name || "Guest Checkout"}

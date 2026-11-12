@@ -132,7 +132,7 @@ export default async function StoreDashboard({
               <tbody>
                 {recentOrders.map((order: any,index) => (
                   <tr key={order.id} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-2">#{order.order_number}</td>
+                    <td className="px-4 py-2">{order.order_number}</td>
                     <td className="px-4 py-2">€{Number(order.total_amount).toLocaleString()}</td>
                     <td className="px-4 py-2">{order.order_status}</td>
                     <td className="px-4 py-2">{new Date(order.created_at).toLocaleDateString()}</td>

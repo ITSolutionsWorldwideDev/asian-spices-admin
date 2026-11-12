@@ -225,7 +225,6 @@ export default function ProductFormComponent({
   const name = watch("name");
   const weight = watch("weight");
   const categoryId = watch("category_id");
-  const brandId = watch("brand_id");
 
   // const base_price = watch("base_price") || 0;
   // const discountType = watch("discount_type");

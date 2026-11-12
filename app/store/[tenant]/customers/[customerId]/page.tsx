@@ -151,7 +151,7 @@ export default function CustomerDetailPage() {
                 <tr key={o.id}>
                   <td>
                     <Link href={`/orders/${o.id}`}>
-                      #{o.order_number}
+                      {o.order_number}
                     </Link>
                   </td>
                   <td>{new Date(o.created_at).toLocaleDateString()}</td>

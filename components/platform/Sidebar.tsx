@@ -39,6 +39,12 @@ const PLATFORM_MENU = [
         link: "/platform/returns",
         submenu: false,
       },
+      {
+        label: "Reviews",
+        icon: "message",
+        link: "/platform/reviews",
+        submenu: false,
+      },
     ],
   },
 

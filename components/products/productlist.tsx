@@ -24,6 +24,7 @@ type Product = {
   category: string;
   subcategory: string;
   brand: string;
+  weight?: string | null;
   base_price: number;
   quantity: number;
   status: number;
@@ -204,6 +205,14 @@ export default function ProductListComponent() {
       sorter: (a: Product, b: Product) => a.brand.localeCompare(b.brand),
     },
     {
+      title: "Weight",
+      dataIndex: "weight",
+      width: 110,
+      sorter: (a: Product, b: Product) =>
+        String(a.weight || "").localeCompare(String(b.weight || "")),
+      render: (weight: string | null | undefined) => weight?.trim() || "—",
+    },
+    {
       title: "Price",
       dataIndex: "base_price",
       sorter: (a: Product, b: Product) => a.base_price - b.base_price,
@@ -357,31 +366,27 @@ export default function ProductListComponent() {
 
       {/* ------------------------- IMPORT MODAL ------------------------- */}
       {showImportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <ProductImportModal
-            onClose={() => setShowImportModal(false)}
-            onSuccess={() => {
-              fetchProducts(filters); // refresh list after import
-              showToast("success", "Products imported successfully");
-            }}
-          />
-        </div>
+        <ProductImportModal
+          onClose={() => setShowImportModal(false)}
+          onSuccess={() => {
+            fetchProducts(filters); // refresh list after import
+            showToast("success", "Products imported successfully");
+          }}
+        />
       )}
 
       {/* ------------------------- [ADDED] DISCOUNT IMPORT MODAL ------------------------- */}
       {showDiscountModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <DiscountImportModal
-            onClose={() => setShowDiscountModal(false)}
-            onSuccess={() => {
-              fetchProducts(filters); // Refresh data to accurately reflect new price schemas
-              showToast(
-                "success",
-                "Product pricing discount matrix updated successfully",
-              );
-            }}
-          />
-        </div>
+        <DiscountImportModal
+          onClose={() => setShowDiscountModal(false)}
+          onSuccess={() => {
+            fetchProducts(filters); // Refresh data to accurately reflect new price schemas
+            showToast(
+              "success",
+              "Product pricing discount matrix updated successfully",
+            );
+          }}
+        />
       )}
     </>
   );

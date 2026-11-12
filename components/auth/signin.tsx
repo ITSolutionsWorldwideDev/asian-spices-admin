@@ -73,20 +73,20 @@ export default function SigninComponent() {
                   <form onSubmit={handleLogin}>
                     <div className="login-userset">
                       <a
-                        href="index.html"
-                        className="login-logo logo-white"
+                        href="/"
+                        className="login-logo !block mb-6"
                         style={{ marginInline: 0 }}
                       >
-                        <img src="/assets/img/logo.svg" alt="Img" />
+                        <img src="/assets/img/logo.svg" alt="Asian Spices" className="h-10 w-auto" />
                       </a>
                       <div className="login-userheading">
-                        <h3 className="text-white text-2xl font-bold">Sign In</h3>
+                        <h3 className="!text-white text-2xl font-bold">Sign In</h3>
 
                         {errorMsg && (
                           <p className="text-red-500 mb-3">{errorMsg}</p>
                         )}
 
-                        <h4 className="text-[16px] text-gray-300">
+                        <h4 className="text-[16px] !text-gray-300">
                           Access the Asian Spices panel using your email and
                           passcode.
                         </h4>
@@ -130,7 +130,7 @@ export default function SigninComponent() {
                         <div className="mt-2 text-right">
                           <a
                             href="/forgot-password"
-                            className="text-sm text-white underline hover:text-orange-400"
+                            className="text-sm !text-white underline hover:!text-orange-400"
                           >
                             Forgot Password?
                           </a>
@@ -143,19 +143,19 @@ export default function SigninComponent() {
                         {errorMsg && <p className="text-red-500">{errorMsg}</p>}
                       </div>
 
-                      <p className="mt-4 text-center text-white text-sm">
+                      <p className="mt-4 text-center !text-white text-sm">
                         <a
                           href="https://www.asianspices.online/signup"
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="underline hover:text-orange-400"
+                          className="!text-white underline hover:!text-orange-400"
                         >
                           Sign up as a partner
                         </a>
                       </p>
 
                       <div className="my-6 flex justify-center items-center copyright-text">
-                        <p className="text-gray-400">Copyright &copy; 2026 Asian Spices</p>
+                        <p className="!text-gray-400">Copyright &copy; 2026 Asian Spices</p>
                       </div>
                     </div>
                   </form>

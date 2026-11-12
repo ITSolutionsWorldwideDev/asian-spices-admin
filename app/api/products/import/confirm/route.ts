@@ -14,6 +14,7 @@ import {
   getMaxNumericItemCodeSequence,
 } from "@/lib/products/itemCode";
 import { slugify } from "@/lib/utils/slugify";
+import { allocateUniqueProductSlug } from "@/lib/products/product-slug";
 import { normalizeExcelRow } from "@/lib/products/excelRow";
 import {
   decideImportAction,
@@ -208,6 +209,13 @@ export async function POST(req: NextRequest) {
             : null;
 
           if (action === "update" && existing) {
+            const slug = await allocateUniqueProductSlug(
+              client,
+              values.slug || values.name,
+              existing.id,
+              values.brand,
+            );
+
             await client.query(
               `
               UPDATE store_products SET
@@ -233,7 +241,7 @@ export async function POST(req: NextRequest) {
               `,
               [
                 values.name,
-                values.slug,
+                slug,
                 values.sku,
                 values.itemCode,
                 categoryId,
@@ -283,7 +291,7 @@ export async function POST(req: NextRequest) {
               ...existing,
               ...{
                 name: values.name,
-                slug: values.slug,
+                slug,
                 sku: values.sku,
                 item_code: values.itemCode,
                 category: values.category,
@@ -313,6 +321,13 @@ export async function POST(req: NextRequest) {
             touchedProductIds.push(existing.id);
             updated++;
           } else {
+            const slug = await allocateUniqueProductSlug(
+              client,
+              values.slug || values.name,
+              null,
+              values.brand,
+            );
+
             const productRes = await client.query<{ id: number }>(
               `
               INSERT INTO store_products (
@@ -328,7 +343,7 @@ export async function POST(req: NextRequest) {
               `,
               [
                 values.name,
-                values.slug,
+                slug,
                 values.sku,
                 values.itemCode,
                 categoryId,
@@ -379,7 +394,7 @@ export async function POST(req: NextRequest) {
               sku: values.sku,
               item_code: values.itemCode,
               name: values.name,
-              slug: values.slug,
+              slug,
               description: values.description,
               health_benefits: values.healthBenefits,
               base_price: values.basePrice,

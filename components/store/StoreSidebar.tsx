@@ -82,17 +82,7 @@ export default function StoreSidebar({ collapsed }: SidebarProps) {
           <ChevronsLeft />
         </button>
       </div> */}
-      <div className="h-16 border-b flex items-center justify-center">
-        {collapsed ? (
-          <img src="/assets/img/logo.svg" alt="Logo" className="h-8 w-8" />
-        ) : (
-          <img
-            src="/assets/img/logo.svg"
-            alt="Logo"
-            className="max-h-7 w-auto max-w-[140px]"
-          />
-        )}
-      </div>
+
 
       {/* <PerfectScrollbar> */}
       <div className="flex-1 overflow-y-auto">

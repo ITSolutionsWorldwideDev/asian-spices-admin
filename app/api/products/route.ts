@@ -10,6 +10,10 @@ import {
 } from "@/lib/products/uniqueCodes";
 import { allocateNextSku } from "@/lib/products/sku";
 import { allocateNextItemCode } from "@/lib/products/itemCode";
+import {
+  allocateUniqueProductSlug,
+  resolveBrandNameForSlug,
+} from "@/lib/products/product-slug";
 
 /* ------------------ GET (List Products) ------------------ */
 export async function GET(req: NextRequest) {
@@ -120,6 +124,14 @@ export async function POST(req: NextRequest) {
         ? null
         : String(body.weight).trim();
 
+    const brandName = await resolveBrandNameForSlug(client, body.brand_id);
+    const slug = await allocateUniqueProductSlug(
+      client,
+      body.slug || body.name,
+      null,
+      brandName,
+    );
+
     const productInsertQuery = `
       INSERT INTO store_products (
         name, slug, sku, item_code, country_id, country_of_origin, category_id, subcategory_id, brand_id,
@@ -132,7 +144,7 @@ export async function POST(req: NextRequest) {
 
     const productResult = await client.query(productInsertQuery, [
       body.name,
-      body.slug,
+      slug,
       sku,
       itemCode,
       body.country_id || null,
@@ -363,6 +375,13 @@ export async function POST(req: NextRequest) {
     await client.query("BEGIN");
 
     const body = await req.json();
+    const brandName = await resolveBrandNameForSlug(client, body.brand_id);
+    const slug = await allocateUniqueProductSlug(
+      client,
+      body.slug || body.name,
+      null,
+      brandName,
+    );
 
     const product = await client.query(
       `
@@ -375,7 +394,7 @@ export async function POST(req: NextRequest) {
       `,
       [
         body.name,
-        body.slug,
+        slug,
         body.sku,
         body.item_code,
         body.country_id,
