@@ -24,6 +24,7 @@ type Product = {
   category: string;
   subcategory: string;
   brand: string;
+  weight?: string | null;
   base_price: number;
   quantity: number;
   status: number;
@@ -202,6 +203,14 @@ export default function ProductListComponent() {
       title: "Brand",
       dataIndex: "brand",
       sorter: (a: Product, b: Product) => a.brand.localeCompare(b.brand),
+    },
+    {
+      title: "Weight",
+      dataIndex: "weight",
+      width: 110,
+      sorter: (a: Product, b: Product) =>
+        String(a.weight || "").localeCompare(String(b.weight || "")),
+      render: (weight: string | null | undefined) => weight?.trim() || "—",
     },
     {
       title: "Price",

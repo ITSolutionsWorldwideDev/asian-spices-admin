@@ -24,7 +24,7 @@ export const getStoreDashboardData = cache(async (storeId: string) => {
 
     // pool.query(`SELECT COUNT(*) FROM store_orders WHERE store_id = $1`, [storeId]),
     pool.query(
-      `SELECT COUNT(DISTINCT order_id) FROM order_item_allocations WHERE store_id = $1 AND status in ('assigned','pending')`,
+      `SELECT COUNT(DISTINCT order_id) FROM order_item_allocations WHERE store_id = $1`,
       [storeId],
     ),
 
