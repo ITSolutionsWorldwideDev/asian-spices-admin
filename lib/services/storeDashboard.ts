@@ -39,15 +39,16 @@ export const getStoreDashboardData = cache(async (storeId: string) => {
     pool.query(
       `SELECT COALESCE(SUM(total_amount),0) AS total
        FROM store_orders
-       WHERE store_id = $1 AND order_status = 'completed'`,
+       WHERE (store_id = $1 OR (store_id IS NULL AND current_store_id = $1))
+         AND LOWER(order_status) NOT IN ('rejected', 'cancelled', 'pending')`,
       [storeId],
     ),
 
     pool.query(
       `SELECT COALESCE(SUM(total_amount),0) AS total
        FROM store_orders
-       WHERE store_id = $1
-         AND order_status = 'completed'
+       WHERE (store_id = $1 OR (store_id IS NULL AND current_store_id = $1))
+         AND LOWER(order_status) NOT IN ('rejected', 'cancelled', 'pending')
          AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', NOW())`,
       [storeId],
     ),

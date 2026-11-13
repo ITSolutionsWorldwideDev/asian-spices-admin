@@ -26,11 +26,11 @@ export const getPlatformDashboardData = cache(async () => {
     // Platform users
     pool.query(`SELECT COUNT(*) FROM users`),
 
-    // Real revenue from completed store orders (all stores)
+    // Real revenue: all orders except rejected, cancelled, pending
     pool.query(
       `SELECT COALESCE(SUM(total_amount),0) AS total
        FROM store_orders
-       WHERE order_status = 'completed'`
+       WHERE LOWER(order_status) NOT IN ('rejected', 'cancelled', 'pending')`
     ),
 
     // Active subscriptions
