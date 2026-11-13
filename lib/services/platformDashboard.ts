@@ -26,10 +26,11 @@ export const getPlatformDashboardData = cache(async () => {
     // Platform users
     pool.query(`SELECT COUNT(*) FROM users`),
 
-    // Revenue (from subscriptions or orders)
+    // Real revenue from completed store orders (all stores)
     pool.query(
-      `SELECT COALESCE(SUM(price_cents),0) AS total
-       FROM plans`
+      `SELECT COALESCE(SUM(total_amount),0) AS total
+       FROM store_orders
+       WHERE order_status = 'completed'`
     ),
 
     // Active subscriptions
