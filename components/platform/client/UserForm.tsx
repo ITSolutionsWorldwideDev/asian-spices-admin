@@ -177,8 +177,11 @@ export default function UserForm({ user }: UserFormProps) {
                   type="password"
                   className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
                   placeholder={user ? "Leave blank to keep current" : "Minimum 8 characters"}
+                  value={form.password}
                   onChange={e => setForm({...form, password: e.target.value})}
                   required={!user}
+                  minLength={user ? undefined : 8}
+                  autoComplete="new-password"
                 />
               </div>
             </div>

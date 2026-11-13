@@ -83,17 +83,40 @@ export async function saveUserAction(userId: string | null, formData: SaveUserFo
 
       const hashedPassword = await bcrypt.hash(formData.password, 10);
       const userRes = await client.query(
-        `INSERT INTO users (email, name, password_hash, is_platform_admin, status)
-         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        `INSERT INTO users (email, name, password_hash, is_platform_admin, status, password_changed_at)
+         VALUES ($1, $2, $3, $4, $5, NOW()) RETURNING id`,
         [formData.email, formData.name, hashedPassword, formData.is_platform_admin, formData.status]
       );
       finalUserId = userRes.rows[0].id;
     } else {
       // UPDATE USER
-      await client.query(
-        `UPDATE users SET email = $1, name = $2, is_platform_admin = $3, status = $4 WHERE id = $5`,
-        [formData.email, formData.name, formData.is_platform_admin, formData.status, userId]
-      );
+      const newPassword = formData.password?.trim();
+      if (newPassword) {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await client.query(
+          `UPDATE users
+           SET email = $1,
+               name = $2,
+               is_platform_admin = $3,
+               status = $4,
+               password_hash = $5,
+               password_changed_at = NOW()
+           WHERE id = $6`,
+          [
+            formData.email,
+            formData.name,
+            formData.is_platform_admin,
+            formData.status,
+            hashedPassword,
+            userId,
+          ],
+        );
+      } else {
+        await client.query(
+          `UPDATE users SET email = $1, name = $2, is_platform_admin = $3, status = $4 WHERE id = $5`,
+          [formData.email, formData.name, formData.is_platform_admin, formData.status, userId]
+        );
+      }
     }
 
     // SYNC STORE ASSIGNMENTS
