@@ -17,7 +17,7 @@ export interface AuthUser {
 export async function authorizeUser(email: string, password: string): Promise<AuthUser>{
   const userRes = await runQuery(
     `SELECT id, email, password_hash, is_platform_admin
-     FROM users WHERE email = $1 AND status = 'active'`,
+     FROM users WHERE lower(email) = lower($1) AND status = 'active'`,
     [email]
   );
 

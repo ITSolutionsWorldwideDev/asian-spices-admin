@@ -90,7 +90,24 @@ export async function saveUserAction(userId: string | null, formData: SaveUserFo
       finalUserId = userRes.rows[0].id;
     } else {
       // UPDATE USER
+      const email = String(formData.email || "").trim();
+      const name = String(formData.name || "").trim();
       const newPassword = formData.password?.trim();
+
+      if (!email) {
+        throw new Error("Email is required");
+      }
+
+      const emailTaken = await client.query(
+        `SELECT id FROM users
+         WHERE lower(email) = lower($1) AND id <> $2
+         LIMIT 1`,
+        [email, userId],
+      );
+      if (emailTaken.rows.length > 0) {
+        throw new Error("A user with this email already exists.");
+      }
+
       if (newPassword) {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         await client.query(
@@ -103,8 +120,8 @@ export async function saveUserAction(userId: string | null, formData: SaveUserFo
                password_changed_at = NOW()
            WHERE id = $6`,
           [
-            formData.email,
-            formData.name,
+            email,
+            name,
             formData.is_platform_admin,
             formData.status,
             hashedPassword,
@@ -114,7 +131,7 @@ export async function saveUserAction(userId: string | null, formData: SaveUserFo
       } else {
         await client.query(
           `UPDATE users SET email = $1, name = $2, is_platform_admin = $3, status = $4 WHERE id = $5`,
-          [formData.email, formData.name, formData.is_platform_admin, formData.status, userId]
+          [email, name, formData.is_platform_admin, formData.status, userId]
         );
       }
     }
@@ -137,6 +154,9 @@ export async function saveUserAction(userId: string | null, formData: SaveUserFo
 
     await client.query("COMMIT");
     revalidatePath("/platform/users");
+    if (finalUserId) {
+      revalidatePath(`/platform/users/${finalUserId}`);
+    }
     return { success: true, id: finalUserId };
   } catch (e) {
     await client.query("ROLLBACK");

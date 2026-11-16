@@ -6,7 +6,7 @@ import { saveUserAction, getReferenceData } from "./actions";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui";
 import Link from "next/link";
-import { ArrowLeft, Plus, Trash2, Shield, User, Mail, Lock, Home } from "react-feather";
+import { ArrowLeft, Plus, Trash2, Shield, User, Mail, Lock, Home, Eye, EyeOff } from "react-feather";
 
 interface StoreOption {
   id: string;
@@ -39,6 +39,7 @@ export default function UserForm({ user }: UserFormProps) {
   const router = useRouter();
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [showPassword, setShowPassword] = useState(false);
 
   // Reference Data State
   const [stores, setStores] = useState<StoreOption[]>([]);
@@ -93,7 +94,7 @@ export default function UserForm({ user }: UserFormProps) {
     });
   };
 
-  const handleAction = async (e: React.FormEvent) => {
+  const handleAction = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     // Check for duplicates (Assigning the same store twice)
@@ -103,14 +104,27 @@ export default function UserForm({ user }: UserFormProps) {
       return;
     }
 
+    // Read from the DOM so browser autofill / typed values are not missed
+    const fd = new FormData(e.currentTarget);
+    const payload = {
+      ...form,
+      name: String(fd.get("name") ?? form.name).trim(),
+      email: String(fd.get("email") ?? form.email).trim(),
+      password: String(fd.get("password") ?? form.password),
+    };
+
     startTransition(async () => {
       try {
-        await saveUserAction(user?.id ?? null, form);
+        await saveUserAction(user?.id ?? null, payload);
         showToast("success", user ? "User updated" : "User created");
         router.push("/platform/users");
         router.refresh();
       } catch (err) {
-        showToast("error", "Failed to save user");
+        const message =
+          err instanceof Error && err.message
+            ? err.message
+            : "Failed to save user";
+        showToast("error", message);
       }
     });
   };
@@ -144,6 +158,7 @@ export default function UserForm({ user }: UserFormProps) {
                 <div className="relative">
                   <User className="absolute left-3 top-3 text-gray-400" size={16} />
                   <input 
+                    name="name"
                     className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
                     placeholder="John Doe"
                     value={form.name}
@@ -158,12 +173,14 @@ export default function UserForm({ user }: UserFormProps) {
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 text-gray-400" size={16} />
                   <input 
+                    name="email"
                     type="email"
                     className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
                     placeholder="john@example.com"
                     value={form.email}
                     onChange={e => setForm({...form, email: e.target.value})}
                     required
+                    autoComplete="email"
                   />
                 </div>
               </div>
@@ -174,8 +191,9 @@ export default function UserForm({ user }: UserFormProps) {
               <div className="relative">
                 <Lock className="absolute left-3 top-3 text-gray-400" size={16} />
                 <input 
-                  type="password"
-                  className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  className="w-full pl-10 pr-10 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
                   placeholder={user ? "Leave blank to keep current" : "Minimum 8 characters"}
                   value={form.password}
                   onChange={e => setForm({...form, password: e.target.value})}
@@ -183,6 +201,14 @@ export default function UserForm({ user }: UserFormProps) {
                   minLength={user ? undefined : 8}
                   autoComplete="new-password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 transition"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
             </div>
 
