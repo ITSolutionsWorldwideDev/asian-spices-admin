@@ -14,6 +14,8 @@ declare module "next-auth" {
       id: string;
       email: string;
       isPlatformAdmin?: boolean;
+      /** true = password already changed; false = must set a new password */
+      mustChangePassword?: boolean;
       storeRoles?: StoreRole[];
     };
     expired?: boolean;
@@ -23,6 +25,7 @@ declare module "next-auth" {
     id: string;
     email: string;
     isPlatformAdmin?: boolean;
+    mustChangePassword?: boolean;
     storeRoles?: StoreRole[];
   }
 }
@@ -32,6 +35,7 @@ declare module "next-auth/jwt" {
     userId: string;
     email: string;
     isPlatformAdmin?: boolean;
+    mustChangePassword?: boolean;
     storeRoles?: StoreRole[];
     lastActiveAt?: number;
   }

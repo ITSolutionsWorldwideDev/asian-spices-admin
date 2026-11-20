@@ -123,6 +123,11 @@ export default withAuth(
           return true;
         }
 
+        // Background cron jobs have no browser session.
+        if (req.nextUrl.pathname.startsWith("/api/cron")) {
+          return true;
+        }
+
         if (req.nextUrl.pathname === "/api/log") return true;
 
         // UploadThing server callbacks have no session cookie — blocking them

@@ -225,14 +225,15 @@ export async function createPartner(formData: FormData) {
            SET password_hash = $1,
                name = $2,
                status = 'active',
-               role = 'admin'
+               role = 'admin',
+               must_change_password = false
            WHERE id = $3`,
           [adminPasswordHash, initialAdminName, existingAdmin.rows[0].id],
         );
       } else {
         await client.query(
-          `INSERT INTO users (email, password_hash, name, status, role)
-           VALUES ($1, $2, $3, 'active', 'admin')`,
+          `INSERT INTO users (email, password_hash, name, status, role, must_change_password)
+           VALUES ($1, $2, $3, 'active', 'admin', false)`,
           [initialAdminEmail, adminPasswordHash, initialAdminName],
         );
       }
@@ -261,14 +262,15 @@ export async function createPartner(formData: FormData) {
              SET password_hash = $1,
                  name = $2,
                  status = 'active',
-                 role = 'store_owner'
+                 role = 'store_owner',
+                 must_change_password = false
              WHERE id = $3`,
             [ownerPasswordHash, ownerName, existingOwner.rows[0].id],
           );
         } else {
           await client.query(
-            `INSERT INTO users (email, password_hash, name, status, role)
-             VALUES ($1, $2, $3, 'active', 'store_owner')`,
+            `INSERT INTO users (email, password_hash, name, status, role, must_change_password)
+             VALUES ($1, $2, $3, 'active', 'store_owner', false)`,
             [ownerEmail, ownerPasswordHash, ownerName],
           );
         }
@@ -444,7 +446,10 @@ export async function approvePartner(partnerId: string) {
         await client.query(
           `UPDATE users
            SET store_id = COALESCE(store_id, $1),
-               role = 'store_owner'
+               role = 'store_owner',
+               must_change_password = false,
+               password_changed_at = NOW(),
+               temp_password_reminders = 0
            WHERE id = $2`,
           [result.storeId, userId],
         );
@@ -468,7 +473,12 @@ export async function approvePartner(partnerId: string) {
           tempPassword = savedInitialPassword;
           const passwordHash = await hash(tempPassword, 10);
           await client.query(
-            `UPDATE users SET password_hash = $1 WHERE id = $2`,
+            `UPDATE users
+             SET password_hash = $1,
+                 must_change_password = false,
+                 password_changed_at = NOW(),
+                 temp_password_reminders = 0
+             WHERE id = $2`,
             [passwordHash, userId],
           );
         } else {
@@ -477,8 +487,22 @@ export async function approvePartner(partnerId: string) {
             tempPassword = Math.random().toString(36).slice(-10);
             const passwordHash = await hash(tempPassword, 10);
             await client.query(
-              `UPDATE users SET password_hash = $1 WHERE id = $2`,
+              `UPDATE users
+               SET password_hash = $1,
+                   must_change_password = false,
+                   password_changed_at = NOW(),
+                   temp_password_reminders = 0
+               WHERE id = $2`,
               [passwordHash, userId],
+            );
+          } else {
+            await client.query(
+              `UPDATE users
+               SET must_change_password = false,
+                   password_changed_at = NOW(),
+                   temp_password_reminders = 0
+               WHERE id = $1`,
+              [userId],
             );
           }
         }
@@ -500,8 +524,11 @@ export async function approvePartner(partnerId: string) {
 
         const userId = randomUUID();
         await client.query(
-          `INSERT INTO users (id, email, password_hash, name, store_id, role)
-           VALUES ($1, $2, $3, $4, $5, 'admin')`,
+          `INSERT INTO users (
+             id, email, password_hash, name, store_id, role,
+             must_change_password, password_changed_at, temp_password_reminders
+           )
+           VALUES ($1, $2, $3, $4, $5, 'admin', false, NOW(), 0)`,
           [userId, storeOwnerLogin, passwordHash, ownerName, result.storeId],
         );
 
@@ -531,8 +558,11 @@ export async function approvePartner(partnerId: string) {
 
         const userId = randomUUID();
         await client.query(
-          `INSERT INTO users (id, email, password_hash, name, store_id, role)
-           VALUES ($1, $2, $3, $4, $5, 'store_owner')`,
+          `INSERT INTO users (
+             id, email, password_hash, name, store_id, role,
+             must_change_password, password_changed_at, temp_password_reminders
+           )
+           VALUES ($1, $2, $3, $4, $5, 'store_owner', false, NOW(), 0)`,
           [userId, storeOwnerLogin, passwordHash, ownerName, result.storeId],
         );
 
@@ -568,7 +598,10 @@ export async function approvePartner(partnerId: string) {
         await client.query(
           `UPDATE users
            SET store_id = COALESCE(store_id, $1),
-               role = 'admin'
+               role = 'admin',
+               must_change_password = false,
+               password_changed_at = NOW(),
+               temp_password_reminders = 0
            WHERE id = $2`,
           [result.storeId, adminUserId],
         );

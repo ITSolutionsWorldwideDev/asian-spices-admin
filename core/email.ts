@@ -7,6 +7,7 @@ interface EmailOptions {
   fromAccount?: "billing" | "order" | "partners" | "support" | "default";
   replyTo?: string;
   cc?: string | string[];
+  bcc?: string | string[];
   attachments?: Array<{
     filename: string;
     content: any;
@@ -106,6 +107,7 @@ export async function sendEmail({
   fromAccount = "default",
   replyTo,
   cc,
+  bcc,
   attachments,
 }: EmailOptions) {
   const profileKey: ProfileKey = SMTP_PROFILES[fromAccount]
@@ -129,6 +131,7 @@ export async function sendEmail({
     from: fromAddress,
     to,
     cc,
+    bcc,
     subject: finalSubject,
     html,
     text,

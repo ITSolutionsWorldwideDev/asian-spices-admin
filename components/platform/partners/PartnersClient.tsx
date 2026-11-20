@@ -7,6 +7,7 @@ import { useOptimistic, useTransition } from "react";
 import PartnerCard from "./PartnerCard";
 import { approvePartner, rejectPartner } from "./actions";
 import FiltersBar from "./FiltersBar";
+import LoaderOverlay from "@/components/layout/loader-overlay";
 
 export default function PartnersClient({
   partners,
@@ -74,6 +75,11 @@ export default function PartnersClient({
 
   return (
     <>
+      <LoaderOverlay
+        show={isPending}
+        message="Processing partner..."
+      />
+
       <div className="page-header flex justify-between items-center mb-4">
         <div>
           <h4 className="text-lg font-semibold">Partners</h4>
@@ -89,10 +95,6 @@ export default function PartnersClient({
           <FiltersBar />
         </div>
       </div>
-
-      {isPending && (
-        <div className="text-sm text-blue-600 font-medium mb-2">Syncing platform changes...</div>
-      )}
 
       {optimisticPartners.length === 0 ? (
         <p className="text-center py-10 text-gray-500">No applications found</p>

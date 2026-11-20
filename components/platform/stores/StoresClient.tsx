@@ -7,16 +7,15 @@ import { startTransition, useOptimistic, useState } from "react";
 import FiltersBar from "./FiltersBar";
 import StoreCard from "./StoreCard";
 import { deleteStore, setStoreStatus } from "./actions";
+import LoaderOverlay from "@/components/layout/loader-overlay";
 
 export default function StoresClient({ stores, total, page, pageSize }: any) {
   const totalPages = Math.ceil(total / pageSize);
-  const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [optimisticStores, updateOptimistic] = useOptimistic(
     stores,
     (state, action: any) => {
-
-      console.log('action === ',action);
       if (action.type === "delete") {
         return state.filter((s: any) => s.id !== action.id);
       }
@@ -25,13 +24,14 @@ export default function StoresClient({ stores, total, page, pageSize }: any) {
           s.id === action.id ? { ...s, status: action.status } : s,
         );
       }
-      console.log('state === ',state);
       return state;
     },
   );
 
   return (
     <>
+      <LoaderOverlay show={deleting} message="Deleting store..." />
+
       <div className="page-header flex justify-between items-center mb-4">
         <div>
           <h4 className="text-lg font-semibold">Stores</h4>
@@ -50,16 +50,7 @@ export default function StoresClient({ stores, total, page, pageSize }: any) {
         <div className="card-body p-3"></div>
       </div>
 
-      {loading ? (
-        <div className="card">
-          <div className="card-body p-3">
-            <div className="flex items-center justify-center py-24 space-x-3">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-black" />
-              <p className="text-gray-500 font-medium">Loading...</p>
-            </div>
-          </div>
-        </div>
-      ) : optimisticStores.length === 0 ? (
+      {optimisticStores.length === 0 ? (
         <div className="card">
           <div className="card-body p-3">
             <p className="text-center py-10 text-gray-500">No Store found</p>
@@ -72,14 +63,23 @@ export default function StoresClient({ stores, total, page, pageSize }: any) {
               key={store.id}
               store={store}
               onDelete={async () => {
+                if (deleting) return;
                 const ok = window.confirm(
                   `Are you sure you want to delete the store "${store.name}"? This cannot be undone.`,
                 );
                 if (!ok) return;
+                setDeleting(true);
                 startTransition(() => {
                   updateOptimistic({ type: "delete", id: store.id });
                 });
-                await deleteStore(store.id);
+                try {
+                  await deleteStore(store.id);
+                } catch (error) {
+                  console.error("Failed to delete store:", error);
+                  alert("Failed to delete store. Please try again.");
+                } finally {
+                  setDeleting(false);
+                }
               }}
               onToggleStatus={async () => {
                 const status =
