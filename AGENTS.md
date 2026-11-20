@@ -15,7 +15,7 @@ Next.js (App Router, TypeScript) admin dashboard for Asian Spices. Dev server ru
   - `orders/` — order lists + `orders/queue`
   - `store/` — store shell + `store/settings`
   - other feature areas: `platform/`, `shipping/`, `packaging/`, `blogs/`, `customers/`, `chatbot/`, `media/`
-- `core/` — backend-only shared logic: `core/db.ts` (Postgres pool), `core/email.ts` / `core/email-templates.ts`, `core/auth/`, `core/shipping/`, `core/order-routing/`, `core/packaging-service/`, `core/types/`, `core/utils/`
+- `core/` — backend-only shared logic: `core/db.ts` (Postgres pool), `core/email.ts` / `core/email-templates/`, `core/auth/`, `core/shipping/`, `core/order-routing/`, `core/packaging-service/`, `core/types/`, `core/utils/`
 - `lib/` — app helpers grouped by concern (`auth/`, `orders/`, `shipping/`, `products/`, `services/`, `validations/`, `audit/`, `crypto/`, `errors/`, …). Prefer `core/email.ts` over `lib/email/` for anything new.
 - `data/` — static/reference data
   - `navigation/` — routes + sidebar config
@@ -28,4 +28,4 @@ Next.js (App Router, TypeScript) admin dashboard for Asian Spices. Dev server ru
 PostgreSQL via the `pg` pool in `core/db.ts`. Query columns have drifted from the live schema before (e.g. a missing `created_at` column caused 500s on `/api/store-assignments`) — verify column names against the actual DB schema when touching SQL, don't assume the query matches the table.
 
 ## Related repo
-`asian-spices-web` (sibling directory) is the customer-facing storefront — a separate repo, not part of a monorepo/Turborepo setup despite what older docs here implied. Order-confirmation emails to customers are sent from there, not from this admin repo; `sendOrderConfirmationEmail` in `core/email-templates.ts` here is currently unused dead code.
+`asian-spices-web` (sibling directory) is the customer-facing storefront — a separate repo, not part of a monorepo/Turborepo setup despite what older docs here implied. Order-confirmation emails to customers are sent from there, not from this admin repo; `sendOrderConfirmationEmail` in `core/email-templates/` here is currently unused dead code.
