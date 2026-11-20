@@ -134,11 +134,22 @@ export async function createStore(formData: FormData) {
     let userId: string;
     if (existingUser.rows.length > 0) {
       userId = existingUser.rows[0].id;
+      // await client.query(
+      //   `UPDATE users
+      //    SET must_change_password = false,
+      //        password_changed_at = NOW(),
+      //        temp_password_reminders = 0
+      //    WHERE id = $1`,
+      //   [userId],
+      // );
     } else {
       const passwordHash = await hash(adminPassword, 10);
       const userRes = await client.query(
-        `INSERT INTO users (email, password_hash, name)
-         VALUES ($1, $2, $3)
+        `INSERT INTO users (
+           email, password_hash, name, must_change_password,
+           password_changed_at, temp_password_reminders
+         )
+         VALUES ($1, $2, $3, true, NOW(), 0)
          RETURNING id`,
         [adminEmail, passwordHash, adminName],
       );
@@ -590,6 +601,14 @@ export async function saveStore(
       let userId: string;
       if (existingUser.rows.length > 0) {
         userId = existingUser.rows[0].id;
+        // await client.query(
+        //   `UPDATE users
+        //    SET must_change_password = false,
+        //        password_changed_at = NOW(),
+        //        temp_password_reminders = 0
+        //    WHERE id = $1`,
+        //   [userId],
+        // );
       } else {
         if (!adminPassword) {
           throw new Error("Password required for new user");
@@ -597,8 +616,11 @@ export async function saveStore(
 
         const passwordHash = await hash(adminPassword as string, 10);
         const newUser = await client.query(
-          `INSERT INTO users (email, password_hash, name)
-           VALUES ($1, $2, $3)
+          `INSERT INTO users (
+             email, password_hash, name, must_change_password,
+             password_changed_at, temp_password_reminders
+           )
+           VALUES ($1, $2, $3, true, NOW(), 0)
            RETURNING id`,
           [adminEmail, passwordHash, adminName],
         );

@@ -2,8 +2,9 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { approvePartner, rejectPartner, deletePartner } from "./actions";
+import LoaderOverlay from "@/components/layout/loader-overlay";
 
 function isEmpty(value: unknown) {
   if (value == null) return true;
@@ -116,6 +117,11 @@ export default function PartnerDetail({ partner }: any) {
 
   return (
     <div className="space-y-6">
+      <LoaderOverlay
+        show={loading}
+        message="Processing partner..."
+      />
+
       {/* 🏢 COMPANY INFO */}
       <Section title="Company Info">
         <Field label="Company Name" value={partner.company_name} />

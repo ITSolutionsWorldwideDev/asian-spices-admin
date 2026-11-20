@@ -8,6 +8,7 @@ declare module "next-auth" {
       id: string;
       email: string;
       isPlatformAdmin?: boolean;
+      mustChangePassword?: boolean;
       storeRoles?: {
         store_id: string;
         role: string;
@@ -20,6 +21,7 @@ declare module "next-auth" {
   interface JWT {
     id: string;
     isPlatformAdmin?: boolean;
+    mustChangePassword?: boolean;
     storeRoles?: {
       store_id: string;
       role: string;

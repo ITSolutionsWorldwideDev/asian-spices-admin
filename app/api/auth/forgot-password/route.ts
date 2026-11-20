@@ -128,7 +128,8 @@ export async function POST(req: Request) {
       const passwordHash = await bcrypt.hash(password, 10);
       const updateRes = await runQuery(
         `UPDATE users u
-         SET password_hash = $1
+         SET password_hash = $1,
+             must_change_password = true
          WHERE LOWER(u.email) = $2
            AND u.status = 'active'
            AND ${PARTNER_ACCOUNT_SQL}`,

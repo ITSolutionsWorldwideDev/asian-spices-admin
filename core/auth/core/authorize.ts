@@ -7,6 +7,8 @@ export interface AuthUser {
   id: string;
   email: string;
   isPlatformAdmin: boolean;
+  /** false = temporary/issued password; user must set a new one. true = already changed. */
+  mustChangePassword: boolean;
   storeRoles: {
     store_id: string;
     role: string;
@@ -16,7 +18,7 @@ export interface AuthUser {
 
 export async function authorizeUser(email: string, password: string): Promise<AuthUser>{
   const userRes = await runQuery(
-    `SELECT id, email, password_hash, is_platform_admin
+    `SELECT id, email, password_hash, is_platform_admin, must_change_password
      FROM users WHERE email = $1 AND status = 'active'`,
     [email]
   );
@@ -69,6 +71,8 @@ export async function authorizeUser(email: string, password: string): Promise<Au
     id: user.id,
     email: user.email,
     isPlatformAdmin: !!user.is_platform_admin,
+    // Column is inverted vs typical naming: false means "still must change".
+    mustChangePassword: user.must_change_password === true,
     storeRoles: rolesRes.rows
   };
 }

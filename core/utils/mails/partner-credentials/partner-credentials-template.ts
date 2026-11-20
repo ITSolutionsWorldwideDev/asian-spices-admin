@@ -51,7 +51,7 @@ export function generatePartnerCredentialsEmailHtml(data: PartnerCredentialsEmai
   const tempPassword = (data.tempPassword && data.tempPassword.trim()) || 'Zie instructies per e-mail';
   const loginEmailLabel = data.loginEmailLabel || 'Inlog e-mail';
   const loginPasswordLabel = data.loginPasswordLabel || 'Tijdelijk wachtwoord';
-  const loginUrl = data.loginUrl || 'https://www.asianspices.online/login';
+  const loginUrl = data.loginUrl || 'https://partner.asianspices.online/login?callbackUrl=%2F';
   const contactUrl = data.contactUrl || 'https://www.asianspices.online/contact-us';
 
   const logoSrc = data.logoUrl || DEFAULT_LOGO_SRC;

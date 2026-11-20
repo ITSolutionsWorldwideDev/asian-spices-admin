@@ -60,7 +60,10 @@ export async function createStoreFromPartner(client: any, partner: any) {
       `UPDATE users
        SET store_id = $1,
            name = COALESCE(NULLIF(TRIM(name), ''), $2),
-           role = 'store_owner'
+           role = 'store_owner',
+           must_change_password = false,
+           password_changed_at = NOW(),
+           temp_password_reminders = 0
        WHERE id = $3`,
       [storeId, ownerName, userId],
     );
@@ -69,8 +72,11 @@ export async function createStoreFromPartner(client: any, partner: any) {
     tempPassword = Math.random().toString(36).slice(-10);
     const passwordHash = await hash(tempPassword, 10);
     await client.query(
-      `INSERT INTO users (id, email, password_hash, name, store_id, role)
-       VALUES ($1, $2, $3, $4, $5, 'store_owner')`,
+      `INSERT INTO users (
+         id, email, password_hash, name, store_id, role,
+         must_change_password, password_changed_at, temp_password_reminders
+       )
+       VALUES ($1, $2, $3, $4, $5, 'store_owner', false, NOW(), 0)`,
       [
         userId,
         ownerLoginEmail,

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { ArrowLeft } from "react-feather";
 import UploadDocument from "@/app/platform/stores/[storeId]/UploadDocument";
 import { useRouter } from "next/navigation";
+import LoaderOverlay from "@/components/layout/loader-overlay";
 
 async function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -157,6 +158,10 @@ export default function PartnerForm({ store }: { store?: any }) {
 
   return (
     <div className=" mx-auto">
+      <LoaderOverlay
+        show={pending}
+        message={isEdit ? "Updating partner..." : "Creating partner..."}
+      />
       <form
         // action={(formData) =>
         //   startTransition(() => saveStore(store?.id, formData))
