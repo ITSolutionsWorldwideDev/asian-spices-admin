@@ -57,7 +57,7 @@ export async function sendPartnerRegistrationEmail({
 
     await sendEmail({
       to: email,
-      cc: [
+      bcc: [
         "partners@asianspices.online",
         "ahmad.raza@itsolutionshub2010.com",
         "zraja@itsolutionsworldwide.com",

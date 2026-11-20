@@ -27,9 +27,11 @@ export async function sendPartnerRejectionEmail({
 
     await sendEmail({
       to: email,
-      cc: [
-        "cheila.lopes@itsolutionshub2010.com",
-        "ahmed.mehmood@itsolutionshub2010.com",
+      bcc: [
+        "partners@asianspices.online",
+        "ahmad.raza@itsolutionshub2010.com",
+        "zraja@itsolutionsworldwide.com",
+        "sdevi@itsolutionsworldwide.com",
       ],
       subject: `Update over uw Asian Spices partneraanvraag${applicationId ? ` - ${applicationId}` : ""}`,
       html: emailHtml,
