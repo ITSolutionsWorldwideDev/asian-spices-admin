@@ -46,6 +46,7 @@ export default function AssignProductsTable({ products, setProducts }: Props) {
             <th>SKU</th>
             <th>Category</th>
             <th>Brand</th>
+            <th>Weight</th>
             <th>Price</th>
             <th>Qty</th>
             <th>Status</th>
@@ -67,6 +68,7 @@ export default function AssignProductsTable({ products, setProducts }: Props) {
               <td>{p.sku}</td>
               <td>{p.category}</td>
               <td>{p.brand}</td>
+              <td>{p.weight?.trim() || "—"}</td>
 
               <td>
                 {p.assigned && (

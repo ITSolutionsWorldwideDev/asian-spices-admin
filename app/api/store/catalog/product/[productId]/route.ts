@@ -25,12 +25,17 @@ export async function GET(
         p.name,
         p.slug,
         p.sku,
+        p.weight,
         p.description,
         p.health_benefits,
         p.base_price,
         p.quantity,
-        p.created_at
+        p.created_at,
+        c.name AS category,
+        b.name AS brand
       FROM store_products p
+      LEFT JOIN store_categories c ON c.id = p.category_id
+      LEFT JOIN store_brands b ON b.brand_id = p.brand_id
       WHERE p.id = $1
       `,
       [productId]
