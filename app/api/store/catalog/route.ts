@@ -94,6 +94,7 @@ export async function GET(req: NextRequest) {
       p.sku,
       c.name AS category,
       b.name AS brand,
+      p.weight,
 
       p.base_price AS base_price,
       spc.price AS store_price,

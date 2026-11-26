@@ -139,8 +139,10 @@ export default function ProductsCatalogComponent() {
         p.product_id === product_id
           ? {
               ...p,
-              store_price: value,
-              is_overridden: true,
+              // ...(field === "price"
+                 store_price: value,
+                  is_overridden: true ,
+                // : { quantity: value }),
               assigned: true, // ✅ instantly reflect in UI
             }
           : p,
@@ -483,6 +485,23 @@ export default function ProductsCatalogComponent() {
       ),
     },
     {
+      title: "SKU",
+      render: (_: any, record: CatalogProduct) => record.sku || "—",
+    },
+    {
+      title: "Category",
+      render: (_: any, record: CatalogProduct) => record.category || "—",
+    },
+    {
+      title: "Brand",
+      render: (_: any, record: CatalogProduct) => record.brand || "—",
+    },
+    {
+      title: "Weight",
+      render: (_: any, record: CatalogProduct) =>
+        record.weight?.trim() || "—",
+    },
+    {
       title: "Price",
       render: (_: any, record: CatalogProduct) => (
         <div className="flex flex-col gap-1">
@@ -515,6 +534,10 @@ export default function ProductsCatalogComponent() {
           </span>
         </div>
       ),
+    },
+    {
+      title: "Qty",
+      render: (_: any, record: CatalogProduct) => record.quantity ?? 0,
     },
     {
       title: "Assigned",
@@ -742,8 +765,15 @@ export default function ProductsCatalogComponent() {
                       </h2>
 
                       <p className="text-sm text-gray-500">
-                        SKU: {productDetail.sku}
+                        SKU: {productDetail.sku || "—"}
                       </p>
+
+                      <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                        <span>Category: {productDetail.category || "—"}</span>
+                        <span>Brand: {productDetail.brand || "—"}</span>
+                        <span>Weight: {productDetail.weight?.trim() || "—"}</span>
+                        <span>Qty: {productDetail.quantity ?? 0}</span>
+                      </div>
 
                       <p className="text-sm text-gray-600">
                         Description:{" "}
@@ -762,11 +792,6 @@ export default function ProductsCatalogComponent() {
                         <strong>
                           €{Number(productDetail.base_price).toFixed(2)}
                         </strong>
-                      </div>
-
-                      <div className="flex justify-between text-sm">
-                        <span>Stock:</span>
-                        <strong>{productDetail.quantity}</strong>
                       </div>
 
                       <div className="text-xs text-gray-400">

@@ -6,7 +6,7 @@ export type CatalogProduct = {
   sku: string;
   category: string;
   brand: string;
-
+  weight?: string | null;
 
   base_price: number;
   store_price?: number;
